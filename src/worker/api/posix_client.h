@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -23,13 +23,13 @@
 // Created by hdevarajan on 5/10/18.
 //
 
-#ifndef LABIOS_MAIN_POSIXCLIENT_H
-#define LABIOS_MAIN_POSIXCLIENT_H
+#ifndef DTIO_MAIN_POSIXCLIENT_H
+#define DTIO_MAIN_POSIXCLIENT_H
 
 #include "io_client.h"
-#include "labios/common/config_manager.h"
+#include "dtio/common/config_manager.h"
 #include <chrono>
-#include <labios/common/data_structures.h>
+#include <dtio/common/data_structures.h>
 
 using namespace std::chrono;
 
@@ -47,4 +47,4 @@ public:
   int flush_file(flush_task task) override;
 };
 
-#endif // LABIOS_MAIN_POSIXCLIENT_H
+#endif // DTIO_MAIN_POSIXCLIENT_H

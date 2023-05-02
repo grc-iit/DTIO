@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -25,9 +25,9 @@
 #include "task_scheduler.h"
 #include <algorithm>
 #include <iomanip>
-#include <labios/common/data_structures.h>
-#include <labios/common/external_clients/memcached_impl.h>
-#include <labios/labios_system.h>
+#include <dtio/common/data_structures.h>
+#include <dtio/common/external_clients/memcached_impl.h>
+#include <dtio/dtio_system.h>
 
 std::shared_ptr<task_scheduler> task_scheduler::instance = nullptr;
 service task_scheduler::service_i = service(TASK_SCHEDULER);
@@ -35,7 +35,7 @@ service task_scheduler::service_i = service(TASK_SCHEDULER);
  *Interface
  ******************************************************************************/
 int task_scheduler::run() {
-  auto queue = labios_system::getInstance(service_i)->get_client_queue(
+  auto queue = dtio_system::getInstance(service_i)->get_client_queue(
       CLIENT_TASK_SUBJECT);
   auto task_list = std::vector<task *>();
   Timer t = Timer();
@@ -65,13 +65,13 @@ void task_scheduler::schedule_tasks(std::vector<task *> &tasks) {
   Timer t = Timer();
   t.resumeTime();
 #endif
-  auto solver_i = labios_system::getInstance(service_i)->solver_i;
+  auto solver_i = dtio_system::getInstance(service_i)->solver_i;
   solver_input input(tasks, static_cast<int>(tasks.size()));
   solver_output output = solver_i->solve(input);
 
   for (auto element : output.worker_task_map) {
     auto queue =
-        labios_system::getInstance(service_i)->get_worker_queue(element.first);
+        dtio_system::getInstance(service_i)->get_worker_queue(element.first);
     for (auto task : element.second) {
 
       switch (task->t_type) {

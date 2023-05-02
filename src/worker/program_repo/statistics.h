@@ -3,8 +3,8 @@
 // CREATE DATE: 12/17/2017
 // ===============================
 
-#ifndef LABIOS_STATISTICS_H
-#define LABIOS_STATISTICS_H
+#ifndef DTIO_STATISTICS_H
+#define DTIO_STATISTICS_H
 
 #include <string>
 #include <vector>
@@ -54,4 +54,4 @@ private:
   static unsigned long totalSize(std::vector<calculations> &data);
 };
 
-#endif // LABIOS_STATISTICS_H
+#endif // DTIO_STATISTICS_H

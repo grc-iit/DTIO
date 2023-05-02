@@ -2,14 +2,14 @@
 // Created by lukemartinlogan on 7/22/22.
 //
 
-#ifndef LABIOS_BENCH_UTIL_H
-#define LABIOS_BENCH_UTIL_H
+#ifndef DTIO_BENCH_UTIL_H
+#define DTIO_BENCH_UTIL_H
 
-#include "labios/common/return_codes.h"
-#include "labios/common/threadPool.h"
-#include "labios/common/timer.h"
-#include "labios/common/utilities.h"
-#include "labios/drivers/posix.h"
+#include "dtio/common/return_codes.h"
+#include "dtio/common/threadPool.h"
+#include "dtio/common/timer.h"
+#include "dtio/common/utilities.h"
+#include "dtio/drivers/posix.h"
 #include <fcntl.h>
 #include <fstream>
 #include <iomanip>
@@ -67,9 +67,9 @@ static float get_average_worker() {
 static void wait_for_read(size_t size, std::vector<read_task> tasks,
                           std::string filename) {
   char read_buf[size];
-  auto bytes = labios::fread_wait(read_buf, tasks, filename);
+  auto bytes = dtio::fread_wait(read_buf, tasks, filename);
   if (bytes != size)
     std::cerr << "Read failed:" << bytes << "\n";
 }
 
-#endif // LABIOS_BENCH_UTIL_H
+#endif // DTIO_BENCH_UTIL_H

@@ -5,9 +5,9 @@
 #include "util.h"
 
 int main(int argc, char **argv) {
-  labios::MPI_Init(&argc, &argv);
+  dtio::MPI_Init(&argc, &argv);
   if (argc != 5) {
-    printf("USAGE: ./hacc_tabios [labios_conf] [file_path] [iteration] "
+    printf("USAGE: ./hacc_tabios [dtio_conf] [file_path] [iteration] "
            "[buf_path]\n");
     exit(1);
   }
@@ -124,5 +124,5 @@ int main(int argc, char **argv) {
     std::cerr << stream.str();
   }
 
-  labios::MPI_Finalize();
+  dtio::MPI_Finalize();
 }

@@ -5,9 +5,9 @@
 #include "util.h"
 
 int main(int argc, char **argv) {
-  labios::MPI_Init(&argc, &argv);
+  dtio::MPI_Init(&argc, &argv);
   if (argc != 4) {
-    printf("USAGE: ./cm1_base [labios_conf] [file_path] [iteration]\n");
+    printf("USAGE: ./cm1_base [dtio_conf] [file_path] [iteration]\n");
     exit(1);
   }
 
@@ -70,5 +70,5 @@ int main(int argc, char **argv) {
     std::cerr << stream.str();
   }
 
-  labios::MPI_Finalize();
+  dtio::MPI_Finalize();
 }

@@ -5,9 +5,9 @@
 #include "util.h"
 
 int main(int argc, char **argv) {
-  labios::MPI_Init(&argc, &argv);
+  dtio::MPI_Init(&argc, &argv);
   if (argc != 2) {
-    printf("USAGE: ./simple_read [labios_conf]\n");
+    printf("USAGE: ./simple_read [dtio_conf]\n");
     exit(1);
   }
 
@@ -20,20 +20,20 @@ int main(int argc, char **argv) {
   std::cerr << "This is a simple READ test.\n";
 
   // open file for reading
-  fp = labios::fopen(argv[2], "rb");
+  fp = dtio::fopen(argv[2], "rb");
   if (fp == NULL) {
     std::cerr << "Failed to find file. Aborting...\n";
     exit(-1);
   }
 
   // read
-  rv = labios::fread(read_buf, sizeof(read_buf), 1, fp);
+  rv = dtio::fread(read_buf, sizeof(read_buf), 1, fp);
   std::cerr << "(Return value: " << rv << ")\n";
   std::cerr << read_buf << "\n";
 
-  labios::fclose(fp);
+  dtio::fclose(fp);
   timer.pauseTime();
   auto time = timer.elapsed_time;
   std::cerr << "Time elapsed: " << time << " seconds.\n";
-  labios::MPI_Finalize();
+  dtio::MPI_Finalize();
 }

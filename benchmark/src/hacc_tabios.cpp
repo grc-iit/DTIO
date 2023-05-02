@@ -5,9 +5,9 @@
 #include "util.h"
 
 int main(int argc, char **argv) {
-  labios::MPI_Init(&argc, &argv);
+  dtio::MPI_Init(&argc, &argv);
   if (argc != 5) {
-    printf("USAGE: ./hacc_tabios [labios_conf] [file_path] [iteration] "
+    printf("USAGE: ./hacc_tabios [dtio_conf] [file_path] [iteration] "
            "[buf_path]\n");
     exit(1);
   }
@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
   Timer wbb = Timer();
   wbb.resumeTime();
 #endif
-  FILE *fh = labios::fopen(filename.c_str(), "w+");
+  FILE *fh = dtio::fopen(filename.c_str(), "w+");
 #ifdef TIMERBASE
   wbb.pauseTime();
 #endif
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 #endif
         operations.emplace_back(std::make_pair(
             item[0],
-            labios::fwrite_async(write_buf[j], sizeof(char), item[0], fh)));
+            dtio::fwrite_async(write_buf[j], sizeof(char), item[0], fh)));
 #ifdef TIMERBASE
         wbb.pauseTime();
 #endif
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
   wbb.resumeTime();
 #endif
   for (auto operation : operations) {
-    auto bytes = labios::fwrite_wait(operation.second);
+    auto bytes = dtio::fwrite_wait(operation.second);
     if (bytes != operation.first)
       std::cerr << "Write failed\n";
   }
@@ -100,14 +100,14 @@ int main(int argc, char **argv) {
   Timer rbb = Timer();
   rbb.resumeTime();
 #endif
-  labios::fclose(fh);
+  dtio::fclose(fh);
 
 #ifndef COLLECT
-  FILE *fh1 = labios::fopen(filename.c_str(), "r+");
-  auto op = labios::fread_async(sizeof(char), io_per_teration, fh1);
-  //    auto bytes= labios::fread_wait(read_buf,op,filename);
+  FILE *fh1 = dtio::fopen(filename.c_str(), "r+");
+  auto op = dtio::fread_async(sizeof(char), io_per_teration, fh1);
+  //    auto bytes= dtio::fread_wait(read_buf,op,filename);
   //    if(bytes!=io_per_teration) std::cerr << "Read failed:" <<bytes<<"\n";
-  labios::fclose(fh1);
+  dtio::fclose(fh1);
 
 #endif
 
@@ -126,9 +126,9 @@ int main(int argc, char **argv) {
   Timer pfs = Timer();
   pfs.resumeTime();
 #endif
-  FILE *fh2 = labios::fopen(output.c_str(), "w+");
-  labios::fwrite_async(read_buf, sizeof(char), io_per_teration, fh2);
-  labios::fclose(fh2);
+  FILE *fh2 = dtio::fopen(output.c_str(), "w+");
+  dtio::fwrite_async(read_buf, sizeof(char), io_per_teration, fh2);
+  dtio::fclose(fh2);
 #ifdef TIMERBASE
   pfs.pauseTime();
   free(read_buf);
@@ -154,5 +154,5 @@ int main(int argc, char **argv) {
     stream << "average," << mean << "\n";
     std::cerr << stream.str();
   }
-  labios::MPI_Finalize();
+  dtio::MPI_Finalize();
 }

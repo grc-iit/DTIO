@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -23,10 +23,10 @@
 // Created by hdevarajan on 5/10/18.
 //
 
-#ifndef LABIOS_MAIN_IO_CLIENT_H
-#define LABIOS_MAIN_IO_CLIENT_H
+#ifndef DTIO_MAIN_IO_CLIENT_H
+#define DTIO_MAIN_IO_CLIENT_H
 
-#include <labios/common/data_structures.h>
+#include <dtio/common/data_structures.h>
 
 class io_client {
 protected:
@@ -39,4 +39,4 @@ public:
   virtual int delete_file(delete_task task) = 0;
   virtual int flush_file(flush_task task) = 0;
 };
-#endif // LABIOS_MAIN_IO_CLIENT_H
+#endif // DTIO_MAIN_IO_CLIENT_H

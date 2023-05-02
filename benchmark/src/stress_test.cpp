@@ -5,9 +5,9 @@
 #include "util.h"
 
 int main(int argc, char **argv) {
-  labios::MPI_Init(&argc, &argv);
+  dtio::MPI_Init(&argc, &argv);
   if (argc != 2) {
-    printf("USAGE: ./stress_test [labios_conf]\n");
+    printf("USAGE: ./stress_test [dtio_conf]\n");
     exit(1);
   }
 
@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
   int num_iterations = 128;
   Timer global_timer = Timer();
   global_timer.resumeTime();
-  FILE *fh = labios::fopen("file.test", "w+");
+  FILE *fh = dtio::fopen("file.test", "w+");
   global_timer.pauseTime();
   std::vector<std::pair<size_t, std::vector<write_task *>>> operations =
       std::vector<std::pair<size_t, std::vector<write_task *>>>();
@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
   for (int i = 0; i < num_iterations; ++i) {
     global_timer.resumeTime();
     operations.emplace_back(std::make_pair(
-        io_size, labios::fwrite_async(write_buf, sizeof(char), io_size, fh)));
+        io_size, dtio::fwrite_async(write_buf, sizeof(char), io_size, fh)));
     global_timer.pauseTime();
     if (i != 0 && i % 32 == 0) {
       if (rank == 0)
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
       for (int task = 0; task < 32; ++task) {
         auto operation = operations[task];
         global_timer.resumeTime();
-        auto bytes = labios::fwrite_wait(operation.second);
+        auto bytes = dtio::fwrite_wait(operation.second);
         if (bytes != operation.first)
           std::cerr << "Write failed\n";
         global_timer.pauseTime();
@@ -48,13 +48,13 @@ int main(int argc, char **argv) {
   }
   global_timer.resumeTime();
   for (auto operation : operations) {
-    auto bytes = labios::fwrite_wait(operation.second);
+    auto bytes = dtio::fwrite_wait(operation.second);
     if (bytes != operation.first)
       std::cerr << "Write failed\n";
   }
   global_timer.pauseTime();
   global_timer.resumeTime();
-  labios::fclose(fh);
+  dtio::fclose(fh);
   global_timer.pauseTime();
   if (rank == 0)
     std::cerr << "Done writing. Now reducing\n";
@@ -70,5 +70,5 @@ int main(int argc, char **argv) {
     stream << "mean," << mean << "\tmax," << max << "\tmin," << min << "\n";
     std::cerr << stream.str();
   }
-  labios::MPI_Finalize();
+  dtio::MPI_Finalize();
 }

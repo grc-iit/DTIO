@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -23,10 +23,10 @@
  *include files
  ******************************************************************************/
 #include <cstring>
-#include <labios/common/metadata_manager/metadata_manager.h>
-#include <labios/common/return_codes.h>
-#include <labios/common/timer.h>
-#include <labios/common/utilities.h>
+#include <dtio/common/metadata_manager/metadata_manager.h>
+#include <dtio/common/return_codes.h>
+#include <dtio/common/timer.h>
+#include <dtio/common/utilities.h>
 #include <mpi.h>
 #include <random>
 
@@ -43,7 +43,7 @@ int metadata_manager::create(std::string filename, std::string mode,
                              FILE *&fh) {
   if (filename.length() > FILENAME_MAX)
     return MDM__FILENAME_MAX_LENGTH;
-  auto map = labios_system::getInstance(service_i)->map_client();
+  auto map = dtio_system::getInstance(service_i)->map_client();
   fh = fmemopen(nullptr, 1, mode.c_str());
   file_stat stat = {fh, 0, 0, mode, true};
   auto iter = file_map.find(filename);
@@ -73,7 +73,7 @@ int metadata_manager::update_on_open(std::string filename, std::string mode,
 #endif
   if (filename.length() > FILENAME_MAX)
     return MDM__FILENAME_MAX_LENGTH;
-  auto map = labios_system::getInstance(service_i)->map_client();
+  auto map = dtio_system::getInstance(service_i)->map_client();
   auto iter = file_map.find(filename);
   file_stat stat;
   if (iter != file_map.end()) {
@@ -117,7 +117,7 @@ bool metadata_manager::is_opened(FILE *fh) {
 }
 
 int metadata_manager::remove_chunks(std::string &filename) {
-  auto map = labios_system::getInstance(service_i)->map_client();
+  auto map = dtio_system::getInstance(service_i)->map_client();
   std::string chunks_str =
       map->remove(table::FILE_CHUNK_DB, filename, std::to_string(-1));
   std::vector<std::string> chunks = string_split(chunks_str);
@@ -175,7 +175,7 @@ int metadata_manager::update_read_task_info(std::vector<read_task> task_ks,
   Timer t = Timer();
   t.resumeTime();
 #endif
-  auto map = labios_system::getInstance(service_i)->map_client();
+  auto map = dtio_system::getInstance(service_i)->map_client();
   file_stat fs;
   auto iter = file_map.find(filename);
   if (iter != file_map.end())
@@ -195,7 +195,7 @@ int metadata_manager::update_read_task_info(std::vector<read_task> task_ks,
 
 int metadata_manager::update_write_task_info(std::vector<write_task> task_ks,
                                              std::string filename) {
-  auto map = labios_system::getInstance(service_i)->map_client();
+  auto map = dtio_system::getInstance(service_i)->map_client();
   file_stat fs;
   auto iter = file_map.find(filename);
   if (iter != file_map.end())
@@ -222,7 +222,7 @@ int metadata_manager::update_write_task_info(std::vector<write_task> task_ks,
 
 int metadata_manager::update_on_seek(std::string filename, size_t offset,
                                      size_t origin) {
-  auto map = labios_system::getInstance(service_i)->map_client();
+  auto map = dtio_system::getInstance(service_i)->map_client();
   serialization_manager sm = serialization_manager();
   auto iter = file_map.find(filename);
   if (iter != file_map.end()) {
@@ -257,7 +257,7 @@ int metadata_manager::update_on_seek(std::string filename, size_t offset,
 
 void metadata_manager::update_on_read(std::string filename, size_t size) {
   std::shared_ptr<distributed_hashmap> map =
-      labios_system::getInstance(service_i)->map_client();
+      dtio_system::getInstance(service_i)->map_client();
   serialization_manager sm = serialization_manager();
   auto iter = file_map.find(filename);
   if (iter != file_map.end()) {
@@ -271,7 +271,7 @@ void metadata_manager::update_on_read(std::string filename, size_t size) {
 
 void metadata_manager::update_on_write(std::string filename, size_t size,
                                        size_t offset) {
-  auto map = labios_system::getInstance(service_i)->map_client();
+  auto map = dtio_system::getInstance(service_i)->map_client();
   serialization_manager sm = serialization_manager();
   auto iter = file_map.find(filename);
   if (iter != file_map.end()) {
@@ -291,7 +291,7 @@ std::vector<chunk_meta> metadata_manager::fetch_chunks(read_task task) {
   Timer t = Timer();
   t.resumeTime();
 #endif
-  auto map = labios_system::getInstance(service_i)->map_client();
+  auto map = dtio_system::getInstance(service_i)->map_client();
 
   auto remaining_data = task.source.size;
   auto chunks = std::vector<chunk_meta>();
@@ -346,7 +346,7 @@ int metadata_manager::update_write_task_info(write_task task_k,
   Timer t = Timer();
   t.resumeTime();
 #endif
-  auto map = labios_system::getInstance(service_i)->map_client();
+  auto map = dtio_system::getInstance(service_i)->map_client();
   file_stat fs;
   auto iter = file_map.find(filename);
   if (iter != file_map.end())

@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -23,8 +23,8 @@
  *include files
  ******************************************************************************/
 #include <iomanip>
-#include <labios/common/external_clients/nats_impl.h>
-#include <labios/common/timer.h>
+#include <dtio/common/external_clients/nats_impl.h>
+#include <dtio/common/timer.h>
 
 /******************************************************************************
  *Interface

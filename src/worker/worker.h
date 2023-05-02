@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -23,16 +23,16 @@
  * Created by hariharan on 5/10/18.
  * Updated by akougkas on 6/26/2018
  ******************************************************************************/
-#ifndef LABIOS_MAIN_WORKERSERVICE_H
-#define LABIOS_MAIN_WORKERSERVICE_H
+#ifndef DTIO_MAIN_WORKERSERVICE_H
+#define DTIO_MAIN_WORKERSERVICE_H
 /******************************************************************************
  *include files
  ******************************************************************************/
 #include "../task_scheduler/task_scheduler.h"
 #include "api/io_client.h"
 #include "api/posix_client.h"
-#include <labios/common/external_clients/memcached_impl.h>
-#include <labios/labios_system.h>
+#include <dtio/common/external_clients/memcached_impl.h>
+#include <dtio/dtio_system.h>
 /******************************************************************************
  *Class
  ******************************************************************************/
@@ -56,8 +56,8 @@ private:
       client = std::make_shared<posix_client>(posix_client(worker_index));
     }
     queue =
-        labios_system::getInstance(service_i)->get_worker_queue(worker_index);
-    map = labios_system::getInstance(service_i)->map_server();
+        dtio_system::getInstance(service_i)->get_worker_queue(worker_index);
+    map = dtio_system::getInstance(service_i)->map_server();
   }
   /******************************************************************************
    *Interface
@@ -86,4 +86,4 @@ public:
   virtual ~worker() {}
 };
 
-#endif // LABIOS_MAIN_WORKERSERVICE_H
+#endif // DTIO_MAIN_WORKERSERVICE_H

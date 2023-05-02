@@ -5,9 +5,9 @@
 #include "util.h"
 
 int main(int argc, char **argv) {
-  labios::MPI_Init(&argc, &argv);
+  dtio::MPI_Init(&argc, &argv);
   if (argc != 4) {
-    printf("USAGE: ./cm1_tabios [labios_conf] [file_path] [iteration]\n");
+    printf("USAGE: ./cm1_tabios [dtio_conf] [file_path] [iteration]\n");
     exit(1);
   }
 
@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
   Timer global_timer = Timer();
 
   global_timer.resumeTime();
-  FILE *fh = labios::fopen(filename.c_str(), "w+");
+  FILE *fh = dtio::fopen(filename.c_str(), "w+");
   global_timer.pauseTime();
 
   char *write_buf[32];
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
         global_timer.resumeTime();
         operations.emplace_back(std::make_pair(
             item[0],
-            labios::fwrite_async(write_buf[j], sizeof(char), item[0], fh)));
+            dtio::fwrite_async(write_buf[j], sizeof(char), item[0], fh)));
         global_timer.pauseTime();
         current_offset += item[0];
       }
@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
   printf("HERE2\n");
   global_timer.resumeTime();
   for (auto operation : operations) {
-    auto bytes = labios::fwrite_wait(operation.second);
+    auto bytes = dtio::fwrite_wait(operation.second);
     printf("HERE2.5: %ul\n", bytes);
     if (bytes != operation.first)
       std::cerr << "Write failed\n";
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
   global_timer.resumeTime();
   if (rank == 0)
     std::cerr << "Write finished\n";
-  labios::fclose(fh);
+  dtio::fclose(fh);
   global_timer.pauseTime();
   printf("HERE3");
 
@@ -92,5 +92,5 @@ int main(int argc, char **argv) {
     stream << mean << "," << max << "," << min << "\n";
     std::cerr << stream.str();
   }
-  labios::MPI_Finalize();
+  dtio::MPI_Finalize();
 }

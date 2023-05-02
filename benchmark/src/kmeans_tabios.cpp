@@ -5,10 +5,10 @@
 #include "util.h"
 
 int main(int argc, char **argv) {
-  labios::MPI_Init(&argc, &argv);
+  dtio::MPI_Init(&argc, &argv);
   if (argc != 5) {
     printf(
-        "USAGE: ./kmean_tabios [labios_conf] [file_path] [iter] [pfs_path]\n");
+        "USAGE: ./kmean_tabios [dtio_conf] [file_path] [iter] [pfs_path]\n");
     exit(1);
   }
 
@@ -38,12 +38,12 @@ int main(int argc, char **argv) {
   Timer map = Timer();
   map.resumeTime();
 #endif
-  FILE *fh = labios::fopen(filename.c_str(), "w+");
+  FILE *fh = dtio::fopen(filename.c_str(), "w+");
 #ifdef TIMERBASE
   map.pauseTime();
 #endif
   global_timer.pauseTime();
-  labios::fwrite(write_buf, sizeof(char), io_per_teration, fh);
+  dtio::fwrite(write_buf, sizeof(char), io_per_teration, fh);
   delete (write_buf);
   size_t count = 0;
   std::vector<std::pair<size_t, std::vector<read_task>>> operations =
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 #ifdef TIMERBASE
           map.resumeTime();
 #endif
-          labios::fseek(fh, rand_offset, SEEK_SET);
+          dtio::fseek(fh, rand_offset, SEEK_SET);
 #ifdef TIMERBASE
           map.pauseTime();
 #endif
@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 #endif
 #ifndef COLLECT
         operations.emplace_back(std::make_pair(
-            item[0], labios::fread_async(sizeof(char), item[0], fh)));
+            item[0], dtio::fread_async(sizeof(char), item[0], fh)));
 
 #endif
 #ifdef TIMERBASE
@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
   for (auto operation : operations) {
     wait_for_read(operation.first, operation.second, filename);
   }
-  labios::fclose(fh);
+  dtio::fclose(fh);
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0)
     std::cerr << "Read Done\n";
@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
   Timer reduce = Timer();
   reduce.resumeTime();
 #endif
-  outfile = labios::fopen(finalname.c_str(), "w+");
+  outfile = dtio::fopen(finalname.c_str(), "w+");
 #ifdef TIMERBASE
   reduce.pauseTime();
 #endif
@@ -130,8 +130,8 @@ int main(int argc, char **argv) {
 #ifdef TIMERBASE
   reduce.resumeTime();
 #endif
-  labios::fwrite(out_buff, sizeof(char), 1024 * 1024, outfile);
-  labios::fclose(outfile);
+  dtio::fwrite(out_buff, sizeof(char), 1024 * 1024, outfile);
+  dtio::fclose(outfile);
 #ifdef TIMERBASE
   reduce.pauseTime();
 #endif
@@ -159,5 +159,5 @@ int main(int argc, char **argv) {
     stream << "average," << mean << "\n";
     std::cerr << stream.str();
   }
-  labios::MPI_Finalize();
+  dtio::MPI_Finalize();
 }

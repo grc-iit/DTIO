@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -23,16 +23,16 @@
 // Created by hariharan on 2/16/18.
 //
 
-#ifndef LABIOS_MAIN_CLIENT_H
-#define LABIOS_MAIN_CLIENT_H
+#ifndef DTIO_MAIN_CLIENT_H
+#define DTIO_MAIN_CLIENT_H
 
-#include <labios/common/data_structures.h>
+#include <dtio/common/data_structures.h>
 
 #include <future>
 #include <mpi.h>
 #include <unordered_map>
 
-class LabiosClient {
+class DTIOClient {
 private:
   std::unordered_map<size_t, MPI_Comm> application_map;
   std::unordered_map<std::string, file_meta> files;
@@ -41,7 +41,7 @@ private:
   size_t count;
   MPI_Comm applications_comms, client_comms;
   std::future<int> async_handle;
-  LabiosClient() : count(0), application_map() {}
+  DTIOClient() : count(0), application_map() {}
 
 public:
   int init();
@@ -58,4 +58,4 @@ public:
   int delete_chunk(file_meta &f, std::string key);
 };
 
-#endif // LABIOS_MAIN_CLIENT_H
+#endif // DTIO_MAIN_CLIENT_H

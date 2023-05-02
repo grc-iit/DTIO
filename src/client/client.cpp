@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -25,21 +25,21 @@
 
 #include "client.h"
 #include <cstring>
-#include <labios/common/return_codes.h>
-#include <labios/labios_system.h>
+#include <dtio/common/return_codes.h>
+#include <dtio/dtio_system.h>
 #include <mpi.h>
 
-int LabiosClient::init() {
-  MPI_Open_port(MPI_INFO_NULL, const_cast<char *>(LABIOS_CLIENT_PORT.c_str()));
+int DTIOClient::init() {
+  MPI_Open_port(MPI_INFO_NULL, const_cast<char *>(DTIO_CLIENT_PORT.c_str()));
   MPI_Comm_rank(MPI_COMM_SELF, &rank);
   MPI_Intercomm_merge(MPI_COMM_SELF, 0, &applications_comms);
   return SUCCESS;
 }
 
-int LabiosClient::listen_application_connections() {
+int DTIOClient::listen_application_connections() {
   while (true) {
     MPI_Comm application_comm;
-    MPI_Comm_accept(LABIOS_CLIENT_PORT.c_str(), MPI_INFO_NULL, rank,
+    MPI_Comm_accept(DTIO_CLIENT_PORT.c_str(), MPI_INFO_NULL, rank,
                     MPI_COMM_SELF, &application_comm);
     int client_rank;
     MPI_Comm_rank(applications_comms, &client_rank);
@@ -49,20 +49,20 @@ int LabiosClient::listen_application_connections() {
     MPI_Intercomm_merge(application_comm, 0, &applications_comms);
     if (!async_handle.valid()) {
       async_handle =
-          std::async(std::launch::async, &LabiosClient::initialize_application,
+          std::async(std::launch::async, &DTIOClient::initialize_application,
                      this, count);
     }
   }
 }
 
-int LabiosClient::initialize_application(size_t application_id) { return 0; }
+int DTIOClient::initialize_application(size_t application_id) { return 0; }
 
-int LabiosClient::listen_request() {
+int DTIOClient::listen_request() {
   message msg;
   message_key key;
   MPI_Datatype message_key;
   int error =
-      labios_system::getInstance(CLIENT)->build_message_key(message_key);
+      dtio_system::getInstance(CLIENT)->build_message_key(message_key);
   while (true) {
     MPI_Status status;
     MPI_Recv(&key, 1, message_key, MPI_ANY_SOURCE, MPI_ANY_TAG,
@@ -74,7 +74,7 @@ int LabiosClient::listen_request() {
       case META_FH: {
         file file_struct;
         MPI_Datatype message_file;
-        error = labios_system::getInstance(CLIENT)->build_message_file(
+        error = dtio_system::getInstance(CLIENT)->build_message_file(
             message_file);
         MPI_Status status_file;
         MPI_Recv(&file_struct, 1, message_file, source, MPI_ANY_TAG,
@@ -106,7 +106,7 @@ int LabiosClient::listen_request() {
       case META_CHUNK: {
         chunk_msg chunk_struct;
         MPI_Datatype message_chunk;
-        error = labios_system::getInstance(CLIENT)->build_message_chunk(
+        error = dtio_system::getInstance(CLIENT)->build_message_chunk(
             message_chunk);
         MPI_Status status_file;
         MPI_Recv(&chunk_struct, 1, message_chunk, source, MPI_ANY_TAG,
@@ -170,18 +170,18 @@ int LabiosClient::listen_request() {
   return 0;
 }
 
-int LabiosClient::update_file(file_meta f, std::string key) { return 0; }
+int DTIOClient::update_file(file_meta f, std::string key) { return 0; }
 
-int LabiosClient::update_dataspace(size_t id, dataspace data) { return 0; }
+int DTIOClient::update_dataspace(size_t id, dataspace data) { return 0; }
 
-int LabiosClient::get_file(file_meta &f, std::string key) { return 0; }
+int DTIOClient::get_file(file_meta &f, std::string key) { return 0; }
 
-int LabiosClient::get_dataspace(size_t id, dataspace &data) { return 0; }
+int DTIOClient::get_dataspace(size_t id, dataspace &data) { return 0; }
 
-int LabiosClient::get_chunk(file_meta &f, std::string key) { return 0; }
+int DTIOClient::get_chunk(file_meta &f, std::string key) { return 0; }
 
-int LabiosClient::delete_file(file_meta &f, std::string key) { return 0; }
+int DTIOClient::delete_file(file_meta &f, std::string key) { return 0; }
 
-int LabiosClient::delete_chunk(file_meta &f, std::string key) { return 0; }
+int DTIOClient::delete_chunk(file_meta &f, std::string key) { return 0; }
 
-int LabiosClient::update_chunk(file_meta f, std::string key) { return 0; }
+int DTIOClient::update_chunk(file_meta f, std::string key) { return 0; }

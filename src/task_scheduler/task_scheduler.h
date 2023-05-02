@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -23,16 +23,16 @@
  * Created by hariharan on 5/9/18.
  * Updated by akougkas on 6/26/2018
  ******************************************************************************/
-#ifndef LABIOS_MAIN_TASK_SCHEDULER_SERVICE_H
-#define LABIOS_MAIN_TASK_SCHEDULER_SERVICE_H
+#ifndef DTIO_MAIN_TASK_SCHEDULER_SERVICE_H
+#define DTIO_MAIN_TASK_SCHEDULER_SERVICE_H
 /******************************************************************************
  *include files
  ******************************************************************************/
-#include <labios/common/config_manager.h>
-#include <labios/common/enumerations.h>
-#include <labios/common/external_clients/nats_impl.h>
-#include <labios/common/threadPool.h>
-#include <labios/common/timer.h>
+#include <dtio/common/config_manager.h>
+#include <dtio/common/enumerations.h>
+#include <dtio/common/external_clients/nats_impl.h>
+#include <dtio/common/threadPool.h>
+#include <dtio/common/timer.h>
 #include <memory>
 #include <zconf.h>
 /******************************************************************************
@@ -73,4 +73,4 @@ public:
   virtual ~task_scheduler() { scheduling_threads.shutdown(); }
 };
 
-#endif // LABIOS_MAIN_TASK_SCHEDULER_SERVICE_H
+#endif // DTIO_MAIN_TASK_SCHEDULER_SERVICE_H

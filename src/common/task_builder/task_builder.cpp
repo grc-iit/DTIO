@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -23,8 +23,8 @@
  *include files
  ******************************************************************************/
 #include <cmath>
-#include <labios/common/metadata_manager/metadata_manager.h>
-#include <labios/common/task_builder/task_builder.h>
+#include <dtio/common/metadata_manager/metadata_manager.h>
+#include <dtio/common/task_builder/task_builder.h>
 #include <vector>
 
 std::shared_ptr<task_builder> task_builder::instance = nullptr;
@@ -33,8 +33,8 @@ std::shared_ptr<task_builder> task_builder::instance = nullptr;
  ******************************************************************************/
 std::vector<write_task *> task_builder::build_write_task(write_task task,
                                                          std::string data) {
-  auto map_client = labios_system::getInstance(service_i)->map_client();
-  auto map_server = labios_system::getInstance(service_i)->map_server();
+  auto map_client = dtio_system::getInstance(service_i)->map_client();
+  auto map_server = dtio_system::getInstance(service_i)->map_server();
   auto tasks = std::vector<write_task *>();
   file source = task.source;
 
@@ -47,9 +47,9 @@ std::vector<write_task *> task_builder::build_write_task(write_task task,
       (source.offset / MAX_IO_UNIT) * MAX_IO_UNIT + source.offset % MAX_IO_UNIT;
   std::size_t data_offset = 0;
   std::size_t remaining_data = source.size;
-  int server = static_cast<int>(labios_system::getInstance(LIB)->rank /
+  int server = static_cast<int>(dtio_system::getInstance(LIB)->rank /
                                 PROCS_PER_MEMCACHED);
-  // std::cout<<"rank"<<labios_system::getInstance(LIB)->rank<<"server:"<<server
+  // std::cout<<"rank"<<dtio_system::getInstance(LIB)->rank<<"server:"<<server
   // <<"\n";
   while (remaining_data > 0) {
     std::size_t chunk_index = base_offset / MAX_IO_UNIT;
@@ -254,11 +254,11 @@ std::vector<write_task *> task_builder::build_write_task(write_task task,
 std::vector<read_task> task_builder::build_read_task(read_task task) {
   auto tasks = std::vector<read_task>();
   auto mdm = metadata_manager::getInstance(LIB);
-  auto map_server = labios_system::getInstance(service_i)->map_server();
-  auto map_client = labios_system::getInstance(service_i)->map_client();
+  auto map_server = dtio_system::getInstance(service_i)->map_server();
+  auto map_client = dtio_system::getInstance(service_i)->map_client();
   auto chunks = mdm->fetch_chunks(task);
   size_t data_pointer = 0;
-  int server = static_cast<int>(labios_system::getInstance(LIB)->rank /
+  int server = static_cast<int>(dtio_system::getInstance(LIB)->rank /
                                 PROCS_PER_MEMCACHED);
   for (auto chunk : chunks) {
     auto rt = new read_task();

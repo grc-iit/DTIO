@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(
-  labios
+  dtio
   VERSION 0.0.0
-  DESCRIPTION "Labios: A Label-based I/O system")
+  DESCRIPTION "DTIO: A Data Task I/O system")
 
 set(CMAKE_CXX_STANDARD 17)
 include(GNUInstallDirs)
@@ -14,7 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(MEMCACHED true)
 set(NATS true)
 set(MPI true)
-# set(ROCKS true) set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+#set(ROCKS true) # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERMDM")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERTS")
@@ -40,7 +40,7 @@ set(COMMON_SRC
     src/common/data_manager/data_manager.cpp
     src/common/client_interface/distributed_hashmap.cpp
     src/common/metadata_manager/metadata_manager.cpp
-    src/labios_system.cpp
+    src/dtio_system.cpp
     src/common/client_interface/distributed_hashmap.cpp
     src/common/client_interface/distributed_queue.cpp
     src/common/external_clients/serialization_manager.cpp
@@ -48,17 +48,17 @@ set(COMMON_SRC
     src/common/external_clients/memcached_impl.cpp
     src/common/external_clients/nats_impl.cpp
     src/common/task_builder/task_builder.cpp)
-set(LABIOS_LIB_SRC src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
-set(LABIOS_CLIENT_SRC src/client/main.cpp src/client/client.cpp
+set(DTIO_LIB_SRC src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
+set(DTIO_CLIENT_SRC src/client/main.cpp src/client/client.cpp
                       src/common/threadPool.cpp)
-set(LABIOS_SERVER_SRC src/system_manager/main.cpp
+set(DTIO_SERVER_SRC src/system_manager/main.cpp
                       src/system_manager/system_manager_service.cpp)
-set(LABIOS_TS_SRC
+set(DTIO_TS_SRC
     src/task_scheduler/main.cpp src/task_scheduler/task_scheduler.cpp
     src/task_scheduler/task_scheduler.h)
-set(LABIOS_WM_SRC src/worker_manager/main.cpp
+set(DTIO_WM_SRC src/worker_manager/main.cpp
                   src/worker_manager/worker_manager_service.cpp)
-set(LABIOS_WS_SRC
+set(DTIO_WS_SRC
     src/worker/api/posix_client.cpp src/worker/program_repo/statistics.cpp
     src/worker/main.cpp src/worker/worker.cpp)
 
@@ -76,15 +76,15 @@ if(DEFINED ROCKS)
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 
-add_library(labios_common SHARED ${COMMON_SRC})
-add_library(${PROJECT_NAME} SHARED ${LABIOS_LIB_SRC})
-add_executable(labios_client ${LABIOS_CLIENT_SRC})
-add_executable(labios_server ${LABIOS_SERVER_SRC})
-add_executable(labios_task_scheduler ${LABIOS_TS_SRC})
-add_executable(labios_worker_manager ${LABIOS_WM_SRC})
-add_executable(labios_worker ${LABIOS_WS_SRC})
+add_library(dtio_common SHARED ${COMMON_SRC})
+add_library(${PROJECT_NAME} SHARED ${DTIO_LIB_SRC})
+add_executable(dtio_client ${DTIO_CLIENT_SRC})
+add_executable(dtio_server ${DTIO_SERVER_SRC})
+add_executable(dtio_task_scheduler ${DTIO_TS_SRC})
+add_executable(dtio_worker_manager ${DTIO_WM_SRC})
+add_executable(dtio_worker ${DTIO_WS_SRC})
 
-function(labios_set_libs target)
+function(dtio_set_libs target)
   target_link_libraries(${target} yaml-cpp)
   if(DEFINED MPI)
     target_link_libraries(${target} ${MPI_LIBRARIES})
@@ -99,41 +99,41 @@ function(labios_set_libs target)
     target_link_libraries(${target} -lnats)
   endif()
   target_link_libraries(${target} -pthread cityhash)
-  if(NOT ${target} STREQUAL "labios_common")
+  if(NOT ${target} STREQUAL "dtio_common")
     message(${target})
-    add_dependencies(${target} labios_common)
-    target_link_libraries(${target} labios_common)
+    add_dependencies(${target} dtio_common)
+    target_link_libraries(${target} dtio_common)
   endif()
 endfunction()
 
-labios_set_libs(labios_common)
-labios_set_libs(labios_client)
-labios_set_libs(labios_server)
-labios_set_libs(labios_task_scheduler)
-labios_set_libs(labios_worker_manager)
-labios_set_libs(labios_worker)
-labios_set_libs(${PROJECT_NAME})
+dtio_set_libs(dtio_common)
+dtio_set_libs(dtio_client)
+dtio_set_libs(dtio_server)
+dtio_set_libs(dtio_task_scheduler)
+dtio_set_libs(dtio_worker_manager)
+dtio_set_libs(dtio_worker)
+dtio_set_libs(${PROJECT_NAME})
 
 set_target_properties(
   ${PROJECT_NAME}
   PROPERTIES VERSION ${PROJECT_VERSION}
              SOVERSION 1
-             PUBLIC_HEADER include/labios.h)
+             PUBLIC_HEADER include/dtio.h)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 
 target_include_directories(${PROJECT_NAME} PRIVATE .)
 
-target_link_libraries(labios ${CMAKE_CXX_LINK_FLAGS})
+target_link_libraries(dtio ${CMAKE_CXX_LINK_FLAGS})
 
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(TARGETS labios_common DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(TARGETS labios_client DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(TARGETS labios_server DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(TARGETS labios_task_scheduler DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(TARGETS labios_worker_manager DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(TARGETS labios_worker DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS dtio_common DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(TARGETS dtio_client DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS dtio_server DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS dtio_task_scheduler DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS dtio_worker_manager DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS dtio_worker DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(
   TARGETS ${PROJECT_NAME}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

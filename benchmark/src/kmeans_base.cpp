@@ -5,9 +5,9 @@
 #include "util.h"
 
 int main(int argc, char **argv) {
-  labios::MPI_Init(&argc, &argv);
+  dtio::MPI_Init(&argc, &argv);
   if (argc != 5) {
-    printf("USAGE: ./kmean_base [labios_conf] [file_path] [iter] [pfs_path]\n");
+    printf("USAGE: ./kmean_base [dtio_conf] [file_path] [iter] [pfs_path]\n");
     exit(1);
   }
 
@@ -154,5 +154,5 @@ int main(int argc, char **argv) {
     stream << "average," << mean << "\n";
     std::cerr << stream.str();
   }
-  labios::MPI_Finalize();
+  dtio::MPI_Finalize();
 }

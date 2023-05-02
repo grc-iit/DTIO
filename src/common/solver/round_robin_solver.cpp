@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -22,8 +22,8 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
-#include <labios/common/solver/round_robin_solver.h>
-#include <labios/labios_system.h>
+#include <dtio/common/solver/round_robin_solver.h>
+#include <dtio/dtio_system.h>
 
 std::shared_ptr<round_robin_solver> round_robin_solver::instance = nullptr;
 /******************************************************************************
@@ -31,7 +31,7 @@ std::shared_ptr<round_robin_solver> round_robin_solver::instance = nullptr;
  ******************************************************************************/
 solver_output round_robin_solver::solve(solver_input input) {
   std::vector<task *> worker_tasks;
-  auto map_server = labios_system::getInstance(service_i)->map_server();
+  auto map_server = dtio_system::getInstance(service_i)->map_server();
 
   solver_output solution(input.num_tasks);
   for (auto i = 0; i < input.tasks.size(); i++) {

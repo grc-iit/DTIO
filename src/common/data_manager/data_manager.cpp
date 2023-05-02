@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -23,8 +23,8 @@
  *include files
  ******************************************************************************/
 #include <iomanip>
-#include <labios/common/data_manager/data_manager.h>
-#include <labios/common/timer.h>
+#include <dtio/common/data_manager/data_manager.h>
+#include <dtio/common/timer.h>
 
 std::shared_ptr<data_manager> data_manager::instance = nullptr;
 /******************************************************************************
@@ -36,7 +36,7 @@ std::string data_manager::get(const table &name, std::string key,
   Timer t = Timer();
   t.resumeTime();
 #endif
-  auto return_value = labios_system::getInstance(service_i)->map_client()->get(
+  auto return_value = dtio_system::getInstance(service_i)->map_client()->get(
       name, key, server);
 #ifdef TIMERDM
   std::stringstream stream;
@@ -53,7 +53,7 @@ int data_manager::put(const table &name, std::string key, std::string data,
   Timer t = Timer();
   t.resumeTime();
 #endif
-  auto return_value = labios_system::getInstance(service_i)->map_client()->put(
+  auto return_value = dtio_system::getInstance(service_i)->map_client()->put(
       name, key, data, server);
 #ifdef TIMERDM
   std::stringstream stream;
@@ -66,7 +66,7 @@ int data_manager::put(const table &name, std::string key, std::string data,
 
 bool data_manager::exists(const table &name, std::string key,
                           std::string server) {
-  return labios_system::getInstance(service_i)->map_client()->exists(name, key,
+  return dtio_system::getInstance(service_i)->map_client()->exists(name, key,
                                                                      server);
 }
 
@@ -77,7 +77,7 @@ std::string data_manager::remove(const table &name, std::string key,
   t.resumeTime();
 #endif
   auto return_value =
-      labios_system::getInstance(service_i)->map_client()->remove(
+      dtio_system::getInstance(service_i)->map_client()->remove(
           name, std::move(key), std::move(server));
 #ifdef TIMERDM
   std::stringstream stream;

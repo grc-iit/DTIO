@@ -5,9 +5,9 @@
 #include "util.h"
 
 int main(int argc, char **argv) {
-  labios::MPI_Init(&argc, &argv);
+  dtio::MPI_Init(&argc, &argv);
   if (argc != 5) {
-    printf("USAGE: ./montage_base [labios_conf] [file_path] [iter] "
+    printf("USAGE: ./montage_base [dtio_conf] [file_path] [iter] "
            "[final_path]\n");
     exit(1);
   }
@@ -79,8 +79,8 @@ int main(int argc, char **argv) {
 #ifdef TIMERBASE
     w.resumeTime();
 #endif
-    fd1 = labios::fopen(filename1.c_str(), "w+");
-    fd2 = labios::fopen(filename2.c_str(), "w+");
+    fd1 = dtio::fopen(filename1.c_str(), "w+");
+    fd2 = dtio::fopen(filename2.c_str(), "w+");
 #ifdef TIMERBASE
     w.pauseTime();
 #endif
@@ -99,11 +99,11 @@ int main(int argc, char **argv) {
         if (rank % 2 == 0 || comm_size == 1) {
           if (j % 2 == 0) {
             operations.emplace_back(std::make_pair(
-                item[0], labios::fwrite_async(write_buf[j], sizeof(char),
+                item[0], dtio::fwrite_async(write_buf[j], sizeof(char),
                                               item[0], fd1)));
           } else {
             operations.emplace_back(std::make_pair(
-                item[0], labios::fwrite_async(write_buf[j], sizeof(char),
+                item[0], dtio::fwrite_async(write_buf[j], sizeof(char),
                                               item[0], fd2)));
           }
         }
@@ -121,12 +121,12 @@ int main(int argc, char **argv) {
 #endif
   if (rank % 2 == 0 || comm_size == 1) {
     for (auto operation : operations) {
-      auto bytes = labios::fwrite_wait(operation.second);
+      auto bytes = dtio::fwrite_wait(operation.second);
       if (bytes != operation.first)
         std::cerr << "Write failed\n";
     }
-    labios::fclose(fd1);
-    labios::fclose(fd2);
+    dtio::fclose(fd1);
+    dtio::fclose(fd2);
   }
 #ifdef TIMERBASE
   w.pauseTime();
@@ -168,8 +168,8 @@ int main(int argc, char **argv) {
       filename2 = file_path + "file2_" + std::to_string(rank - 1) + ".dat";
     }
 
-    fd1 = labios::fopen(filename1.c_str(), "r+");
-    fd2 = labios::fopen(filename2.c_str(), "r+");
+    fd1 = dtio::fopen(filename1.c_str(), "r+");
+    fd2 = dtio::fopen(filename2.c_str(), "r+");
   }
 #ifdef TIMERBASE
   r.pauseTime();
@@ -187,8 +187,8 @@ int main(int argc, char **argv) {
         if (rank % 2 != 0 || comm_size == 1) {
           ssize_t bytes = 0;
 #ifndef COLLECT
-          bytes = labios::fread(read_buf, sizeof(char), item[0] / 2, fd1);
-          bytes += labios::fread(read_buf, sizeof(char), item[0] / 2, fd2);
+          bytes = dtio::fread(read_buf, sizeof(char), item[0] / 2, fd1);
+          bytes += dtio::fread(read_buf, sizeof(char), item[0] / 2, fd2);
           if (bytes != item[0])
             std::cerr << "Read() failed!"
                       << "Bytes:" << bytes << "\tError code:" << errno << "\n";
@@ -207,8 +207,8 @@ int main(int argc, char **argv) {
   r.resumeTime();
 #endif
   if (rank % 2 != 0 || comm_size == 1) {
-    labios::fclose(fd1);
-    labios::fclose(fd2);
+    dtio::fclose(fd1);
+    dtio::fclose(fd2);
   }
 #ifdef TIMERBASE
   r.pauseTime();
@@ -238,7 +238,7 @@ int main(int argc, char **argv) {
   std::string finalname = final_path + "final_" + std::to_string(rank) + ".dat";
   FILE *outfile;
   global_timer.resumeTime();
-  outfile = labios::fopen(finalname.c_str(), "w+");
+  outfile = dtio::fopen(finalname.c_str(), "w+");
   global_timer.pauseTime();
   for (auto i = 0; i < 32; ++i) {
     for (int j = 0; j < comm_size * 1024 * 128; ++j) {
@@ -255,8 +255,8 @@ int main(int argc, char **argv) {
   char final_buff[1024 * 1024];
   gen_random(final_buff, 1024 * 1024);
   global_timer.resumeTime();
-  labios::fwrite(final_buff, sizeof(char), 1024 * 1024, outfile);
-  labios::fclose(outfile);
+  dtio::fwrite(final_buff, sizeof(char), 1024 * 1024, outfile);
+  dtio::fclose(outfile);
 #ifdef TIMERBASE
   a.pauseTime();
 #endif
@@ -283,5 +283,5 @@ int main(int argc, char **argv) {
     stream << "average," << mean << "\n";
     std::cerr << stream.str();
   }
-  labios::MPI_Finalize();
+  dtio::MPI_Finalize();
 }

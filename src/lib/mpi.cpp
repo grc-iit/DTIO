@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -22,14 +22,14 @@
 //
 // Created by anthony on 4/24/18.
 //
-#include <labios/common/utilities.h>
-#include <labios/drivers/mpi.h>
+#include <dtio/common/utilities.h>
+#include <dtio/drivers/mpi.h>
 
-int labios::MPI_Init(int *argc, char ***argv) {
+int dtio::MPI_Init(int *argc, char ***argv) {
   PMPI_Init(argc, argv);
   ConfigManager::get_instance()->LoadConfig((*argv)[1]);
-  labios_system::getInstance(service::LIB);
+  dtio_system::getInstance(service::LIB);
   return 0;
 }
 
-void labios::MPI_Finalize() { PMPI_Finalize(); }
+void dtio::MPI_Finalize() { PMPI_Finalize(); }

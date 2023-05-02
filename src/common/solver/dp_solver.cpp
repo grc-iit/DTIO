@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -24,8 +24,8 @@
  ******************************************************************************/
 #include "knapsack.cpp"
 #include <algorithm>
-#include <labios/common/solver/dp_solver.h>
-#include <labios/labios_system.h>
+#include <dtio/common/solver/dp_solver.h>
+#include <dtio/dtio_system.h>
 
 /******************************************************************************
  *Interface
@@ -78,7 +78,7 @@ solver_output DPSolver::solve(solver_input input) {
     actual_index++;
   }
 
-  auto map = labios_system::getInstance(service_i)->map_server();
+  auto map = dtio_system::getInstance(service_i)->map_server();
   auto sorted_workers = std::vector<std::pair<int, int>>();
   int original_index = 0;
   for (int worker_index = 0; worker_index < MAX_WORKER_COUNT; worker_index++) {

@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -25,9 +25,9 @@
 
 #include "posix_client.h"
 #include <iomanip>
-#include <labios/common/client_interface/distributed_hashmap.h>
-#include <labios/common/timer.h>
-#include <labios/labios_system.h>
+#include <dtio/common/client_interface/distributed_hashmap.h>
+#include <dtio/common/timer.h>
+#include <dtio/dtio_system.h>
 
 int posix_client::read(read_task task) {
 #ifdef TIMERW
@@ -45,7 +45,7 @@ int posix_client::read(read_task task) {
     std::cerr << "posix_client::read() read failed\n";
   // throw std::runtime_error("posix_client::read() read failed");
 
-  auto map_client = labios_system::getInstance(WORKER)->map_client();
+  auto map_client = dtio_system::getInstance(WORKER)->map_client();
   serialization_manager sm = serialization_manager();
 #ifdef TIMERDM
   Timer t0 = Timer();
@@ -108,9 +108,9 @@ int posix_client::write(write_task task) {
   t.resumeTime();
 #endif
   std::shared_ptr<distributed_hashmap> map_client =
-      labios_system::getInstance(WORKER)->map_client();
+      dtio_system::getInstance(WORKER)->map_client();
   std::shared_ptr<distributed_hashmap> map_server =
-      labios_system::getInstance(WORKER)->map_server();
+      dtio_system::getInstance(WORKER)->map_server();
   serialization_manager sm = serialization_manager();
   auto source = task.source;
   size_t chunk_index = (source.offset / MAX_IO_UNIT);

@@ -3,9 +3,9 @@
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
- * This file is part of Labios
+ * This file is part of DTIO
  *
- * Labios is free software: you can redistribute it and/or modify
+ * DTIO is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -23,16 +23,16 @@
  *include files
  ******************************************************************************/
 #include <iomanip>
-#include <labios/common/return_codes.h>
-#include <labios/common/task_builder/task_builder.h>
-#include <labios/common/timer.h>
-#include <labios/drivers/posix.h>
+#include <dtio/common/return_codes.h>
+#include <dtio/common/task_builder/task_builder.h>
+#include <dtio/common/timer.h>
+#include <dtio/drivers/posix.h>
 #include <zconf.h>
 
 /******************************************************************************
  *Interface
  ******************************************************************************/
-FILE *labios::fopen(const char *filename, const char *mode) {
+FILE *dtio::fopen(const char *filename, const char *mode) {
   auto mdm = metadata_manager::getInstance(LIB);
   FILE *fh = nullptr;
   if (!mdm->is_created(filename)) {
@@ -41,13 +41,13 @@ FILE *labios::fopen(const char *filename, const char *mode) {
       return nullptr;
     } else {
       if (mdm->create(filename, mode, fh) != SUCCESS) {
-        throw std::runtime_error("labios::fopen() create failed!");
+        throw std::runtime_error("dtio::fopen() create failed!");
       }
     }
   } else {
     if (!mdm->is_opened(filename)) {
       if (mdm->update_on_open(filename, mode, fh) != SUCCESS) {
-        throw std::runtime_error("labios::fopen() update failed!");
+        throw std::runtime_error("dtio::fopen() update failed!");
       }
     } else
       return nullptr;
@@ -55,7 +55,7 @@ FILE *labios::fopen(const char *filename, const char *mode) {
   return fh;
 }
 
-int labios::fclose(FILE *stream) {
+int dtio::fclose(FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   if (!mdm->is_opened(stream))
     return LIB__FCLOSE_FAILED;
@@ -64,7 +64,7 @@ int labios::fclose(FILE *stream) {
   return SUCCESS;
 }
 
-int labios::fseek(FILE *stream, long int offset, int origin) {
+int dtio::fseek(FILE *stream, long int offset, int origin) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto filename = mdm->get_filename(stream);
   if (mdm->get_mode(filename) == "a" || mdm->get_mode(filename) == "a+")
@@ -94,11 +94,11 @@ int labios::fseek(FILE *stream, long int offset, int origin) {
                              static_cast<size_t>(origin));
 }
 
-std::vector<read_task> labios::fread_async(size_t size, size_t count,
+std::vector<read_task> dtio::fread_async(size_t size, size_t count,
                                            FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
-      labios_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
+      dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
   auto task_m = task_builder::getInstance(LIB);
   auto filename = mdm->get_filename(stream);
   auto offset = mdm->get_fp(filename);
@@ -137,7 +137,7 @@ std::vector<read_task> labios::fread_async(size_t size, size_t count,
   return tasks;
 }
 
-std::size_t labios::fread_wait(void *ptr, std::vector<read_task> &tasks,
+std::size_t dtio::fread_wait(void *ptr, std::vector<read_task> &tasks,
                                std::string filename) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto data_m = data_manager::getInstance(LIB);
@@ -192,10 +192,10 @@ std::size_t labios::fread_wait(void *ptr, std::vector<read_task> &tasks,
   return size_read;
 }
 
-size_t labios::fread(void *ptr, size_t size, size_t count, FILE *stream) {
+size_t dtio::fread(void *ptr, size_t size, size_t count, FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
-      labios_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
+      dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
   auto task_m = task_builder::getInstance(LIB);
   auto data_m = data_manager::getInstance(LIB);
   auto filename = mdm->get_filename(stream);
@@ -256,17 +256,17 @@ size_t labios::fread(void *ptr, size_t size, size_t count, FILE *stream) {
   return size_read;
 }
 
-std::vector<write_task *> labios::fwrite_async(void *ptr, size_t size,
+std::vector<write_task *> dtio::fwrite_async(void *ptr, size_t size,
                                                size_t count, FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
-      labios_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
+      dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
   auto task_m = task_builder::getInstance(LIB);
   auto data_m = data_manager::getInstance(LIB);
   auto filename = mdm->get_filename(stream);
   auto offset = mdm->get_fp(filename);
   if (!mdm->is_opened(filename))
-    throw std::runtime_error("labios::fwrite() file not opened!");
+    throw std::runtime_error("dtio::fwrite() file not opened!");
   auto w_task = write_task(file(filename, offset, size * count), file());
 #ifdef TIMERTB
   Timer t = Timer();
@@ -307,10 +307,10 @@ std::vector<write_task *> labios::fwrite_async(void *ptr, size_t size,
   return write_tasks;
 }
 
-size_t labios::fwrite_wait(std::vector<write_task *> tasks) {
+size_t dtio::fwrite_wait(std::vector<write_task *> tasks) {
   size_t total_size_written = 0;
-  auto map_client = labios_system::getInstance(LIB)->map_client();
-  auto map_server = labios_system::getInstance(LIB)->map_server();
+  auto map_client = dtio_system::getInstance(LIB)->map_client();
+  auto map_server = dtio_system::getInstance(LIB)->map_server();
   for (auto task : tasks) {
     int count = 0;
     Timer wait_timer = Timer();
@@ -339,18 +339,18 @@ size_t labios::fwrite_wait(std::vector<write_task *> tasks) {
   return total_size_written;
 }
 
-size_t labios::fwrite(void *ptr, size_t size, size_t count, FILE *stream) {
+size_t dtio::fwrite(void *ptr, size_t size, size_t count, FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
-      labios_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
-  auto map_client = labios_system::getInstance(LIB)->map_client();
-  auto map_server = labios_system::getInstance(LIB)->map_server();
+      dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
+  auto map_client = dtio_system::getInstance(LIB)->map_client();
+  auto map_server = dtio_system::getInstance(LIB)->map_server();
   auto task_m = task_builder::getInstance(LIB);
   auto data_m = data_manager::getInstance(LIB);
   auto filename = mdm->get_filename(stream);
   auto offset = mdm->get_fp(filename);
   if (!mdm->is_opened(filename))
-    throw std::runtime_error("labios::fwrite() file not opened!");
+    throw std::runtime_error("dtio::fwrite() file not opened!");
   auto w_task = write_task(file(filename, offset, size * count), file());
 #ifdef TIMERTB
   Timer t = Timer();
