@@ -69,6 +69,13 @@ const float POLICY_WEIGHT[WORKER_ATTRIBUTES_COUNT] = {.3, .2, .3, .1, .1};
 const double WORKER_INTERVAL = 2.0;
 const std::size_t MAX_WORKER_TASK_COUNT = 50;
 /*******************
+ *Worker Manager
+ *******************/
+const int MAX_SCORE = 100;
+const int NUM_BUCKETS = 2; // % of buckets to use for sorting
+const Distribution distribution = UNIFORM; // Way to distribute workers to buckets
+
+/*******************
  *Scheduler
  *******************/
 const std::size_t MAX_NUM_TASKS_IN_QUEUE = 1;

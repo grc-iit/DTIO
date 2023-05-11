@@ -33,14 +33,6 @@
 #include <string>
 #include <vector>
 
-enum Distribution { UNIFORM, LINEAR, EXPONENTIAL };
-
-// Constants
-int MAX_SCORE = 100;
-int NUM_WORKERS = 100;               // Total number of workers
-int NUM_BUCKETS = 2;                 // % of buckets to use for sorting
-Distribution distribution = UNIFORM; // Way to distribute workers to buckets
-
 std::vector<int>
     whichBucket;         // Keeps track of which bucket index the worker is in
 std::vector<int> scores; // Keeps track of worker score
@@ -138,7 +130,7 @@ void updateScore(int workerID, int newScore) {
 }
 
 void populate_buckets_uniform(std::vector<Bucket> &buckets) {
-  for (int i = 0; i < NUM_WORKERS; i++) {
+  for (int i = 0; i < MAX_WORKER_COUNT; i++) {
     whichBucket[i] = i % NUM_BUCKETS;
     buckets[i % NUM_BUCKETS].insertWorker(i);
   }
@@ -146,7 +138,7 @@ void populate_buckets_uniform(std::vector<Bucket> &buckets) {
 
 void populate_buckets_linear(std::vector<Bucket> &buckets) {
   // Determine slope
-  int step = NUM_WORKERS / ((NUM_BUCKETS * (NUM_BUCKETS + 1)) / 2);
+  int step = MAX_WORKER_COUNT / ((NUM_BUCKETS * (NUM_BUCKETS + 1)) / 2);
 
   int workerID = 0;
   for (int i = 0; i < NUM_BUCKETS; i++) {
@@ -158,7 +150,7 @@ void populate_buckets_linear(std::vector<Bucket> &buckets) {
   }
 
   // Insert remainder workers into the last bucket
-  while (workerID < NUM_WORKERS) {
+  while (workerID < MAX_WORKER_COUNT) {
     whichBucket[workerID] = NUM_BUCKETS - 1;
     buckets.back().insertWorker(workerID++);
   }
@@ -166,7 +158,7 @@ void populate_buckets_linear(std::vector<Bucket> &buckets) {
 
 void populate_buckets_exponential(std::vector<Bucket> &buckets) {
   // Determine exponential coefficient
-  int coefficient = NUM_WORKERS / ((1 << (NUM_BUCKETS + 2)) - 4);
+  int coefficient = MAX_WORKER_COUNT / ((1 << (NUM_BUCKETS + 2)) - 4);
 
   int workerID = 0;
   for (int i = 0; i < NUM_BUCKETS; i++) {
@@ -178,7 +170,7 @@ void populate_buckets_exponential(std::vector<Bucket> &buckets) {
   }
 
   // Insert remainder workers into the last bucket
-  while (workerID < NUM_WORKERS) {
+  while (workerID < MAX_WORKER_COUNT) {
     whichBucket[workerID] = NUM_BUCKETS - 1;
     buckets.back().insertWorker(workerID++);
   }
@@ -189,8 +181,8 @@ std::shared_ptr<worker_manager_service> worker_manager_service::instance =
 void worker_manager_service::run() {
 
   // Initialize all data structures
-  scores = std::vector<int>(NUM_WORKERS, MAX_SCORE);
-  whichBucket = std::vector<int>(NUM_WORKERS);
+  scores = std::vector<int>(MAX_WORKER_COUNT, MAX_SCORE);
+  whichBucket = std::vector<int>(MAX_WORKER_COUNT);
   buckets = std::vector<Bucket>(NUM_BUCKETS);
 
   switch (distribution) {
@@ -221,7 +213,7 @@ int worker_manager_service::sort_worker_score() {
   int currentBucket = 0;
   int bucketOffset = 0;
   int currentPosition = 0;
-  for (int i = 0; i <= NUM_WORKERS / workersPerChunk; i++) {
+  for (int i = 0; i <= MAX_WORKER_COUNT / workersPerChunk; i++) {
     std::stringstream s;
     for (int j = 0; j < workersPerChunk; j++) {
       s << buckets[currentBucket].getWorkerId(0) << ',';

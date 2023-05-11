@@ -73,4 +73,6 @@ enum solver_impl_type {
 };
 enum io_client_type { POSIX = 0 };
 
+enum Distribution { UNIFORM, LINEAR, EXPONENTIAL };
+
 #endif // DTIO_MAIN_ENUMERATION_H
