@@ -50,7 +50,7 @@
 *.swp
 *.vim
 *.nvim
- .cache/
+.cache/
 cmake-*/
 compile_commands.json
 
