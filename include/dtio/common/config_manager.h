@@ -34,6 +34,8 @@
 #include <string>
 #include <thread>
 #include <yaml-cpp/yaml.h>
+#include <mpi.h>
+#include <dtio/common/enumerations.h>
 
 /******************************************************************************
  *Class
@@ -64,6 +66,7 @@ public:
   std::string ASSIGNMENT_POLICY;
   std::string WORKER_PATH;
   std::string PFS_PATH;
+  MPI_Comm *DATASPACE_COMM;
   int TS_NUM_WORKER_THREADS;
   static std::shared_ptr<ConfigManager> get_instance() {
     return instance == nullptr
@@ -72,6 +75,7 @@ public:
   }
   void LoadConfig(char *path) {
     config_ = YAML::LoadFile(path);
+
     NATS_URL_CLIENT = config_["NATS_URL_CLIENT"].as<std::string>();
     NATS_URL_SERVER = config_["NATS_URL_SERVER"].as<std::string>();
     MEMCACHED_URL_CLIENT = config_["MEMCACHED_URL_CLIENT"].as<std::string>();

@@ -19,28 +19,26 @@
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
-/*******************************************************************************
- * Created by hariharan on 2/3/18.
- * Updated by akougkas on 6/26/2018
- ******************************************************************************/
-#ifndef DTIO_MAIN_MEMCACHEDIMPL_H
-#define DTIO_MAIN_MEMCACHEDIMPL_H
+#ifndef DTIO_MAIN_HCLMAPIMPL_H
+#define DTIO_MAIN_HCLMAPIMPL_H
 /******************************************************************************
  *include files
  ******************************************************************************/
 #include <city.h>
 #include <cstring>
 #include <dtio/common/client_interface/distributed_hashmap.h>
-#include <libmemcached/memcached.h>
+#include <dtio/common/config_manager.h>
+#include <hcl.h>
+
 /******************************************************************************
  *Class
  ******************************************************************************/
-class MemcacheDImpl : public distributed_hashmap {
+class HCLMapImpl : public distributed_hashmap {
   /******************************************************************************
    *Variables and members
    ******************************************************************************/
 private:
-  memcached_st *mem_client;
+  hcl::unordered_map<std::string, std::string> *hcl_client;
   size_t num_servers;
   std::string get_server(std::string key);
 
@@ -48,10 +46,11 @@ public:
   /******************************************************************************
    *Constructor
    ******************************************************************************/
-  MemcacheDImpl(service service, const std::string &config_string, int server)
+  HCLMapImpl(service service)
       : distributed_hashmap(service) {
-    mem_client = memcached(config_string.c_str(), config_string.size());
-    num_servers = mem_client->number_of_hosts;
+    MPI_Barrier(* ConfigManager::get_instance()->DATASPACE_COMM); // Ideally, we'd have a communicator for maps specifically
+    hcl_client = new hcl::unordered_map<std::string, std::string>(); // Map needs to be spawned on multiple servers, clients and workers at the same time. This will be client-side.
+    num_servers = HCL_CONF->NUM_SERVERS;
   }
   size_t get_servers() override { return num_servers; }
   /******************************************************************************
@@ -76,7 +75,7 @@ public:
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~MemcacheDImpl() {}
+  virtual ~HCLMapImpl() {}
 };
 
-#endif // DTIO_MAIN_MEMCACHEDIMPL_H
+#endif // DTIO_MAIN_HCLMAPimpl_H

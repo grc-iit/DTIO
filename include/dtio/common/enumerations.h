@@ -34,6 +34,7 @@ enum message_type { METADATA = 0, DATASPACE = 1 };
 enum operation { WRITE = 0, READ = 1, DELETE = 2, FLUSH = 3 };
 enum map_type { META_FH = 0, META_CHUNK = 1 };
 enum location_type { BUFFERS = 0, CACHE = 1, PFS = 2 };
+enum mpi_comms {DATASPACE_COLOR = 1 }
 enum service {
   LIB = 0,
   CLIENT = 1,
@@ -62,8 +63,8 @@ enum table {
   WRITE_FINISHED_DB = 8,
   COUNTER_DB = 9
 };
-enum map_impl_type { ROCKS_DB = 0, MEMCACHE_D = 1 };
-enum queue_impl_type { NATS = 0 };
+enum map_impl_type { ROCKS_DB = 0, MEMCACHE_D = 1, HCLMAP = 2 };
+enum queue_impl_type { NATS = 0, HCLQUEUE = 1 };
 enum solver_impl_type {
   DP = 0,
   GREEDY = 1,

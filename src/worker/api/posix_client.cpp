@@ -125,8 +125,9 @@ int posix_client::write(write_task task) {
   Timer t0 = Timer();
   t0.resumeTime();
 #endif
+  // FIXME: modify the data to pull from local buffers if there is no dataspace (task is sync)
   std::string data = map_client->get(DATASPACE_DB, task.destination.filename,
-                                     std::to_string(task.destination.server));
+				     std::to_string(task.destination.server));
 #ifdef TIMERDM
   std::stringstream stream;
   stream << "posix_client::write()::get_data," << std::fixed

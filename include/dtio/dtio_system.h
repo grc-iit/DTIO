@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019  SCS Lab <scs-help@cs.iit.edu>, Hariharan
+ * Copyright (C) 2023  SCS Lab <scs-help@cs.iit.edu>, Hariharan
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
@@ -37,6 +37,8 @@
 #include <dtio/common/external_clients/memcached_impl.h>
 #include <dtio/common/external_clients/nats_impl.h>
 #include <dtio/common/external_clients/rocksdb_impl.h>
+#include <dtio/common/external_clients/hcl_map_impl.h>
+#include <dtio/common/external_clients/hcl_queue_impl.h>
 #include <dtio/common/solver/solver.h>
 #include <memory>
 #include <mpi.h>
@@ -84,14 +86,27 @@ public:
   inline std::shared_ptr<distributed_queue>
   get_client_queue(const std::string &subject) {
     if (client_queue == nullptr) {
-      if (service_i == LIB)
-        client_queue = std::make_shared<NatsImpl>(
-            service_i, ConfigManager::get_instance()->NATS_URL_CLIENT,
-            CLIENT_TASK_SUBJECT, std::to_string(service_i), false);
-      else
-        client_queue = std::make_shared<NatsImpl>(
-            service_i, ConfigManager::get_instance()->NATS_URL_CLIENT,
-            CLIENT_TASK_SUBJECT, std::to_string(service_i), true);
+      if (service_i == LIB) {
+	if (queue_impl_type_t == queue_impl_type::NATS) {
+          client_queue = std::make_shared<NatsImpl>(
+              service_i, ConfigManager::get_instance()->NATS_URL_CLIENT,
+              CLIENT_TASK_SUBJECT, std::to_string(service_i), false);
+	}
+	else if (queue_impl_type_t == queue_impl_type::HCLQUEUE) {
+	  // FIXME is the shared pointer able to recognize the HCLQueueImpl as a distributed_queue?
+	  client_queue = std::make_shared<HCLQueueImpl>(service_i);
+	}
+      }
+      else {
+	if (queue_impl_type_t == queue_impl_type::NATS) {
+          client_queue = std::make_shared<NatsImpl>(
+              service_i, ConfigManager::get_instance()->NATS_URL_CLIENT,
+              CLIENT_TASK_SUBJECT, std::to_string(service_i), true);
+	}
+	else if (queue_impl_type_t == queue_impl_type::HCLQUEUE) {
+          client_queue = std::make_shared<HCLQueueImpl>(service_i);
+	}
+      }
     }
     return client_queue;
   }

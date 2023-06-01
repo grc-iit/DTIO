@@ -33,7 +33,7 @@
 #include <dtio/common/exceptions.h>
 #include <dtio/common/external_clients/serialization_manager.h>
 #include <memory>
-#include <nats.h>
+
 /******************************************************************************
  *Class
  ******************************************************************************/

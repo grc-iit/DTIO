@@ -156,14 +156,15 @@ struct task {
   int64_t task_id;
   bool publish;
   bool addDataspace;
+  bool async;
   /*******************
    *Constructors
    *******************/
   explicit task(task_type t_type)
-      : t_type(t_type), task_id(0), publish(false), addDataspace(true) {}
+    : t_type(t_type), task_id(0), publish(false), addDataspace(true), async(true) {}
   task(const task &t_other)
       : t_type(t_other.t_type), task_id(t_other.task_id),
-        publish(t_other.publish), addDataspace(t_other.addDataspace) {}
+        publish(t_other.publish), addDataspace(t_other.addDataspace), async(t_other.async) {}
   /*******************
    *Destructor
    *******************/

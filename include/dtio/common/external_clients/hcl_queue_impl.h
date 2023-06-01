@@ -19,64 +19,47 @@
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
-/*******************************************************************************
- * Created by hariharan on 2/3/18.
- * Updated by akougkas on 6/26/2018
- ******************************************************************************/
-#ifndef DTIO_MAIN_MEMCACHEDIMPL_H
-#define DTIO_MAIN_MEMCACHEDIMPL_H
+#ifndef DTIO_MAIN_HCLQUEUEIMPL_H
+#define DTIO_MAIN_HCLQUEUEIMPL_H
 /******************************************************************************
  *include files
  ******************************************************************************/
 #include <city.h>
 #include <cstring>
-#include <dtio/common/client_interface/distributed_hashmap.h>
-#include <libmemcached/memcached.h>
-/******************************************************************************
- *Class
- ******************************************************************************/
-class MemcacheDImpl : public distributed_hashmap {
+#include <dtio/common/client_interface/distributed_queue.h>
+#include <hcl.h>
+
+class HCLQueueImpl : public distributed_queue {
+private:
   /******************************************************************************
    *Variables and members
    ******************************************************************************/
-private:
-  memcached_st *mem_client;
-  size_t num_servers;
-  std::string get_server(std::string key);
+  hcl::queue<std::string> *hcl_client;
+  std::string subject;
 
 public:
   /******************************************************************************
    *Constructor
    ******************************************************************************/
-  MemcacheDImpl(service service, const std::string &config_string, int server)
-      : distributed_hashmap(service) {
-    mem_client = memcached(config_string.c_str(), config_string.size());
-    num_servers = mem_client->number_of_hosts;
+  HCLQueueImpl(service service)
+      : distributed_queue(service) {
+    hcl_client = new hcl::queue<std::string>();
+
+    // natsConnection_SubscribeSync(&sub, nc, subject.c_str());
   }
-  size_t get_servers() override { return num_servers; }
   /******************************************************************************
    *Interface
    ******************************************************************************/
-  int put(const table &name, std::string key, const std::string &value,
-          std::string group_key) override;
-  std::string get(const table &name, std::string key,
-                  std::string group_key) override;
-  std::string remove(const table &name, std::string key,
-                     std::string group_key) override;
-  bool exists(const table &name, std::string key,
-              std::string group_key) override;
-  bool purge() override;
-
-  size_t counter_init(const table &name, std::string key,
-                      std::string group_key) override;
-
-  size_t counter_inc(const table &name, std::string key,
-                     std::string group_key) override;
-
+  int publish_task(task *task_t) override;
+  task *subscribe_task_with_timeout(int &status) override;
+  task *subscribe_task(int &status) override;
+  int get_queue_count() override;
+  int get_queue_size() override;
+  int get_queue_count_limit() override;
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~MemcacheDImpl() {}
+  virtual ~HCLQueueImpl() {}
 };
 
-#endif // DTIO_MAIN_MEMCACHEDIMPL_H
+#endif // DTIO_MAIN_HCLQUEUEimpl_H

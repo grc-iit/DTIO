@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019  SCS Lab <scs-help@cs.iit.edu>, Hariharan
+ * Copyright (C) 2023  SCS Lab <scs-help@cs.iit.edu>, Hariharan
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
@@ -42,6 +42,9 @@ void dtio_system::init(service service) {
         service, ConfigManager::get_instance()->MEMCACHED_URL_SERVER, 0);
   } else if (map_impl_type_t == map_impl_type::ROCKS_DB) {
     map_server_ = std::make_shared<RocksDBImpl>(service, kDBPath_server);
+  }
+  else if (map_impl_type_t == map_impl_type::HCLMAP) {
+    map_server_ = std::make_shared<HCLMapImpl>(service);
   }
 
   if (solver_impl_type_t == solver_impl_type::DP) {
@@ -97,6 +100,9 @@ void dtio_system::init(service service) {
         application_id);
   } else if (map_impl_type_t == map_impl_type::ROCKS_DB) {
     map_client_ = std::make_shared<RocksDBImpl>(service, kDBPath_client);
+  }
+  else if (map_impl_type_t == map_impl_type::HCLMAP) {
+    map_client_ = std::make_shared<HCLMapImpl>(service);
   }
 }
 
