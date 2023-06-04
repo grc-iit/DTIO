@@ -22,18 +22,17 @@
 /*******************************************************************************
  * Created by hariharan on 2/16/18.
  * Updated by akougkas on 6/26/2018
+ * Updated by kbateman and nrajesh (nrj5k) since
  ******************************************************************************/
 #ifndef DTIO_MAIN_CONSTANTS_H
 #define DTIO_MAIN_CONSTANTS_H
-/******************************************************************************
- *include files
- ******************************************************************************/
+
+#include "dtio/common/enumerations.h"
 #include <climits>
 #include <cstddef>
 #include <string>
-/******************************************************************************
- *DTIO parameters
- ******************************************************************************/
+
+// DTIO parameters
 const std::string DTIO_CLIENT_PORT = "9999";
 const size_t KEY_SIZE = 256;
 const size_t FILE_SIZE = 256;
@@ -45,9 +44,8 @@ const std::string kDBPath_client = "/tmp/rocksdb";
 const std::string kDBPath_server = "/tmp/rocksdb";
 const std::size_t MAX_IO_UNIT = 1 * 1024 * 1024;
 const std::string CLIENT_TASK_SUBJECT = "TASK";
-/*******************
- *Configs
- *******************/
+
+// Configs
 const map_impl_type map_impl_type_t = map_impl_type::MEMCACHE_D;
 const solver_impl_type solver_impl_type_t = solver_impl_type::ROUND_ROBIN;
 const queue_impl_type queue_impl_type_t = queue_impl_type::NATS;
@@ -56,28 +54,25 @@ const std::string DATASPACE_ID = "DATASPACE_ID";
 const std::string ROUND_ROBIN_INDEX = "ROUND_ROBIN_INDEX";
 const std::string KEY_SEPARATOR = "#";
 const size_t PROCS_PER_MEMCACHED = 8;
-/*******************
- *Workers
- *******************/
+
+// Workers
 const std::size_t MAX_WORKER_COUNT = 4;
 const int WORKER_SPEED = 2;
 const int WORKER_ENERGY = 2;
 const int64_t WORKER_CAPACITY_MAX = 137438953472;
 const size_t KB = 1024;
 const std::size_t WORKER_ATTRIBUTES_COUNT = 5;
-const float POLICY_WEIGHT[WORKER_ATTRIBUTES_COUNT] = {.3, .2, .3, .1, .1};
+const float POLICY_WEIGHT[WORKER_ATTRIBUTES_COUNT] = { .3, .2, .3, .1, .1 };
 const double WORKER_INTERVAL = 2.0;
 const std::size_t MAX_WORKER_TASK_COUNT = 50;
-/*******************
- *Worker Manager
- *******************/
+
+// Worker Manager
 const int MAX_SCORE = 100;
 const int NUM_BUCKETS = 2; // % of buckets to use for sorting
-const Distribution distribution = UNIFORM; // Way to distribute workers to buckets
+const Distribution distribution
+    = UNIFORM; // Way to distribute workers to buckets
 
-/*******************
- *Scheduler
- *******************/
+// Scheduler
 const std::size_t MAX_NUM_TASKS_IN_QUEUE = 1;
 const std::size_t MAX_SCHEDULE_TIMER = 1;
 const std::size_t MAX_READ_TIMER = 3;
