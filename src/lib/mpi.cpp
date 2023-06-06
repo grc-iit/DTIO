@@ -31,7 +31,7 @@ int dtio::MPI_Init(int *argc, char ***argv) {
   ConfigManager::get_instance()->LoadConfig((*argv)[1]);
   int rank;
   PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  PMPI_Comm_split(MPI_COMM_WORLD, CLIENT_COLOR, rank, ConfigManager::get_instance()->PROCESS_COMM);
+  PMPI_Comm_split(MPI_COMM_WORLD, CLIENT_COLOR, rank - ConfigManager::get_instance()->NUM_WORKERS - ConfigManager::get_instance()->NUM_SCHEDULERS - 1, ConfigManager::get_instance()->PROCESS_COMM);
   dtio_system::getInstance(service::LIB);
   return 0;
 }

@@ -70,6 +70,7 @@ public:
   MPI_Comm *PROCESS_COMM;
   int TS_NUM_WORKER_THREADS;
   std::size_t NUM_WORKERS; // FIXME: make private
+  std::size_t NUM_SCHEDULERS; // FIXME: make private
 
   static std::shared_ptr<ConfigManager> get_instance() {
     return instance == nullptr
@@ -88,6 +89,7 @@ public:
     PFS_PATH = scs::path_parser(config_["PFS_PATH"].as<std::string>());
     TS_NUM_WORKER_THREADS = config_["TS_NUM_WORKER_THREADS"].as<int>();
     NUM_WORKERS = config_["NUM_WORKERS"].as<int>();
+    NUM_WORKERS = config_["NUM_SCHEDULERS"].as<int>();
   }
   /******************************************************************************
    *Destructor
