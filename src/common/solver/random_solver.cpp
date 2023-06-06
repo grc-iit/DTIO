@@ -23,6 +23,7 @@
  *include files
  ******************************************************************************/
 #include <dtio/common/solver/random_solver.h>
+#include <dtio/common/config_manager.h>
 #include <random>
 /******************************************************************************
  *Interface
@@ -40,7 +41,7 @@ solver_output random_solver::solve(solver_input input) {
       auto *wt = reinterpret_cast<write_task *>(input.tasks[i]);
       if (wt->destination.worker == -1)
         solution.solution[i] =
-            static_cast<int>(dist(generator) % MAX_WORKER_COUNT + 1);
+            static_cast<int>(dist(generator) % ConfigManager::get_instance()->NUM_WORKERS + 1);
       else
         solution.solution[i] = wt->destination.worker;
       break;
@@ -49,7 +50,7 @@ solver_output random_solver::solve(solver_input input) {
       auto *rt = reinterpret_cast<read_task *>(input.tasks[i]);
       if (rt->source.worker == -1)
         solution.solution[i] =
-            static_cast<int>(dist(generator) % MAX_WORKER_COUNT + 1);
+            static_cast<int>(dist(generator) % ConfigManager::get_instance()->NUM_WORKERS + 1);
       else
         solution.solution[i] = rt->source.worker;
       break;

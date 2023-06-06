@@ -24,6 +24,7 @@
 //
 
 #include "worker_manager_service.h"
+#include <dtio/common/config_manager.h>
 #include <dtio/common/constants.h>
 #include <zconf.h>
 
@@ -130,7 +131,7 @@ void updateScore(int workerID, int newScore) {
 }
 
 void populate_buckets_uniform(std::vector<Bucket> &buckets) {
-  for (int i = 0; i < MAX_WORKER_COUNT; i++) {
+  for (int i = 0; i < ConfigManager::get_instance()->NUM_WORKERS; i++) {
     whichBucket[i] = i % NUM_BUCKETS;
     buckets[i % NUM_BUCKETS].insertWorker(i);
   }
@@ -138,7 +139,7 @@ void populate_buckets_uniform(std::vector<Bucket> &buckets) {
 
 void populate_buckets_linear(std::vector<Bucket> &buckets) {
   // Determine slope
-  int step = MAX_WORKER_COUNT / ((NUM_BUCKETS * (NUM_BUCKETS + 1)) / 2);
+  int step = ConfigManager::get_instance()->NUM_WORKERS / ((NUM_BUCKETS * (NUM_BUCKETS + 1)) / 2);
 
   int workerID = 0;
   for (int i = 0; i < NUM_BUCKETS; i++) {
@@ -150,7 +151,7 @@ void populate_buckets_linear(std::vector<Bucket> &buckets) {
   }
 
   // Insert remainder workers into the last bucket
-  while (workerID < MAX_WORKER_COUNT) {
+  while (workerID < ConfigManager::get_instance()->NUM_WORKERS) {
     whichBucket[workerID] = NUM_BUCKETS - 1;
     buckets.back().insertWorker(workerID++);
   }
@@ -158,7 +159,7 @@ void populate_buckets_linear(std::vector<Bucket> &buckets) {
 
 void populate_buckets_exponential(std::vector<Bucket> &buckets) {
   // Determine exponential coefficient
-  int coefficient = MAX_WORKER_COUNT / ((1 << (NUM_BUCKETS + 2)) - 4);
+  int coefficient = ConfigManager::get_instance()->NUM_WORKERS / ((1 << (NUM_BUCKETS + 2)) - 4);
 
   int workerID = 0;
   for (int i = 0; i < NUM_BUCKETS; i++) {
@@ -170,7 +171,7 @@ void populate_buckets_exponential(std::vector<Bucket> &buckets) {
   }
 
   // Insert remainder workers into the last bucket
-  while (workerID < MAX_WORKER_COUNT) {
+  while (workerID < ConfigManager::get_instance()->NUM_WORKERS) {
     whichBucket[workerID] = NUM_BUCKETS - 1;
     buckets.back().insertWorker(workerID++);
   }
@@ -181,8 +182,8 @@ std::shared_ptr<worker_manager_service> worker_manager_service::instance =
 void worker_manager_service::run() {
 
   // Initialize all data structures
-  scores = std::vector<int>(MAX_WORKER_COUNT, MAX_SCORE);
-  whichBucket = std::vector<int>(MAX_WORKER_COUNT);
+  scores = std::vector<int>(ConfigManager::get_instance()->NUM_WORKERS, MAX_SCORE);
+  whichBucket = std::vector<int>(ConfigManager::get_instance()->NUM_WORKERS);
   buckets = std::vector<Bucket>(NUM_BUCKETS);
 
   switch (distribution) {
@@ -213,7 +214,7 @@ int worker_manager_service::sort_worker_score() {
   int currentBucket = 0;
   int bucketOffset = 0;
   int currentPosition = 0;
-  for (int i = 0; i <= MAX_WORKER_COUNT / workersPerChunk; i++) {
+  for (int i = 0; i <= ConfigManager::get_instance()->NUM_WORKERS / workersPerChunk; i++) {
     std::stringstream s;
     for (int j = 0; j < workersPerChunk; j++) {
       s << buckets[currentBucket].getWorkerId(0) << ',';

@@ -56,7 +56,6 @@ const std::string KEY_SEPARATOR = "#";
 const size_t PROCS_PER_MEMCACHED = 8;
 
 // Workers
-const std::size_t MAX_WORKER_COUNT = 4;
 const int WORKER_SPEED = 2;
 const int WORKER_ENERGY = 2;
 const int64_t WORKER_CAPACITY_MAX = 137438953472;

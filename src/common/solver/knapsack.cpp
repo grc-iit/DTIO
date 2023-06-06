@@ -1627,7 +1627,7 @@ static void mulbranch(allinfo *a, stype *c1) {
                                 mulknap
    ====================================================================== */
 
-static int mulknap(int n, int m, int *p, int64_t *w, int *x, int64_t *c) {
+static int mulknap(int n, int m, int *p, int64_t *w, int *x, std::vector<int64_t> c) {
   register ntype i, l;
   register item *j, *k;
   allinfo a;

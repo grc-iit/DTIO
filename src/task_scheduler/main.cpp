@@ -36,6 +36,9 @@
 int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
   ConfigManager::get_instance()->LoadConfig(argv[1]);
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_split(MPI_COMM_WORLD, SCHEDULER_COLOR, rank, ConfigManager::get_instance()->PROCESS_COMM);
   auto scheduler_service = task_scheduler::getInstance(TASK_SCHEDULER);
   scheduler_service->run();
   MPI_Finalize();

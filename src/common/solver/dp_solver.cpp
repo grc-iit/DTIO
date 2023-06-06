@@ -31,12 +31,12 @@
  *Interface
  ******************************************************************************/
 solver_output DPSolver::solve(solver_input input) {
-  int *worker_score;
-  int64_t *worker_capacity;
-  int *worker_energy;
-  worker_score = new int[MAX_WORKER_COUNT];
-  worker_capacity = new int64_t[MAX_WORKER_COUNT];
-  worker_energy = new int[MAX_WORKER_COUNT];
+  std::vector<int> worker_score;
+  std::vector<int64_t> worker_capacity;
+  std::vector<int> worker_energy;
+  worker_score.reserve(ConfigManager::get_instance()->NUM_WORKERS);
+  worker_capacity.reserve(ConfigManager::get_instance()->NUM_WORKERS);
+  worker_energy.reserve(ConfigManager::get_instance()->NUM_WORKERS);
   int solver_index = 0, static_index = 0, actual_index = 0;
   auto solver_task_map = std::unordered_map<int, int>();
   auto static_task_map = std::unordered_map<int, int>();
@@ -81,7 +81,7 @@ solver_output DPSolver::solve(solver_input input) {
   auto map = dtio_system::getInstance(service_i)->map_server();
   auto sorted_workers = std::vector<std::pair<int, int>>();
   int original_index = 0;
-  for (int worker_index = 0; worker_index < MAX_WORKER_COUNT; worker_index++) {
+  for (int worker_index = 0; worker_index < ConfigManager::get_instance()->NUM_WORKERS; worker_index++) {
     std::string val =
         map->get(table::WORKER_CAPACITY, std::to_string(worker_index + 1),
                  std::to_string(-1));
@@ -105,7 +105,7 @@ solver_output DPSolver::solve(solver_input input) {
   solver_output solver_output_i(input.num_tasks);
   int max_value = -1;
 
-  for (auto i = 1; i <= MAX_WORKER_COUNT; i++) {
+  for (auto i = 1; i <= ConfigManager::get_instance()->NUM_WORKERS; i++) {
     solver_output solver_output_temp(input.num_tasks);
     int *p = calculate_values(input, i, worker_score, worker_energy);
     int val = mulknap(input.num_tasks, i, p, input.task_size,
@@ -131,7 +131,7 @@ solver_output DPSolver::solve(solver_input input) {
   // check if there is a solution for the DPSolver
   for (int t = 0; t < input.num_tasks; t++) {
     if (solver_output_i.solution[t] - 1 < 0 ||
-        solver_output_i.solution[t] - 1 > MAX_WORKER_COUNT) {
+        solver_output_i.solution[t] - 1 > ConfigManager::get_instance()->NUM_WORKERS) {
       throw std::runtime_error("DPSolver::solve(): No Solution found\n");
     }
     solver_output_i.solution[t] =
@@ -175,16 +175,16 @@ solver_output DPSolver::solve(solver_input input) {
     } else
       it->second.push_back(input.tasks[task_index]);
   }
-  delete (worker_score);
-  delete (worker_capacity);
-  delete (worker_energy);
+  // delete (worker_score);
+  // delete (worker_capacity);
+  // delete (worker_energy);
 
   return solver_output_i;
 }
 
 int *DPSolver::calculate_values(solver_input input, int num_bins,
-                                const int *worker_score,
-                                const int *worker_energy) {
+                                std::vector<int> worker_score,
+                                std::vector<int> worker_energy) {
   int *p = new int[input.num_tasks];
   for (int i = 0; i < input.num_tasks; i++) {
     for (int j = 0; j < num_bins; j++) {

@@ -73,8 +73,10 @@ public:
   {
     return map_server_;
   }
-  std::shared_ptr<distributed_queue> client_queue,
-      worker_queues[MAX_WORKER_COUNT];
+  std::shared_ptr<distributed_queue> client_queue;
+  std::vector<std::shared_ptr<distributed_queue>> worker_queues;
+  worker_queues.reserve(ConfigManager::get_instance()->NUM_WORKERS);
+
   int rank, client_rank;
   MPI_Comm client_comm;
 

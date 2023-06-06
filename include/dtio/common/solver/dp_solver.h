@@ -39,7 +39,7 @@ private:
    *Variables and members
    ******************************************************************************/
   int *calculate_values(solver_input input, int num_bins,
-                        const int *worker_score, const int *worker_energy);
+                        std::vector<int> worker_score, std::vector<int> worker_energy);
 
 public:
   /******************************************************************************

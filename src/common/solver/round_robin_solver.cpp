@@ -23,6 +23,7 @@
  *include files
  ******************************************************************************/
 #include <dtio/common/solver/round_robin_solver.h>
+#include <dtio/common/config_manager.h>
 #include <dtio/dtio_system.h>
 
 std::shared_ptr<round_robin_solver> round_robin_solver::instance = nullptr;
@@ -37,7 +38,7 @@ solver_output round_robin_solver::solve(solver_input input) {
   for (auto i = 0; i < input.tasks.size(); i++) {
     std::size_t worker_id = map_server->counter_inc(
         COUNTER_DB, ROUND_ROBIN_INDEX, std::to_string(-1));
-    worker_id = worker_id % MAX_WORKER_COUNT;
+    worker_id = worker_id % ConfigManager::get_instance()->NUM_WORKERS;
     switch (input.tasks[i]->t_type) {
     case task_type::WRITE_TASK: {
       auto *wt = reinterpret_cast<write_task *>(input.tasks[i]);
