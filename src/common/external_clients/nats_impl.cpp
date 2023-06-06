@@ -24,7 +24,7 @@
  ******************************************************************************/
 #include <iomanip>
 #include <dtio/common/external_clients/nats_impl.h>
-#include <dtio/common/timer.h>
+#include <hcl/common/debug.h>
 
 /******************************************************************************
  *Interface

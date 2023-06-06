@@ -24,7 +24,7 @@
  ******************************************************************************/
 #include <iomanip>
 #include <dtio/common/data_manager/data_manager.h>
-#include <dtio/common/timer.h>
+#include <hcl/common/debug.h>
 
 std::shared_ptr<data_manager> data_manager::instance = nullptr;
 /******************************************************************************

@@ -46,7 +46,7 @@ const std::size_t MAX_IO_UNIT = 1 * 1024 * 1024;
 const std::string CLIENT_TASK_SUBJECT = "TASK";
 
 // Configs
-const map_impl_type map_impl_type_t = map_impl_type::HCLMAP;
+const map_impl_type map_impl_type_t = map_impl_type::MEMCACHE_D;
 const solver_impl_type solver_impl_type_t = solver_impl_type::ROUND_ROBIN;
 const queue_impl_type queue_impl_type_t = queue_impl_type::NATS;
 const io_client_type io_client_type_t = io_client_type::POSIX;

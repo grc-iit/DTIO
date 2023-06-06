@@ -49,7 +49,7 @@ public:
     HCL_CONF->MY_SERVER = my_server;
     HCL_CONF->NUM_SERVERS = num_servers;
     HCL_CONF->SERVER_ON_NODE = server_on_node;
-    HCL_CONF->SERVER_LIST_PATH = ConfigManager::get_instance()->HCL_SERVER_LIST;
+    // HCL_CONF->SERVER_LIST_PATH = ConfigManager::get_instance()->HCL_SERVER_LIST;
 
     MPI_Barrier(*ConfigManager::get_instance ()
 		->DATASPACE_COMM); // Ideally, we'd have a communicator

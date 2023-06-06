@@ -40,6 +40,7 @@
 #include <dtio/common/external_clients/rocksdb_impl.h>
 #include <dtio/common/solver/solver.h>
 #include <memory>
+#include <vector>
 #include <mpi.h>
 #include <string>
 
@@ -54,6 +55,7 @@ private:
       : service_i (service), application_id (), client_comm (), client_rank (),
         rank ()
   {
+    worker_queues.reserve(ConfigManager::get_instance()->NUM_WORKERS); // TODO: investigate the proper way to allocate this
     init (service_i);
   }
   void init (service service);
@@ -75,7 +77,6 @@ public:
   }
   std::shared_ptr<distributed_queue> client_queue;
   std::vector<std::shared_ptr<distributed_queue>> worker_queues;
-  worker_queues.reserve(ConfigManager::get_instance()->NUM_WORKERS);
 
   int rank, client_rank;
   MPI_Comm client_comm;

@@ -26,7 +26,7 @@
 #include "posix_client.h"
 #include <iomanip>
 #include <dtio/common/client_interface/distributed_hashmap.h>
-#include <dtio/common/timer.h>
+#include <hcl/common/debug.h>
 #include <dtio/dtio_system.h>
 
 int posix_client::read(read_task task) {

@@ -25,7 +25,7 @@
 #include <cstring>
 #include <dtio/common/metadata_manager/metadata_manager.h>
 #include <dtio/common/return_codes.h>
-#include <dtio/common/timer.h>
+#include <hcl/common/debug.h>
 #include <dtio/common/utilities.h>
 #include <mpi.h>
 #include <random>

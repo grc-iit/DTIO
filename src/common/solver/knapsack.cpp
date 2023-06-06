@@ -1,8 +1,5 @@
-//
-// Created by hdevarajan on 5/8/18.
-//
-
 #include <iostream>
+#include <vector>
 
 /* ======================================================================
              mulknap.c,  David Pisinger                     feb 1998

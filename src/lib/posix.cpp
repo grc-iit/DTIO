@@ -25,7 +25,7 @@
 #include <iomanip>
 #include <dtio/common/return_codes.h>
 #include <dtio/common/task_builder/task_builder.h>
-#include <dtio/common/timer.h>
+#include <hcl/common/debug.h>
 #include <dtio/drivers/posix.h>
 #include <zconf.h>
 

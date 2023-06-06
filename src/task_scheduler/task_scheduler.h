@@ -32,7 +32,7 @@
 #include <dtio/common/enumerations.h>
 #include <dtio/common/external_clients/nats_impl.h>
 #include <dtio/common/threadPool.h>
-#include <dtio/common/timer.h>
+#include <hcl/common/debug.h>
 #include <memory>
 #include <zconf.h>
 /******************************************************************************
