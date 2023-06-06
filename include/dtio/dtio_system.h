@@ -64,8 +64,10 @@ private:
   }
   void init(service service);
   std::shared_ptr<distributed_hashmap> map_client_, map_server_;
+  std::unordered_map<int, std::shared_ptr<distributed_hashmap>> hcl_map_client_;
 
 public:
+  int num_clients;
   std::shared_ptr<solver> solver_i;
   std::shared_ptr<distributed_hashmap> map_client() { return map_client_; }
   std::shared_ptr<distributed_hashmap> map_server() { return map_server_; }

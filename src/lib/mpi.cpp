@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019  SCS Lab <scs-help@cs.iit.edu>, Hariharan
+ * Copyright (C) 2023  SCS Lab <scs-help@cs.iit.edu>, Hariharan
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
@@ -22,12 +22,16 @@
 //
 // Created by anthony on 4/24/18.
 //
+#include "dtio/common/enumerations.h"
 #include <dtio/common/utilities.h>
 #include <dtio/drivers/mpi.h>
 
 int dtio::MPI_Init(int *argc, char ***argv) {
   PMPI_Init(argc, argv);
   ConfigManager::get_instance()->LoadConfig((*argv)[1]);
+  int rank;
+  PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  PMPI_Comm_split(MPI_COMM_WORLD, CLIENT_COLOR, rank, ConfigManager::get_instance()->CLIENT_COMM);
   dtio_system::getInstance(service::LIB);
   return 0;
 }

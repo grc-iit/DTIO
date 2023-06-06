@@ -28,6 +28,7 @@
 #include <cstring>
 #include <dtio/common/client_interface/distributed_hashmap.h>
 #include <dtio/common/config_manager.h>
+#include <dtio/common/data_structures.h>
 #include <hcl.h>
 
 /******************************************************************************
@@ -38,7 +39,7 @@ class HCLMapImpl : public distributed_hashmap {
    *Variables and members
    ******************************************************************************/
 private:
-  hcl::unordered_map<std::string, std::string> *hcl_client;
+  hcl::unordered_map<struct HCLKeyType, std::string, std::hash<HCLKeyType>, CharAllocator, MappedUnitString> *hcl_client;
   size_t num_servers;
   std::string get_server(std::string key);
 
@@ -46,10 +47,16 @@ public:
   /******************************************************************************
    *Constructor
    ******************************************************************************/
-  HCLMapImpl(service service)
+  HCLMapImpl(service service, bool is_server, int my_server, int num_servers, bool server_on_node=false)
       : distributed_hashmap(service) {
+    HCL_CONF->IS_SERVER = is_server;
+    HCL_CONF->MY_SERVER = my_server;
+    HCL_CONF->NUM_SERVERS = num_servers;
+    HCL_CONF->SERVER_ON_NODE = server_on_node;
+    HCL_CONF->SERVER_LIST_PATH = ConfigManager::get_instance()->HCL_SERVER_LIST;
+
     MPI_Barrier(* ConfigManager::get_instance()->DATASPACE_COMM); // Ideally, we'd have a communicator for maps specifically
-    hcl_client = new hcl::unordered_map<std::string, std::string>(); // Map needs to be spawned on multiple servers, clients and workers at the same time. This will be client-side.
+    hcl_client = new hcl::unordered_map<HCLKeyType, std::string, std::hash<HCLKeyType>, CharAllocator, MappedUnitString>(); // Map needs to be spawned on multiple servers, clients and workers at the same time. This will be client-side.
     num_servers = HCL_CONF->NUM_SERVERS;
   }
   size_t get_servers() override { return num_servers; }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019  SCS Lab <scs-help@cs.iit.edu>, Hariharan
+ * Copyright (C) 2023  SCS Lab <scs-help@cs.iit.edu>, Hariharan
  * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
  * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
  *
@@ -67,6 +67,7 @@ public:
   std::string WORKER_PATH;
   std::string PFS_PATH;
   MPI_Comm *DATASPACE_COMM;
+  MPI_Comm *CLIENT_COMM;
   int TS_NUM_WORKER_THREADS;
   static std::shared_ptr<ConfigManager> get_instance() {
     return instance == nullptr
