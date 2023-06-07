@@ -42,7 +42,6 @@ int worker::run() {
   }
   size_t task_count = 0;
   Timer t = Timer();
-  t.startTime();
 
   do {
     int status = -1;
@@ -87,7 +86,7 @@ int worker::run() {
         throw std::runtime_error("worker::run() failed!");
       }
     }
-    if (t.stopTime() > WORKER_INTERVAL || task_count >= MAX_WORKER_TASK_COUNT) {
+    if (t.pauseTime() > WORKER_INTERVAL || task_count >= MAX_WORKER_TASK_COUNT) {
       if (update_score(false) != SUCCESS) {
         std::cerr << "worker::update_score() failed!\n";
         // throw std::runtime_error("worker::update_score() failed!");
@@ -96,7 +95,7 @@ int worker::run() {
         std::cerr << "worker::update_capacity() failed!\n";
         // throw std::runtime_error("worker::update_capacity() failed!");
       }
-      t.startTime();
+      t.resumeTime();
       task_count = 0;
     }
   } while (!kill);

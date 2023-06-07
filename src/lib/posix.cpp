@@ -153,11 +153,10 @@ std::size_t dtio::fread_wait(void *ptr, std::vector<read_task> &tasks,
       // std::cerr<<"wait in buffers\n";
       Timer wait_timer = Timer();
       int count = 0;
-      while (wait_timer.resumeTime() == 0 &&
-             !data_m->exists(DATASPACE_DB, task.destination.filename,
+      while (!data_m->exists(DATASPACE_DB, task.destination.filename,
                              std::to_string(task.destination.server))) {
         wait_timer.pauseTime();
-        if (wait_timer.elapsed_time > 5 && count % 1000000 == 0) {
+        if (wait_timer.getElapsedTime() > 5 && count % 1000000 == 0) {
           int rank;
           MPI_Comm_rank(MPI_COMM_WORLD, &rank);
           std::stringstream stream;
@@ -165,6 +164,7 @@ std::size_t dtio::fread_wait(void *ptr, std::vector<read_task> &tasks,
                  << "dataspace_id:" << task.destination.filename;
           count++;
         }
+	wait_timer.resumeTime();
       }
       data = data_m->get(DATASPACE_DB, task.destination.filename,
                          std::to_string(task.destination.server));
@@ -224,7 +224,6 @@ size_t dtio::fread(void *ptr, size_t size, size_t count, FILE *stream) {
     }
     case BUFFERS: {
       Timer timer = Timer();
-      timer.startTime();
       client_queue->publish_task(&task);
       while (!data_m->exists(DATASPACE_DB, task.destination.filename,
                              std::to_string(task.destination.server))) {
@@ -315,12 +314,11 @@ size_t dtio::fwrite_wait(std::vector<write_task *> tasks) {
     int count = 0;
     Timer wait_timer = Timer();
 
-    while (wait_timer.resumeTime() == 0 &&
-           !map_server->exists(table::WRITE_FINISHED_DB,
+    while (!map_server->exists(table::WRITE_FINISHED_DB,
                                task->destination.filename,
                                std::to_string(-1))) {
       wait_timer.pauseTime();
-      if (wait_timer.elapsed_time > 5 && count % 10000 == 0) {
+      if (wait_timer.getElapsedTime() > 5 && count % 10000 == 0) {
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         std::stringstream stream;
@@ -328,6 +326,7 @@ size_t dtio::fwrite_wait(std::vector<write_task *> tasks) {
                << "dataspace_id:" << task->destination.filename;
         count++;
       }
+      wait_timer.resumeTime();
     }
     map_server->remove(table::WRITE_FINISHED_DB, task->destination.filename,
                        std::to_string(-1));

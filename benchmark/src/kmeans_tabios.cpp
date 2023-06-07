@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
 #endif
   global_timer.pauseTime();
 #ifdef TIMERBASE
-  auto map_time = map.elapsed_time;
+  auto map_time = map.getElapsedTime();
   double map_sum;
   MPI_Allreduce(&map_time, &map_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double map_mean = map_sum / comm_size;
@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
 #endif
   global_timer.pauseTime();
 #ifdef TIMERBASE
-  auto red_time = reduce.elapsed_time;
+  auto red_time = reduce.getElapsedTime();
   double red_sum, max, min;
   MPI_Allreduce(&red_time, &red_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&red_time, &max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
   if (rank == 0)
     stream << red_mean << "," << max << "," << min;
 #endif
-  auto time = global_timer.elapsed_time;
+  auto time = global_timer.getElapsedTime();
   double sum;
   MPI_Allreduce(&time, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double mean = sum / comm_size;

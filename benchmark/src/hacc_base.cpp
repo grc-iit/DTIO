@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
 #endif
   global_timer.pauseTime();
   free(read_buf);
-  auto time = global_timer.elapsed_time;
+  auto time = global_timer.getElapsedTime();
   double sum;
   MPI_Allreduce(&time, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double mean = sum / comm_size;

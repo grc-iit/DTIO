@@ -44,9 +44,8 @@ void dtio_system::init(service service) {
     map_server_ = std::make_shared<RocksDBImpl>(service, kDBPath_server);
   }
   else if (map_impl_type_t == map_impl_type::HCLMAP) {
-    MPI_Comm_size(* ConfigManager::get_instance()->PROCESS_COMM, &num_clients); // FIXME do we need to transfer the number to non-client processes?
+    MPI_Comm_size(ConfigManager::get_instance()->PROCESS_COMM, &num_clients); // FIXME do we need to transfer the number to non-client processes?
     map_server_ = std::make_shared<HCLMapImpl>(service, true, rank, num_clients);
-    hcl_map_client_[rank] = NULL;
   }
 
   if (solver_impl_type_t == solver_impl_type::DP) {
@@ -104,10 +103,10 @@ void dtio_system::init(service service) {
     map_client_ = std::make_shared<RocksDBImpl>(service, kDBPath_client);
   }
   else if (map_impl_type_t == map_impl_type::HCLMAP) {
-    for (auto clientnum : hcl_map_client_) {
-      // FIXME can you really expand the space of a map which is a class member?
-      hcl_map_client_[clientnum] = std::make_shared<HCLMapImpl>(service, false, clientnum, num_clients)
-    }
+    // for (auto clientnum : hcl_map_client_) {
+    //   // FIXME can you really expand the space of a map which is a class member?
+    //   hcl_map_client_[clientnum] = std::make_shared<HCLMapImpl>(service, false, clientnum, num_clients)
+    // }
   }
 }
 

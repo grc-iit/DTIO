@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
   global_timer.pauseTime();
 #ifdef TIMERBASE
   if (rank == 0)
-    stream << w.elapsed_time << ",";
+    stream << w.getElapsedTime() << ",";
 #endif
 
 #ifdef TIMERBASE
@@ -180,7 +180,7 @@ int main(int argc, char **argv) {
 
 #ifdef TIMERBASE
   if (rank == 0)
-    stream << r.elapsed_time << ",";
+    stream << r.getElapsedTime() << ",";
 #endif
 
 #ifdef TIMERBASE
@@ -215,7 +215,7 @@ int main(int argc, char **argv) {
     stream << a.pauseTime() << ",";
 #endif
 
-  auto time = global_timer.elapsed_time;
+  auto time = global_timer.getElapsedTime();
   double sum;
   MPI_Allreduce(&time, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double mean = sum / comm_size;

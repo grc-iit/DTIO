@@ -51,7 +51,7 @@ public:
     HCL_CONF->SERVER_ON_NODE = server_on_node;
     // HCL_CONF->SERVER_LIST_PATH = ConfigManager::get_instance()->HCL_SERVER_LIST;
 
-    MPI_Barrier(*ConfigManager::get_instance ()
+    MPI_Barrier(ConfigManager::get_instance ()
 		->DATASPACE_COMM); // Ideally, we'd have a communicator
                                    // for maps specifically
     hcl_client = new hcl::unordered_map<HCLKeyType, std::string, std::hash<HCLKeyType>, CharAllocator, MappedUnitString>(); // Map needs to be spawned on multiple servers, clients and workers at the same time. This will be client-side.

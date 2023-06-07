@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 
   dtio::fclose(fp);
   timer.pauseTime();
-  auto time = timer.elapsed_time;
+  auto time = timer.getElapsedTime();
   std::cerr << "Time elapsed: " << time << " seconds.\n";
   dtio::MPI_Finalize();
 }

@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
   wbb.pauseTime();
 #endif
 #ifdef TIMERBASE
-  auto writeBB = wbb.elapsed_time;
+  auto writeBB = wbb.getElapsedTime();
   double bb_sum;
   MPI_Allreduce(&writeBB, &bb_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double bb_mean = bb_sum / comm_size;
@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
 
 #ifdef TIMERBASE
   rbb.pauseTime();
-  auto read_time = rbb.elapsed_time;
+  auto read_time = rbb.getElapsedTime();
   double read_sum;
   MPI_Allreduce(&read_time, &read_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double read_mean = read_sum / comm_size;
@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
 #ifdef TIMERBASE
   pfs.pauseTime();
   free(read_buf);
-  auto pfs_time = pfs.elapsed_time;
+  auto pfs_time = pfs.getElapsedTime();
   double pfs_sum;
   MPI_Allreduce(&pfs_time, &pfs_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double pfs_mean = pfs_sum / comm_size;
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
 #endif
   global_timer.pauseTime();
 
-  auto time = global_timer.elapsed_time;
+  auto time = global_timer.getElapsedTime();
   double sum;
   MPI_Allreduce(&time, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double mean = sum / comm_size;

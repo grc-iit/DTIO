@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
 #ifdef TIMERBASE
   if (rank == 0) {
     stream << "montage_tabios()," << std::fixed << std::setprecision(10)
-           << c.elapsed_time << ",";
+           << c.getElapsedTime() << ",";
   }
 #endif
 #ifdef TIMERBASE
@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
 
   double w_time = 0.0;
   if (rank % 2 == 0)
-    w_time = w.elapsed_time;
+    w_time = w.getElapsedTime();
   double w_sum;
   MPI_Allreduce(&w_time, &w_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double w_mean = w_sum / comm_size * 2;
@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
 #ifdef TIMERBASE
   double r_time = 0.0;
   if (rank % 2 == 1 || comm_size == 1)
-    r_time = r.elapsed_time;
+    r_time = r.getElapsedTime();
   double r_sum;
   MPI_Allreduce(&r_time, &r_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double r_mean = r_sum / comm_size * 2;
@@ -262,7 +262,7 @@ int main(int argc, char **argv) {
 #endif
   global_timer.pauseTime();
 #ifdef TIMERBASE
-  auto a_time = a.elapsed_time;
+  auto a_time = a.getElapsedTime();
   double a_sum;
   MPI_Allreduce(&a_time, &a_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double a_mean = a_sum / comm_size;
@@ -270,7 +270,7 @@ int main(int argc, char **argv) {
     stream << a_mean << ",";
 #endif
 
-  auto time = global_timer.elapsed_time;
+  auto time = global_timer.getElapsedTime();
   double sum;
   MPI_Allreduce(&time, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double mean = sum / comm_size;

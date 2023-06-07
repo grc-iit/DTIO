@@ -27,6 +27,7 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
+#include "dtio/common/config_manager.h"
 #include "dtio/common/enumerations.h"
 #include "worker.h"
 #include <iostream>
@@ -41,7 +42,9 @@ int main(int argc, char **argv) {
   int worker_index;
   MPI_Comm_rank(MPI_COMM_WORLD, &worker_index);
   // Rank in the dataspace communicator should be 0-max_worker_id followed by max_worker_id + 1 - max_client_id
-  MPI_Comm_split(MPI_COMM_WORLD, WORKER_COLOR, worker_index+1, ConfigManager::get_instance()->PROCESS_COMM);
+
+  MPI_Comm_split(MPI_COMM_WORLD, WORKER_COLOR, worker_index+1, & ConfigManager::get_instance()->PROCESS_COMM);
+
   std::shared_ptr<worker> worker_service_i =
       worker::getInstance(service::WORKER, worker_index);
   worker_service_i->run();

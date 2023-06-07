@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
   global_timer.pauseTime();
   printf("HERE3");
 
-  auto time = global_timer.elapsed_time;
+  auto time = global_timer.getElapsedTime();
   double sum, max, min;
   MPI_Allreduce(&time, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&time, &max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);

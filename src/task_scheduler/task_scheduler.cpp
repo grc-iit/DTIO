@@ -39,7 +39,6 @@ int task_scheduler::run() {
       CLIENT_TASK_SUBJECT);
   auto task_list = std::vector<task *>();
   Timer t = Timer();
-  t.startTime();
   int status;
 
   while (!kill) {
@@ -48,12 +47,12 @@ int task_scheduler::run() {
     if (status != -1 && task_i != nullptr) {
       task_list.push_back(task_i);
     }
-    auto time_elapsed = t.stopTime();
+    auto time_elapsed = t.pauseTime();
     if (!task_list.empty() && (task_list.size() >= MAX_NUM_TASKS_IN_QUEUE ||
                                time_elapsed >= MAX_SCHEDULE_TIMER)) {
       // scheduling_threads.submit(std::bind(schedule_tasks, task_list));
       schedule_tasks(task_list);
-      t.startTime();
+      t.resumeTime();
       task_list.clear();
     }
   }

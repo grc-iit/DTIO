@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
   MPI_File_close(&outFile);
   MPI_Barrier(MPI_COMM_WORLD);
   global_timer.pauseTime();
-  auto time = global_timer.elapsed_time;
+  auto time = global_timer.getElapsedTime();
   double sum;
   MPI_Allreduce(&time, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double mean = sum / comm_size;

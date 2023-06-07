@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
   ConfigManager::get_instance()->LoadConfig(argv[1]);
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_split(MPI_COMM_WORLD, WORKER_COLOR, 0, ConfigManager::get_instance()->PROCESS_COMM);
+  MPI_Comm_split(MPI_COMM_WORLD, WORKER_COLOR, 0, & ConfigManager::get_instance()->PROCESS_COMM);
   std::shared_ptr<worker_manager_service> worker_manager_service_i =
       worker_manager_service::getInstance(service::WORKER_MANAGER);
   worker_manager_service_i->run();
