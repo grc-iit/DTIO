@@ -116,7 +116,7 @@ int worker::update_score(bool before_sleeping = false) {
 }
 
 int worker::calculate_worker_score(bool before_sleeping = false) {
-  float load = (float)queue->get_queue_count() / INT_MAX;
+  float load = (float)queue->get_queue_count() / INT_MAX; // FIXME: seg fault here
   float capacity = get_remaining_capacity() / get_total_capacity();
   float isAlive = before_sleeping ? 0 : 1;
   float energy = ((float)WORKER_ENERGY) / 5;

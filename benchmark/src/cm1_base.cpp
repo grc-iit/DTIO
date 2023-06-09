@@ -13,8 +13,8 @@ int main(int argc, char **argv) {
 
   std::stringstream stream;
   int rank, comm_size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+  MPI_Comm_rank(ConfigManager::get_instance()->PROCESS_COMM, &rank);
+  MPI_Comm_size(ConfigManager::get_instance()->PROCESS_COMM, &comm_size);
   std::string file_path = argv[2];
   int iteration = atoi(argv[3]);
 
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
   MPI_Info_create(&info);
   MPI_Info_set(info, "direct_write", "true");
 
-  MPI_File_open(MPI_COMM_WORLD, filename.c_str(),
+  MPI_File_open(ConfigManager::get_instance()->PROCESS_COMM, filename.c_str(),
                 MPI_MODE_CREATE | MPI_MODE_RDWR, info, &outFile);
   MPI_File_set_view(outFile, static_cast<MPI_Offset>(rank * io_per_teration),
                     MPI_CHAR, MPI_CHAR, "native", MPI_INFO_NULL);
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
         global_timer.resumeTime();
         MPI_File_write(outFile, write_buf[j], static_cast<int>(write[0]),
                        MPI_CHAR, MPI_STATUS_IGNORE);
-        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(ConfigManager::get_instance()->PROCESS_COMM);
         global_timer.pauseTime();
         current_offset += write[0];
       }
@@ -59,11 +59,11 @@ int main(int argc, char **argv) {
   }
   global_timer.resumeTime();
   MPI_File_close(&outFile);
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(ConfigManager::get_instance()->PROCESS_COMM);
   global_timer.pauseTime();
   auto time = global_timer.getElapsedTime();
   double sum;
-  MPI_Allreduce(&time, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&time, &sum, 1, MPI_DOUBLE, MPI_SUM, ConfigManager::get_instance()->PROCESS_COMM);
   double mean = sum / comm_size;
   if (rank == 0) {
     stream << "cm1_base," << std::fixed << std::setprecision(6) << mean << "\n";

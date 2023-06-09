@@ -57,6 +57,7 @@ void dtio_system::init(service service) {
   } else if (solver_impl_type_t == solver_impl_type::DEFAULT) {
     solver_i = std::make_shared<default_solver>(service);
   }
+
   switch (service) {
   case LIB: {
     if (rank == 0) {
@@ -73,7 +74,7 @@ void dtio_system::init(service service) {
       std::size_t t = map_server()->counter_inc(COUNTER_DB, DATASPACE_ID,
                                                 std::to_string(-1));
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(ConfigManager::get_instance()->PROCESS_COMM); // MPI_COMM_WORLD
     break;
   }
   case CLIENT: {

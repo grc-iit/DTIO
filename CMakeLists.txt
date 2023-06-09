@@ -11,10 +11,10 @@ include_directories(${INCLUDE_PATH})
 link_libraries(${LIBRARY_PATH})
 # define ones we have installed
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(MEMCACHED false)
-set(NATS false)
+set(MEMCACHED true)
+set(NATS true)
 set(MPI true)
-set(HCL true)
+set(HCL false)
 #set(ROCKS true) # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERMDM")
@@ -37,7 +37,7 @@ set(COMMON_SRC
     src/common/solver/random_solver.cpp
     src/common/solver/round_robin_solver.cpp
     src/common/solver/knapsack.cpp
-    src/common/timer.cpp
+    # src/common/timer.cpp
     src/common/data_manager/data_manager.cpp
     src/common/client_interface/distributed_hashmap.cpp
     src/common/metadata_manager/metadata_manager.cpp
@@ -48,8 +48,8 @@ set(COMMON_SRC
     src/common/external_clients/rocksdb_impl.cpp
     src/common/external_clients/memcached_impl.cpp
     src/common/external_clients/nats_impl.cpp
-    src/common/external_clients/hcl_queue_impl.cpp
-    src/common/external_clients/hcl_map_impl.cpp
+    # src/common/external_clients/hcl_queue_impl.cpp
+    # src/common/external_clients/hcl_map_impl.cpp
     src/common/task_builder/task_builder.cpp)
 set(DTIO_LIB_SRC src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
 # set(DTIO_CLIENT_SRC src/client/main.cpp src/client/client.cpp

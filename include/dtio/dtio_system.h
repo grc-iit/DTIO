@@ -55,9 +55,11 @@ private:
       : service_i (service), application_id (), client_comm (), client_rank (),
         rank ()
   {
-    worker_queues.reserve(ConfigManager::get_instance()->NUM_WORKERS); // TODO: investigate the proper way to allocate this
+    worker_queues = (std::shared_ptr<distributed_queue> *)calloc(ConfigManager::get_instance()->NUM_WORKERS, sizeof(std::shared_ptr<distributed_queue>));
     init (service_i);
+    return;
   }
+
   void init (service service);
   std::shared_ptr<distributed_hashmap> map_client_, map_server_;
   std::vector<std::shared_ptr<distributed_hashmap>> hcl_map_client_;
@@ -76,7 +78,7 @@ public:
     return map_server_;
   }
   std::shared_ptr<distributed_queue> client_queue;
-  std::vector<std::shared_ptr<distributed_queue>> worker_queues;
+  std::shared_ptr<distributed_queue> *worker_queues;
 
   int rank, client_rank;
   MPI_Comm client_comm;
@@ -96,31 +98,15 @@ public:
       {
         if (service_i == LIB)
           {
-            if (queue_impl_type_t == queue_impl_type::NATS)
-              {
-                client_queue = std::make_shared<NatsImpl> (
-                    service_i, ConfigManager::get_instance ()->NATS_URL_CLIENT,
-                    CLIENT_TASK_SUBJECT, std::to_string (service_i), false);
-              }
-            else if (queue_impl_type_t == queue_impl_type::HCLQUEUE)
-              {
-                // FIXME: is the shared pointer able to recognize the
-                // HCLQueueImpl as a distributed_queue?
-                client_queue = std::make_shared<HCLQueueImpl> (service_i);
-              }
+	    client_queue = std::make_shared<NatsImpl> (
+                service_i, ConfigManager::get_instance ()->NATS_URL_CLIENT,
+                CLIENT_TASK_SUBJECT, std::to_string (service_i), false);
           }
         else
           {
-            if (queue_impl_type_t == queue_impl_type::NATS)
-              {
-                client_queue = std::make_shared<NatsImpl> (
-                    service_i, ConfigManager::get_instance ()->NATS_URL_CLIENT,
-                    CLIENT_TASK_SUBJECT, std::to_string (service_i), true);
-              }
-            else if (queue_impl_type_t == queue_impl_type::HCLQUEUE)
-              {
-                client_queue = std::make_shared<HCLQueueImpl> (service_i);
-              }
+            client_queue = std::make_shared<NatsImpl> (
+                service_i, ConfigManager::get_instance ()->NATS_URL_CLIENT,
+                CLIENT_TASK_SUBJECT, std::to_string (service_i), true);
           }
       }
     return client_queue;
@@ -131,8 +117,8 @@ public:
     if (worker_queues[worker_index] == nullptr)
       worker_queues[worker_index] = std::make_shared<NatsImpl> (
           service_i, ConfigManager::get_instance ()->NATS_URL_SERVER,
-          std::to_string (worker_index - 1),
-          std::to_string (service_i) + "_" + std::to_string (worker_index - 1),
+          std::to_string (worker_index),
+          std::to_string (service_i) + "_" + std::to_string (worker_index),
           true);
     return worker_queues[worker_index];
   }
@@ -140,7 +126,7 @@ public:
   int build_message_file (MPI_Datatype &message_file);
   int build_message_chunk (MPI_Datatype &message_chunk);
 
-  virtual ~dtio_system (){};
+  virtual ~dtio_system () { free(worker_queues); };
 };
 
 #endif // DTIO_MAIN_SYSTEM_H
