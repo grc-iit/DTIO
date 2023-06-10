@@ -40,6 +40,7 @@ int main(int argc, char **argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   // Assumption: one worker manager
   MPI_Comm_split(MPI_COMM_WORLD, SCHEDULER_COLOR, rank - ConfigManager::get_instance()->NUM_WORKERS - 1, & ConfigManager::get_instance()->PROCESS_COMM);
+  MPI_Comm_split(MPI_COMM_WORLD, DATASPACE_COLOR, rank - 1, & ConfigManager::get_instance()->DATASPACE_COMM);
   auto scheduler_service = task_scheduler::getInstance(TASK_SCHEDULER);
   scheduler_service->run();
   MPI_Finalize();

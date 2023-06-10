@@ -66,6 +66,7 @@ public:
   std::string ASSIGNMENT_POLICY;
   std::string WORKER_PATH;
   std::string PFS_PATH;
+  std::string HCL_SERVER_LIST_PATH;
   int test;
   MPI_Comm DATASPACE_COMM;
   MPI_Comm PROCESS_COMM;

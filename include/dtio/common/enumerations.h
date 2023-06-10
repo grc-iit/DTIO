@@ -34,7 +34,8 @@ enum message_type { METADATA = 0, DATASPACE = 1 };
 enum operation { WRITE = 0, READ = 1, DELETE = 2, FLUSH = 3 };
 enum map_type { META_FH = 0, META_CHUNK = 1 };
 enum location_type { BUFFERS = 0, CACHE = 1, PFS = 2 };
-enum mpi_comms { CLIENT_COLOR = 0, WORKER_COLOR = 1, SCHEDULER_COLOR = 2, DATASPACE_COLOR = 3 };
+enum mpi_comms { CLIENT_COLOR = 0, WORKER_COLOR = 1, SCHEDULER_COLOR = 2 };
+enum mpi_dataspace_comms { DATASPACE_NULL_COLOR = 0, DATASPACE_COLOR = 1 };
 enum service {
   LIB = 0,
   CLIENT = 1,

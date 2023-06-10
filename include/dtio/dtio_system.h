@@ -56,13 +56,16 @@ private:
         rank ()
   {
     worker_queues = (std::shared_ptr<distributed_queue> *)calloc(ConfigManager::get_instance()->NUM_WORKERS, sizeof(std::shared_ptr<distributed_queue>));
+
+    MPI_Comm_size(ConfigManager::get_instance()->PROCESS_COMM, &num_clients); // FIXME do we need to transfer the number to non-client processes?
+    hcl_map_client_ = (std::shared_ptr<distributed_hashmap> *)calloc(num_clients, sizeof(std::shared_ptr<distributed_hashmap>));
     init (service_i);
     return;
   }
 
   void init (service service);
   std::shared_ptr<distributed_hashmap> map_client_, map_server_;
-  std::vector<std::shared_ptr<distributed_hashmap>> hcl_map_client_;
+  std::shared_ptr<distributed_hashmap> *hcl_map_client_;
 
 public:
   int num_clients;
@@ -126,7 +129,7 @@ public:
   int build_message_file (MPI_Datatype &message_file);
   int build_message_chunk (MPI_Datatype &message_chunk);
 
-  virtual ~dtio_system () { free(worker_queues); };
+  virtual ~dtio_system () { free(worker_queues); free(hcl_map_client_); };
 };
 
 #endif // DTIO_MAIN_SYSTEM_H

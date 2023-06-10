@@ -26,6 +26,7 @@
 #ifndef DTIO_MAIN_HCLMAPIMPL_H
 #define DTIO_MAIN_HCLMAPIMPL_H
 
+#include "dtio/common/enumerations.h"
 #include <city.h>
 #include <cstring>
 #include <dtio/common/client_interface/distributed_hashmap.h>
@@ -45,16 +46,28 @@ public:
   // Constructor
   HCLMapImpl(service service, bool is_server, int my_server, int num_servers, bool server_on_node=false)
       : distributed_hashmap(service) {
-    HCL_CONF->IS_SERVER = is_server;
+    if (service == LIB) {
+      HCL_CONF->IS_SERVER = 1;
+    }
+    else if (service == WORKER || service == TASK_SCHEDULER) {
+      HCL_CONF->IS_SERVER = 0; // Apparently the task scheduler has access to this too?
+    }
+    else {
+      std::cout << "I'm uncertain why this happens " << service << std::endl;
+    }
+
     HCL_CONF->MY_SERVER = my_server;
     HCL_CONF->NUM_SERVERS = num_servers;
     HCL_CONF->SERVER_ON_NODE = server_on_node;
-    // HCL_CONF->SERVER_LIST_PATH = ConfigManager::get_instance()->HCL_SERVER_LIST;
+    HCL_CONF->SERVER_LIST_PATH = CharStruct(ConfigManager::get_instance()->HCL_SERVER_LIST_PATH);
 
-    MPI_Barrier(ConfigManager::get_instance ()
-		->DATASPACE_COMM); // Ideally, we'd have a communicator
-                                   // for maps specifically
-    hcl_client = new hcl::unordered_map<HCLKeyType, std::string, std::hash<HCLKeyType>, CharAllocator, MappedUnitString>(); // Map needs to be spawned on multiple servers, clients and workers at the same time. This will be client-side.
+    if (service == WORKER || service == TASK_SCHEDULER) {
+      MPI_Barrier(ConfigManager::get_instance()->DATASPACE_COMM); // Wait for clients to initialize maps
+    }
+    hcl_client = new hcl::unordered_map<HCLKeyType, std::string, std::hash<HCLKeyType>, CharAllocator, MappedUnitString>();
+    if (service == LIB) {
+      MPI_Barrier(ConfigManager::get_instance()->DATASPACE_COMM); // Tell the workers we've initialized maps
+    }
     num_servers = HCL_CONF->NUM_SERVERS;
   }
   size_t

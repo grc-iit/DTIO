@@ -29,12 +29,17 @@ int HCLMapImpl::put(const table &name, std::string key,
 
 std::string HCLMapImpl::get(const table &name, std::string key,
                                std::string group_key) {
-  return hcl_client->Get(key);
+  auto true_key = HCLKeyType(key);
+  auto retval = hcl_client->Get(true_key);
+  if (retval.first) {
+    return retval.second;
+  }
 }
 
 std::string HCLMapImpl::remove(const table &name, std::string key,
                                   std::string group_key) {
-  hcl_client->Erase(key);
+  auto true_key = HCLKeyType(key);
+  hcl_client->Erase(true_key);
 }
 
 bool HCLMapImpl::exists(const table &name, std::string key,
