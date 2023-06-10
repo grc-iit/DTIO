@@ -7,20 +7,20 @@ and is intended to grow in the intersection of HPC and BigData.
 
 # TODO LIST
 
-*   Task dependencies (don't care)
-*   Metadata persistent store (flush at the end)
-*   Automated server bootstrapping
-*   Investigate read simulation
-*   Handle MDM for outstanding operations (data in transit)
-    *   Discuss how important is this issue of decoupled components
-    *   Possible fixes:
-        *   Invalidation lists + timer expiration to clean up
-        *   Intermediate state of data in MDM
+- [ ] Task dependencies (don't care)
+- [ ] Metadata persistent store (flush at the end)
+- [ ] Automated server bootstrapping
+- [ ] Investigate read simulation
+- [ ] Handle MDM for outstanding operations (data in transit)
+    - [ ] Discuss how important is this issue of decoupled components
+    - [ ] Possible fixes:
+        - [ ] Invalidation lists + timer expiration to clean up
+        - [ ] Intermediate state of data in MDM
 
 ## Notes
 
 *   Timeout task scheduling. line#66
-*   check the usleep in task scheduler → infinite looping
+*   check the `usleep` in task scheduler → infinite looping
 *   Aggregating logs
     `cat ts_* >> ts.csv`
 *   Printing correctly
