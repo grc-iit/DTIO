@@ -24,36 +24,59 @@
 
 int HCLMapImpl::put(const table &name, std::string key,
                        const std::string &value, std::string group_key) {
-  return hcl_client->Put(key, value);
+  key = std::to_string(name) + KEY_SEPARATOR + key;
+  auto true_key = HCLKeyType(key);
+  if (hcl_client->Put(true_key, value)) {
+    return 0;
+  }
+  else {
+    std::cerr << "put failed for key:" << key << "\n";
+    return 1;
+  }
 }
 
 std::string HCLMapImpl::get(const table &name, std::string key,
                                std::string group_key) {
+  key = std::to_string(name) + KEY_SEPARATOR + key;
   auto true_key = HCLKeyType(key);
   auto retval = hcl_client->Get(true_key);
   if (retval.first) {
     return retval.second;
   }
+  else {
+    return "";
+  }
 }
 
 std::string HCLMapImpl::remove(const table &name, std::string key,
                                   std::string group_key) {
+  key = std::to_string(name) + KEY_SEPARATOR + key;
   auto true_key = HCLKeyType(key);
   hcl_client->Erase(true_key);
 }
 
 bool HCLMapImpl::exists(const table &name, std::string key,
                            std::string group_key) {
+  key = std::to_string(name) + KEY_SEPARATOR + key;
+  auto true_key = HCLKeyType(key);
+  auto retval = hcl_client->Get(true_key);
+  return retval.first;
 }
 
-bool HCLMapImpl::purge() { }
+bool HCLMapImpl::purge() {
+  // Not necessary, nothing calls it at the moment and memcached just does a flush
+}
 
 size_t HCLMapImpl::counter_init(const table &name, std::string key,
                                    std::string group_key) {
+  // FIXME: this is used, need to figure out how
+  key = std::to_string(name) + KEY_SEPARATOR + key;
 }
 
 size_t HCLMapImpl::counter_inc(const table &name, std::string key,
                                   std::string group_key) {
+  // FIXME: this is used, need to figure out how
+  key = std::to_string(name) + KEY_SEPARATOR + key;
 }
 
 std::string HCLMapImpl::get_server(std::string key) {

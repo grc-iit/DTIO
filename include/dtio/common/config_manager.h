@@ -82,6 +82,7 @@ public:
   void LoadConfig(char *path) {
     config_ = YAML::LoadFile(path);
 
+    HCL_SERVER_LIST_PATH = config_["HCL_SERVER_LIST_PATH"].as<std::string>();
     NATS_URL_CLIENT = config_["NATS_URL_CLIENT"].as<std::string>();
     NATS_URL_SERVER = config_["NATS_URL_SERVER"].as<std::string>();
     MEMCACHED_URL_CLIENT = config_["MEMCACHED_URL_CLIENT"].as<std::string>();

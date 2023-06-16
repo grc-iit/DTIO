@@ -22,6 +22,7 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
+#include "dtio/common/config_manager.h"
 #include <dtio/common/solver/default_solver.h>
 #include <dtio/common/solver/dp_solver.h>
 #include <dtio/common/solver/random_solver.h>
@@ -44,7 +45,7 @@ void dtio_system::init(service service) {
     map_server_ = std::make_shared<RocksDBImpl>(service, kDBPath_server);
   }
   else if (map_impl_type_t == map_impl_type::HCLMAP) {
-    map_server_ = std::make_shared<HCLMapImpl>(service, true, rank, num_clients);
+    map_server_ = std::make_shared<HCLMapImpl>(service, "server", 0, num_clients);
   }
 
   if (solver_impl_type_t == solver_impl_type::DP) {
@@ -103,9 +104,7 @@ void dtio_system::init(service service) {
     map_client_ = std::make_shared<RocksDBImpl>(service, kDBPath_client);
   }
   else if (map_impl_type_t == map_impl_type::HCLMAP) {
-    for (int clientnum = 0; clientnum < num_clients; clientnum++) {
-      hcl_map_client_[clientnum] = std::make_shared<HCLMapImpl>(service, false, clientnum, num_clients);
-    }
+    map_client_ = std::make_shared<HCLMapImpl>(service, "client", 0, num_clients);
   }
 }
 

@@ -57,7 +57,15 @@ private:
   {
     worker_queues = (std::shared_ptr<distributed_queue> *)calloc(ConfigManager::get_instance()->NUM_WORKERS, sizeof(std::shared_ptr<distributed_queue>));
 
-    MPI_Comm_size(ConfigManager::get_instance()->PROCESS_COMM, &num_clients); // FIXME: do we need to transfer the number to non-client processes?
+    if (service == LIB) {
+      MPI_Comm_size(ConfigManager::get_instance()->PROCESS_COMM, &num_clients);
+    }
+    else {
+      int size;
+      MPI_Comm_size(MPI_COMM_WORLD, &size);
+      num_clients = size - 1 - ConfigManager::get_instance()->NUM_WORKERS - ConfigManager::get_instance()->NUM_SCHEDULERS;
+    }
+
     hcl_map_client_ = (std::shared_ptr<distributed_hashmap> *)calloc(num_clients, sizeof(std::shared_ptr<distributed_hashmap>));
     init (service_i);
     return;
