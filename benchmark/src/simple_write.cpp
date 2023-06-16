@@ -6,8 +6,8 @@
 
 int main(int argc, char **argv) {
   dtio::MPI_Init(&argc, &argv);
-  if (argc != 2) {
-    printf("USAGE: ./simple_write [dtio_conf]\n");
+  if (argc != 3) {
+    printf("USAGE: ./simple_write [dtio_conf] [filename]\n");
     exit(1);
   }
 
