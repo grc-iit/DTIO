@@ -22,19 +22,43 @@
 #include <dtio/common/external_clients/hcl_queue_impl.h>
 #include <mpi.h>
 
-int HCLQueueImpl::publish_task(task *task_t) {
+int
+HCLQueueImpl::publish_task (task *task_t)
+{
+  key = std::to_string (name) + KEY_SEPARATOR + key;
+  auto true_key = HCLKeyType (key);
+  if (hcl_client->Push(true_key, value)
+    {
+      return 0;
+    }
+  else
+    {
+      std::cerr << "put failed for key:" << key << "\n";
+      return 1;
+    }
 }
 
-task *HCLQueueImpl::subscribe_task_with_timeout(int &status) {
+task *
+HCLQueueImpl::subscribe_task_with_timeout (int &status)
+{
 }
 
-task *HCLQueueImpl::subscribe_task(int &status) {
+task *
+HCLQueueImpl::subscribe_task (int &status)
+{
 }
 
-int HCLQueueImpl::get_queue_size() {
+int
+HCLQueueImpl::get_queue_size ()
+{
 }
 
-int HCLQueueImpl::get_queue_count() {
+int
+HCLQueueImpl::get_queue_count ()
+{
 }
 
-int HCLQueueImpl::get_queue_count_limit() { }
+int
+HCLQueueImpl::get_queue_count_limit ()
+{
+}
