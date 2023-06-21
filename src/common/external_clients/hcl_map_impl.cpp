@@ -69,15 +69,35 @@ bool HCLMapImpl::purge() {
 
 size_t HCLMapImpl::counter_init(const table &name, std::string key,
                                    std::string group_key) {
-  // FIXME: this is used, need to figure out how
   key = std::to_string(name) + KEY_SEPARATOR + key;
+  if (group_key == "-1") {
+    group_key = get_server(key);
+  }
+  return distributed_hashmap::counter_init(name, key, group_key);
 }
 
 size_t HCLMapImpl::counter_inc(const table &name, std::string key,
                                   std::string group_key) {
-  // FIXME: this is used, need to figure out how
   key = std::to_string(name) + KEY_SEPARATOR + key;
+  if (group_key == "-1") {
+    group_key = get_server(key);
+  }
+  if (exists(name, key, group_key)) {
+    auto val = get(name, key, group_key);
+    size_t numeric_val = atoi(val.c_str());
+    numeric_val++;
+    put(name, key, std::to_string(numeric_val), group_key);
+    return numeric_val;
+  }
+  else {
+    put(name, key, "0", group_key);
+    return 0;
+  }
 }
 
 std::string HCLMapImpl::get_server(std::string key) {
+  auto true_key = HCLKeyType(key);
+  std::hash<HCLKeyType> keyHash;
+  size_t server = keyHash(true_key) % num_servers;
+  return std::to_string(server);
 }
