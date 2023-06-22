@@ -25,59 +25,47 @@
 int
 HCLQueueImpl::publish_task (task *task_t)
 {
-  auto msg = serialization_manager ().serialize_task (task_t);
-  // TODO: replace with hcl queue
+  // TODO: replace with HCL
+  // auto msg = serialization_manager ().serialize_task (task_t);
   // natsConnection_PublishString (nc, subject.c_str (), msg.c_str ());
+  task t = *task_t;
+  // FIXME: w. keith Push vs LocalPush
+  hcl_queue->LocalPush (t);
   return 0;
 }
 
 task *
 HCLQueueImpl::subscribe_task_with_timeout (int &status)
 {
-  // TODO: replace with HCL
-  // natsMsg *msg = nullptr;
-  // natsSubscription_NextMsg (&msg, sub, MAX_TASK_TIMER_MS);
-  if (msg == nullptr)
-    return nullptr;
-  task *task
-      = serialization_manager ().deserialize_task (natsMsg_GetData (msg));
-  status = 0;
-  return task;
+  return subscribe_task (status);
 }
 
 task *
 HCLQueueImpl::subscribe_task (int &status)
 {
-  // TODO: replace with HCL
-  // natsMsg *msg = nullptr;
-  // natsSubscription_NextMsg (&msg, sub, MAX_TASK_TIMER_MS_MAX);
-  if (msg == nullptr)
-    return nullptr;
-  task *task
-      = serialization_manager ().deserialize_task (natsMsg_GetData (msg));
+  // TODO: add timeout to ConfigManager
+  // create a timeouted task of 10ms
+  unsigned short task_id;
+  // FIXME: w. keith Pop vs LocalPop
+  auto queue_pop = hcl_queue->Pop (task_id);
+  auto queue_bool = queue_pop.first;
+  task hcl_task = queue_pop.second;
   status = 0;
-  return task;
+  return &hcl_task;
 }
 
 int
 HCLQueueImpl::get_queue_size ()
 {
-  // TODO: replace with HCL
-  int size_of_queue;
-  natsSubscription_GetPending (sub, nullptr, &size_of_queue);
-  return size_of_queue;
+  // FIXME: w. Keith: LocalSize vs Size?
+  return hcl_queue->LocalSize ();
 }
 
 int
 HCLQueueImpl::get_queue_count ()
 {
-  // TODO: replace with HCL
-  // int *count_of_queue = new int ();
-  // natsSubscription_GetStats (sub, count_of_queue, NULL, NULL, NULL, NULL,
-  //                           NULL);
-  int queue_count = *count_of_queue;
-  delete (count_of_queue);
-  return queue_count;
+  // FIXME: w. Keith: queue count vs queue size?
+  return hcl_queue->LocalSize ();
 }
 
 int
