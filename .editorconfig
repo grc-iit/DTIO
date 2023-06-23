@@ -1,0 +1,18 @@
+root = true
+[*.{cpp,hpp}]
+# Use spaces for indentation
+indent_style = space
+# Use 2 spaces for indentation
+indent_size = 2
+# Set tab width to 8 characters
+tab_width = 8
+# Set maximum line length to 79 characters
+max_line_length = 79
+# Set line ending to LF (Unix-style)
+end_of_line = lf
+# Set character set to utf-8
+charset = utf-8
+# Remove trailing whitespaces
+trim_trailing_whitespace = true
+# Ensure a newline at the end of the file
+insert_final_newline = true
