@@ -35,35 +35,62 @@
 #include <utility>
 #include <vector>
 
+#include <hcl.h>
 #include <rpc/client.h>
 #include <rpc/rpc_error.h>
 #include <rpc/server.h>
-#include <hcl.h>
 
 struct HCLKeyType
 {
   size_t a;
-  HCLKeyType() : a(0) {}
-  HCLKeyType(size_t a_) : a(a_) {}
-  HCLKeyType(std::string a_) : a(std::hash<std::string>{}(a_)) {}
-  MSGPACK_DEFINE(a);
-  bool operator==(const HCLKeyType &o) const { return a == o.a; }
-  HCLKeyType &operator=(const HCLKeyType &other) {
+  HCLKeyType () : a (0) {}
+  HCLKeyType (size_t a_) : a (a_) {}
+  HCLKeyType (std::string a_) : a (std::hash<std::string>{}(a_)) {}
+  MSGPACK_DEFINE (a);
+  bool
+  operator== (const HCLKeyType &o) const
+  {
+    return a == o.a;
+  }
+  HCLKeyType &
+  operator= (const HCLKeyType &other)
+  {
     a = other.a;
     return *this;
   }
-  bool operator<(const HCLKeyType &o) const { return a < o.a; }
-  bool operator>(const HCLKeyType &o) const { return a > o.a; }
-  bool Contains(const HCLKeyType &o) const { return a == o.a; }
+  bool
+  operator< (const HCLKeyType &o) const
+  {
+    return a < o.a;
+  }
+  bool
+  operator> (const HCLKeyType &o) const
+  {
+    return a > o.a;
+  }
+  bool
+  Contains (const HCLKeyType &o) const
+  {
+    return a == o.a;
+  }
 };
-namespace std {
-template <>
-struct hash<HCLKeyType> {
-  size_t operator()(const HCLKeyType &k) const { return k.a; }
+namespace std
+{
+template <> struct hash<HCLKeyType>
+{
+  size_t
+  operator() (const HCLKeyType &k) const
+  {
+    return k.a;
+  }
 };
 }
-typedef boost::interprocess::allocator<char, boost::interprocess::managed_mapped_file::segment_manager> CharAllocator;
-typedef boost::interprocess::basic_string<char, std::char_traits<char>, CharAllocator> MappedUnitString;
+typedef boost::interprocess::allocator<
+    char, boost::interprocess::managed_mapped_file::segment_manager>
+    CharAllocator;
+typedef boost::interprocess::basic_string<char, std::char_traits<char>,
+                                          CharAllocator>
+    MappedUnitString;
 
 /******************************************************************************
  *message_key structure
@@ -208,6 +235,18 @@ struct task
     archive (this->t_type, this->task_id);
   }
 };
+
+namespace std
+{
+template <> struct hash<task>
+{
+  size_t
+  operator() (const task &k) const
+  {
+    return k.task_id;
+  }
+};
+}
 
 // write_task structure
 struct write_task : public task

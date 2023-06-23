@@ -12,7 +12,7 @@ link_libraries(${LIBRARY_PATH})
 # define ones we have installed
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(MEMCACHED false)
-set(NATS true)
+set(NATS false)
 set(MPI true)
 set(HCL true)
 #set(ROCKS true) # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
@@ -48,7 +48,7 @@ set(COMMON_SRC
     src/common/external_clients/rocksdb_impl.cpp
     src/common/external_clients/memcached_impl.cpp
     src/common/external_clients/nats_impl.cpp
-    # src/common/external_clients/hcl_queue_impl.cpp
+    src/common/external_clients/hcl_queue_impl.cpp
     src/common/external_clients/hcl_map_impl.cpp
     src/common/task_builder/task_builder.cpp)
 set(DTIO_LIB_SRC src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)

@@ -22,7 +22,6 @@
 #ifndef DTIO_MAIN_HCLQUEUEIMPL_H
 #define DTIO_MAIN_HCLQUEUEIMPL_H
 
-#include "hcl/queue/queue.h"
 #include <city.h>
 #include <cstring>
 #include <dtio/common/client_interface/distributed_queue.h>
@@ -30,17 +29,6 @@
 #include <dtio/common/data_structures.h>
 #include <hcl.h>
 
-namespace std
-{
-template <> struct hash<task>
-{
-  size_t
-  operator() (const task &k) const
-  {
-    return k.task_id;
-  }
-};
-}
 
 class HCLQueueImpl : public distributed_queue
 {
@@ -78,7 +66,7 @@ public:
       {
         MPI_Barrier (
             ConfigManager::get_instance ()
-                ->DATASPACE_COMM); // Wait for clients to initialize maps
+                ->QUEUE_WORKER_COMM); // Wait for clients to initialize maps
       }
     // FIX: w: keith
     // if (is_server)
@@ -95,7 +83,7 @@ public:
       {
         MPI_Barrier (
             ConfigManager::get_instance ()
-                ->DATASPACE_COMM); // Tell the workers we've initialized queues
+                ->QUEUE_CLIENT_COMM); // Tell the workers we've initialized queues
       }
   }
   int publish_task (task *task_t) override;

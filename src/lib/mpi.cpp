@@ -27,6 +27,7 @@
 #include <dtio/common/utilities.h>
 #include <dtio/drivers/mpi.h>
 
+<<<<<<< Updated upstream
 int dtio::MPI_Init(int *argc, char ***argv) {
   int provided;
   PMPI_Init_thread(argc, argv, MPI_THREAD_MULTIPLE, &provided);
@@ -34,12 +35,31 @@ int dtio::MPI_Init(int *argc, char ***argv) {
     std::cerr << "Didn't receive appropriate thread specification" << std::endl;
   }
   ConfigManager::get_instance()->LoadConfig((*argv)[1]);
+=======
+int
+dtio::MPI_Init (int *argc, char ***argv)
+{
+  PMPI_Init (argc, argv);
+  ConfigManager::get_instance ()->LoadConfig ((*argv)[1]);
+>>>>>>> Stashed changes
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_split(MPI_COMM_WORLD, CLIENT_COLOR, rank - ConfigManager::get_instance()->NUM_WORKERS - ConfigManager::get_instance()->NUM_SCHEDULERS - 1, & ConfigManager::get_instance()->PROCESS_COMM);
-  MPI_Comm_split(MPI_COMM_WORLD, DATASPACE_COLOR, rank - 1, & ConfigManager::get_instance()->DATASPACE_COMM);
-  dtio_system::getInstance(service::LIB);
+  MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+  MPI_Comm_split (MPI_COMM_WORLD, CLIENT_COLOR,
+                  rank - ConfigManager::get_instance ()->NUM_WORKERS
+                      - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1,
+                  &ConfigManager::get_instance ()->PROCESS_COMM);
+  MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_COLOR, rank - 1,
+                  &ConfigManager::get_instance ()->DATASPACE_COMM);
+  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_CLIENT_COLOR, rank - 1,
+                  &ConfigManager::get_instance ()->QUEUE_CLIENT_COMM);
+  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, rank - 1,
+                  &ConfigManager::get_instance ()->QUEUE_WORKER_COMM);
+  dtio_system::getInstance (service::LIB);
   return 0;
 }
 
-void dtio::MPI_Finalize() { PMPI_Finalize(); }
+void
+dtio::MPI_Finalize ()
+{
+  PMPI_Finalize ();
+}
