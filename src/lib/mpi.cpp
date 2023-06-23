@@ -23,11 +23,16 @@
 // Created by anthony on 4/24/18.
 //
 #include "dtio/common/enumerations.h"
+#include "mpi.h"
 #include <dtio/common/utilities.h>
 #include <dtio/drivers/mpi.h>
 
 int dtio::MPI_Init(int *argc, char ***argv) {
-  PMPI_Init(argc, argv);
+  int provided;
+  PMPI_Init_thread(argc, argv, MPI_THREAD_MULTIPLE, &provided);
+  if (provided < MPI_THREAD_MULTIPLE) {
+    std::cerr << "Didn't receive appropriate thread specification" << std::endl;
+  }
   ConfigManager::get_instance()->LoadConfig((*argv)[1]);
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
