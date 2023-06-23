@@ -29,43 +29,51 @@ HCLQueueImpl::publish_task (task *task_t)
   // auto msg = serialization_manager ().serialize_task (task_t);
   // natsConnection_PublishString (nc, subject.c_str (), msg.c_str ());
   task t = *task_t;
-  // FIXME: w. keith Push vs LocalPush
-  hcl_queue->LocalPush (t);
+  // head_subscription is t.task_id if equal to -1
+  head_subscription = head_subscription == -1 ? t.task_id : head_subscription;
+  tail_subscription = t.task_id;
+  hcl_queue->Push (t, task_hash (t));
   return 0;
 }
 
 task *
 HCLQueueImpl::subscribe_task_with_timeout (int &status)
 {
+  // TODO: add timeout to ConfigManager
+  // create a timeouted task of 10ms
   return subscribe_task (status);
 }
 
 task *
 HCLQueueImpl::subscribe_task (int &status)
 {
-  // TODO: add timeout to ConfigManager
-  // create a timeouted task of 10ms
-  unsigned short task_id;
   // FIXME: w. keith Pop vs LocalPop
-  auto queue_pop = hcl_queue->Pop (task_id);
-  auto queue_bool = queue_pop.first;
-  task hcl_task = queue_pop.second;
-  status = 0;
-  return &hcl_task;
+  if (head_subscription < tail_subscription)
+    {
+      auto queue_pop = hcl_queue->Pop (task_hash (head_subscription++));
+      auto queue_bool = queue_pop.first;
+      task hcl_task = queue_pop.second;
+      status = 0;
+      return &hcl_task;
+    }
+  else
+    {
+      return nullptr;
+    }
 }
 
 int
 HCLQueueImpl::get_queue_size ()
 {
   // FIXME: w. Keith: LocalSize vs Size?
-  return hcl_queue->LocalSize ();
+  return hcl_queue->Size (task_hash (head_subscription));
 }
 
 int
 HCLQueueImpl::get_queue_count ()
 {
   // FIXME: w. Keith: queue count vs queue size?
-  return hcl_queue->LocalSize ();
+  return hcl_queue->Size (task_hash (head_subscription));
 }
 
 int

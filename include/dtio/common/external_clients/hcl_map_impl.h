@@ -38,36 +38,52 @@ class HCLMapImpl : public distributed_hashmap
 {
 
 private:
-  hcl::unordered_map<struct HCLKeyType, std::string, std::hash<HCLKeyType>, CharAllocator, MappedUnitString> *hcl_client;
+  hcl::unordered_map<struct HCLKeyType, std::string, std::hash<HCLKeyType>,
+                     CharAllocator, MappedUnitString> *hcl_client;
   size_t num_servers;
   std::string get_server (std::string key);
 
 public:
   // Constructor
-  HCLMapImpl(service service, std::string mapname, int my_server, int num_servers)
-      : distributed_hashmap(service) {
-    if (service == LIB) {
-      HCL_CONF->IS_SERVER = true;
-    }
-    else if (service == WORKER || service == TASK_SCHEDULER) {
-      HCL_CONF->IS_SERVER = false; // Apparently the task scheduler has access to this too?
-    }
-    else {
-      std::cout << "I'm uncertain why this happens " << service << std::endl;
-    }
+  HCLMapImpl (service service, std::string mapname, int my_server,
+              int num_servers)
+      : distributed_hashmap (service)
+  {
+    if (service == LIB)
+      {
+        HCL_CONF->IS_SERVER = true;
+      }
+    else if (service == WORKER || service == TASK_SCHEDULER)
+      {
+        HCL_CONF->IS_SERVER
+            = false; // Apparently the task scheduler has access to this too?
+      }
+    else
+      {
+        std::cout << "I'm uncertain why this happens " << service << std::endl;
+      }
 
     HCL_CONF->MY_SERVER = my_server;
     HCL_CONF->NUM_SERVERS = num_servers;
     HCL_CONF->SERVER_ON_NODE = true; // service == LIB
-    HCL_CONF->SERVER_LIST_PATH = ConfigManager::get_instance()->HCL_SERVER_LIST_PATH;
+    HCL_CONF->SERVER_LIST_PATH
+        = ConfigManager::get_instance ()->HCL_SERVER_LIST_PATH;
 
-    if (service == WORKER || service == TASK_SCHEDULER) {
-      MPI_Barrier(ConfigManager::get_instance()->DATASPACE_COMM); // Wait for clients to initialize maps
-    }
-    hcl_client = new hcl::unordered_map<HCLKeyType, std::string, std::hash<HCLKeyType>, CharAllocator, MappedUnitString>(mapname);
-    if (service == LIB) {
-      MPI_Barrier(ConfigManager::get_instance()->DATASPACE_COMM); // Tell the workers we've initialized maps
-    }
+    if (service == WORKER || service == TASK_SCHEDULER)
+      {
+        MPI_Barrier (
+            ConfigManager::get_instance ()
+                ->DATASPACE_COMM); // Wait for clients to initialize maps
+      }
+    hcl_client = new hcl::unordered_map<HCLKeyType, std::string,
+                                        std::hash<HCLKeyType>, CharAllocator,
+                                        MappedUnitString> (mapname);
+    if (service == LIB)
+      {
+        MPI_Barrier (
+            ConfigManager::get_instance ()
+                ->DATASPACE_COMM); // Tell the workers we've initialized maps
+      }
   }
   size_t
   get_servers () override
@@ -90,7 +106,6 @@ public:
 
   size_t counter_inc (const table &name, std::string key,
                       std::string group_key) override;
-
 
   virtual ~HCLMapImpl () {}
 };

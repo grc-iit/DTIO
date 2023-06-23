@@ -22,19 +22,22 @@
 #ifndef DTIO_MAIN_HCLQUEUEIMPL_H
 #define DTIO_MAIN_HCLQUEUEIMPL_H
 
+#include "dtio/common/enumerations.h"
+#include "hcl/queue/queue.h"
 #include <city.h>
 #include <cstring>
 #include <dtio/common/client_interface/distributed_queue.h>
 #include <dtio/common/config_manager.h>
 #include <dtio/common/data_structures.h>
-#include <hcl.h>
-
 
 class HCLQueueImpl : public distributed_queue
 {
 private:
   hcl::queue<task> *hcl_queue;
   std::string subject;
+  std::hash<task> task_hash;
+  int64_t tail_subscription;
+  int64_t head_subscription;
 
 public:
   // FIX: w: keith: HCL nuances?
@@ -78,13 +81,14 @@ public:
     //   {
     //     hcl_queue = new hcl::hcl_queue<task> ();
     //   }
-    hcl_queue = new hcl::queue<task> ();
     if (service == LIB)
       {
-        MPI_Barrier (
-            ConfigManager::get_instance ()
-                ->QUEUE_CLIENT_COMM); // Tell the workers we've initialized queues
+        MPI_Barrier (ConfigManager::get_instance ()
+                         ->QUEUE_CLIENT_COMM); // Tell the workers we've
+                                               // initialized queues
       }
+    head_subscription = tail_subscription = -1;
+    hcl_queue = new hcl::queue<task> (queuename);
   }
   int publish_task (task *task_t) override;
   task *subscribe_task_with_timeout (int &status) override;

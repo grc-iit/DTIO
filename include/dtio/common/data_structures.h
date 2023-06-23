@@ -27,6 +27,7 @@
 #ifndef DTIO_MAIN_STRUCTURE_H
 #define DTIO_MAIN_STRUCTURE_H
 
+#include "hcl/common/macros.h"
 #include <cereal/types/common.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/string.hpp>
@@ -243,7 +244,7 @@ template <> struct hash<task>
   size_t
   operator() (const task &k) const
   {
-    return k.task_id;
+    return k.task_id % HCL_CONF->NUM_SERVERS;
   }
 };
 }
