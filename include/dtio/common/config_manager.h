@@ -72,6 +72,7 @@ public:
   MPI_Comm PROCESS_COMM;
   MPI_Comm QUEUE_CLIENT_COMM;
   MPI_Comm QUEUE_WORKER_COMM;
+  MPI_Comm QUEUE_TASKSCHED_COMM;
   int TS_NUM_WORKER_THREADS;
   std::size_t NUM_WORKERS; // FIXME: make private
   std::size_t NUM_SCHEDULERS; // FIXME: make private

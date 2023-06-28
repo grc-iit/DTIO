@@ -22,8 +22,8 @@
 //
 // Created by anthony on 4/24/18.
 //
-#include "dtio/common/enumerations.h"
 #include "mpi.h"
+#include "dtio/common/enumerations.h"
 #include <dtio/common/utilities.h>
 #include <dtio/drivers/mpi.h>
 
@@ -50,6 +50,8 @@ dtio::MPI_Init (int *argc, char ***argv)
                   &ConfigManager::get_instance ()->QUEUE_CLIENT_COMM);
   MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, rank - 1,
                   &ConfigManager::get_instance ()->QUEUE_WORKER_COMM);
+  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_TASKSCHED_COLOR, rank - 1,
+                  &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
   dtio_system::getInstance (service::LIB);
   return 0;
 }

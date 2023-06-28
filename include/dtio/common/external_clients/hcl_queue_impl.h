@@ -35,28 +35,54 @@ class HCLQueueImpl : public distributed_queue
 private:
   hcl::queue<task> *hcl_queue;
   std::string subject;
-  std::hash<task> task_hash;
   int64_t tail_subscription;
   int64_t head_subscription;
+  // DONE: comm needs to be a vector(? or arrays or pointers)
+  // and barrier over all the barriers
+  MPI_Comm comm[4];
+  size_t comm_size = 0;
 
 public:
-  // FIX: w: keith: HCL nuances?
-  HCLQueueImpl (service service, std::string queuename, int my_server,
-                int num_servers)
+  // DONE: make HCLKeyType based on Map
+  std::hash<task> task_hash;
+
+  // TODO: config is the same as map but
+  // order might be different.
+  // need to know what service it is
+  // look into barriers and comms at the same time
+  // when initing hcl queues put barriers to ensure rpc init
+  HCLQueueImpl (service service, std::string &subject, std::string queuename,
+                int my_server, int num_servers, bool subscribe)
       : distributed_queue (service)
   {
-    if (service == LIB)
+    queuename = "";
+    // task sched == server, lib != server
+    if (service == TASK_SCHEDULER)
       {
         HCL_CONF->IS_SERVER = true;
+        queuename = "taskscheduler+" + subject;
+        comm[comm_size++]
+            = ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM;
       }
-    else if (service == WORKER || service == TASK_SCHEDULER)
+    else if (service == WORKER)
       {
-        HCL_CONF->IS_SERVER
-            = false; // Apparently the task scheduler has access to this too?
+        HCL_CONF->IS_SERVER = true;
+        queuename = "taskscheduler+" + subject;
+        comm[comm_size++] = ConfigManager::get_instance ()->QUEUE_WORKER_COMM;
+      }
+    else if (service == LIB)
+      {
+        // Apparently the task scheduler has access to this too?
+        HCL_CONF->IS_SERVER = false;
+        queuename = "taskscheduler+" + subject;
+        comm[comm_size++] = ConfigManager::get_instance ()->QUEUE_CLIENT_COMM;
       }
     else
       {
         std::cout << "I'm uncertain why this happens " << service << std::endl;
+        queuename = "help+" + subject;
+        comm[comm_size++] = ConfigManager::get_instance ()->QUEUE_CLIENT_COMM;
+        // NOTE: shouldnt we just fail and exit here?
       }
 
     HCL_CONF->MY_SERVER = my_server;
@@ -67,20 +93,19 @@ public:
 
     if (service == WORKER || service == TASK_SCHEDULER)
       {
-        MPI_Barrier (
-            ConfigManager::get_instance ()
-                ->QUEUE_WORKER_COMM); // Wait for clients to initialize maps
+        // DONE: need to change how barrier works
+        // one for (worker + task scheduler) and (client/lib + task scheduler)
+        // in server client, need to ensure rpc is initiated
+        // comm changes based on kind of queue
+
+        for (size_t i = 0; i < comm_size; i++)
+          {
+            MPI_Barrier (comm[i]);
+          }
+        // Wait for clients to initialize maps
+        MPI_Barrier (ConfigManager::get_instance ()->QUEUE_CLIENT_COMM);
       }
-    // FIX: w: keith
-    // if (is_server)
-    //   {
-    //     hcl_queue = new hcl::hcl_queue<task> ();
-    //   }
-    // MPI_Barrier (MPI_COMM_WORLD);
-    // if (!is_server)
-    //   {
-    //     hcl_queue = new hcl::hcl_queue<task> ();
-    //   }
+
     if (service == LIB)
       {
         MPI_Barrier (ConfigManager::get_instance ()
@@ -93,6 +118,7 @@ public:
   int publish_task (task *task_t) override;
   task *subscribe_task_with_timeout (int &status) override;
   task *subscribe_task (int &status) override;
+  task *subscribe_task_helper ();
   int get_queue_count () override;
   int get_queue_size () override;
   int get_queue_count_limit () override;

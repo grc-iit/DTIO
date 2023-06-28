@@ -40,9 +40,9 @@
 #include <dtio/common/external_clients/rocksdb_impl.h>
 #include <dtio/common/solver/solver.h>
 #include <memory>
-#include <vector>
 #include <mpi.h>
 #include <string>
+#include <vector>
 
 class dtio_system
 {
@@ -55,18 +55,25 @@ private:
       : service_i (service), application_id (), client_comm (), client_rank (),
         rank ()
   {
-    worker_queues = (std::shared_ptr<distributed_queue> *)calloc(ConfigManager::get_instance()->NUM_WORKERS, sizeof(std::shared_ptr<distributed_queue>));
+    worker_queues = (std::shared_ptr<distributed_queue> *)calloc (
+        ConfigManager::get_instance ()->NUM_WORKERS,
+        sizeof (std::shared_ptr<distributed_queue>));
 
-    if (service == LIB) {
-      MPI_Comm_size(ConfigManager::get_instance()->PROCESS_COMM, &num_clients);
-    }
-    else {
-      int size;
-      MPI_Comm_size(MPI_COMM_WORLD, &size);
-      num_clients = size - 1 - ConfigManager::get_instance()->NUM_WORKERS - ConfigManager::get_instance()->NUM_SCHEDULERS;
-    }
+    if (service == LIB)
+      {
+        MPI_Comm_size (ConfigManager::get_instance ()->PROCESS_COMM,
+                       &num_clients);
+      }
+    else
+      {
+        int size;
+        MPI_Comm_size (MPI_COMM_WORLD, &size);
+        num_clients = size - 1 - ConfigManager::get_instance ()->NUM_WORKERS
+                      - ConfigManager::get_instance ()->NUM_SCHEDULERS;
+      }
 
-    hcl_map_client_ = (std::shared_ptr<distributed_hashmap> *)calloc(num_clients, sizeof(std::shared_ptr<distributed_hashmap>));
+    hcl_map_client_ = (std::shared_ptr<distributed_hashmap> *)calloc (
+        num_clients, sizeof (std::shared_ptr<distributed_hashmap>));
     init (service_i);
     return;
   }
@@ -109,7 +116,7 @@ public:
       {
         if (service_i == LIB)
           {
-	    client_queue = std::make_shared<NatsImpl> (
+            client_queue = std::make_shared<NatsImpl> (
                 service_i, ConfigManager::get_instance ()->NATS_URL_CLIENT,
                 CLIENT_TASK_SUBJECT, std::to_string (service_i), false);
           }
@@ -137,7 +144,11 @@ public:
   int build_message_file (MPI_Datatype &message_file);
   int build_message_chunk (MPI_Datatype &message_chunk);
 
-  virtual ~dtio_system () { free(worker_queues); free(hcl_map_client_); };
+  virtual ~dtio_system ()
+  {
+    free (worker_queues);
+    free (hcl_map_client_);
+  };
 };
 
 #endif // DTIO_MAIN_SYSTEM_H

@@ -19,42 +19,69 @@
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
+#include "dtio/common/constants.h"
+#include "dtio/common/data_structures.h"
 #include <dtio/common/external_clients/hcl_queue_impl.h>
+#include <future>
 #include <mpi.h>
 
 int
 HCLQueueImpl::publish_task (task *task_t)
 {
-  // TODO: replace with HCL
+  // DONE: seems unnecessary? replace with HCL
   // auto msg = serialization_manager ().serialize_task (task_t);
   // natsConnection_PublishString (nc, subject.c_str (), msg.c_str ());
-  task t = *task_t;
   // head_subscription is t.task_id if equal to -1
-  head_subscription = head_subscription == -1 ? t.task_id : head_subscription;
-  tail_subscription = t.task_id;
-  hcl_queue->Push (t, task_hash (t));
-  return 0;
+  head_subscription
+      = head_subscription == -1 ? task_t->task_id : head_subscription;
+  tail_subscription = task_t->task_id;
+  return !hcl_queue->Push (task_t, task_hash (*task_t));
+}
+
+task *
+HCLQueueImpl::subscribe_task_helper ()
+{
+  if (head_subscription < tail_subscription)
+    {
+      // can be all 0
+      auto queue_pop = hcl_queue->Pop (head_subscription++);
+      auto queue_bool = queue_pop.first;
+      task hcl_task = queue_pop.second;
+      return &hcl_task;
+    }
 }
 
 task *
 HCLQueueImpl::subscribe_task_with_timeout (int &status)
 {
-  // TODO: add timeout to ConfigManager
-  // create a timeouted task of 10ms
-  return subscribe_task (status);
+  // DONE: make a while timer < timeout loop and pop the task and wait a bit
+  // use defaults from NATS impl
+  std::future<task *> result
+      = std::async (std::launch::deferred | std::launch::async,
+                    &HCLQueueImpl::subscribe_task_helper, this);
+  if (result.wait_for (std::chrono::milliseconds (MAX_TASK_TIMER_MS))
+      == std::future_status::ready)
+    {
+      return result.get ();
+    }
+  else
+    {
+      return nullptr;
+    }
 }
 
 task *
 HCLQueueImpl::subscribe_task (int &status)
 {
-  // FIXME: w. keith Pop vs LocalPop
-  if (head_subscription < tail_subscription)
+  // DONE: make a while timer < timeout loop and pop the task and wait a bit
+  // use defaults from NATS impl
+  std::future<task *> result
+      = std::async (std::launch::deferred | std::launch::async,
+                    &HCLQueueImpl::subscribe_task_helper, this);
+  if (result.wait_for (std::chrono::milliseconds (MAX_TASK_TIMER_MS_MAX))
+      == std::future_status::ready)
     {
-      auto queue_pop = hcl_queue->Pop (task_hash (head_subscription++));
-      auto queue_bool = queue_pop.first;
-      task hcl_task = queue_pop.second;
-      status = 0;
-      return &hcl_task;
+      return result.get ();
     }
   else
     {
@@ -65,15 +92,17 @@ HCLQueueImpl::subscribe_task (int &status)
 int
 HCLQueueImpl::get_queue_size ()
 {
-  // FIXME: w. Keith: LocalSize vs Size?
-  return hcl_queue->Size (task_hash (head_subscription));
+  return hcl_queue->Size (0);
+  // return hcl_queue->Size (task_hash (head_subscription));
 }
 
 int
 HCLQueueImpl::get_queue_count ()
 {
-  // FIXME: w. Keith: queue count vs queue size?
-  return hcl_queue->Size (task_hash (head_subscription));
+  // this is for direct nats compat
+  // should ultimately be something like
+  // `return hcl_queue->Size (task_hash (head_subscription));`
+  return hcl_queue->Size (0);
 }
 
 int

@@ -27,6 +27,7 @@
 #ifndef DTIO_MAIN_STRUCTURE_H
 #define DTIO_MAIN_STRUCTURE_H
 
+#include "dtio/common/data_structures.h"
 #include "hcl/common/macros.h"
 #include <cereal/types/common.hpp>
 #include <cereal/types/memory.hpp>
@@ -40,6 +41,41 @@
 #include <rpc/client.h>
 #include <rpc/rpc_error.h>
 #include <rpc/server.h>
+
+struct HCLTaskKey
+{
+  size_t a;
+  HCLTaskKey () : a (0) {}
+  HCLTaskKey (size_t a_) : a (a_) {}
+  HCLTaskKey (task a_) : a (std::hash<task>{}(a_)) {}
+  MSGPACK_DEFINE (a);
+  bool
+  operator== (const HCLTaskKey &o) const
+  {
+    return a == o.a;
+  }
+  HCLTaskKey &
+  operator= (const HCLTaskKey &other)
+  {
+    a = other.a;
+    return *this;
+  }
+  bool
+  operator< (const HCLTaskKey &o) const
+  {
+    return a < o.a;
+  }
+  bool
+  operator> (const HCLTaskKey &o) const
+  {
+    return a > o.a;
+  }
+  bool
+  Contains (const HCLTaskKey &o) const
+  {
+    return a == o.a;
+  }
+};
 
 struct HCLKeyType
 {
@@ -245,6 +281,11 @@ template <> struct hash<task>
   operator() (const task &k) const
   {
     return k.task_id % HCL_CONF->NUM_SERVERS;
+  }
+  size_t
+  operator() (const int64_t &task_id) const
+  {
+    return task_id % HCL_CONF->NUM_SERVERS;
   }
 };
 }

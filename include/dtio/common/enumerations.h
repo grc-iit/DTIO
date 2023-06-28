@@ -72,7 +72,8 @@ enum mpi_dataspace_comms
 enum mpi_queue_comms
 {
   QUEUE_CLIENT_COLOR = 0,
-  QUEUE_WORKER_COLOR = 1
+  QUEUE_WORKER_COLOR = 1,
+  QUEUE_TASKSCHED_COLOR = 2
 
 };
 
