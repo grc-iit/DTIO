@@ -23,27 +23,27 @@
 // Created by hdevarajan on 5/10/18.
 //
 
-#include "posix_client.h"
+#include "stdio_client.h"
 #include <iomanip>
 #include <dtio/common/client_interface/distributed_hashmap.h>
 #include <hcl/common/debug.h>
 #include <dtio/dtio_system.h>
 
-int posix_client::dtio_read(read_task task) {
+int stdio_client::dtio_read(read_task task) {
 #ifdef TIMERW
   Timer t = Timer();
   t.resumeTime();
 #endif
-  int fd = open64(task.source.filename.c_str(), O_RDWR); // "r+"
+  FILE *fh = fopen(task.source.filename.c_str(), "r+");
   auto data = static_cast<char *>(malloc(sizeof(char) * task.source.size));
-  long long int pos = lseek64(fd, (off_t)task.source.offset, SEEK_SET);
+  long long int pos = fseek(fh, task.source.offset, SEEK_SET);
   if (pos != 0)
-    std::cerr << "posix_client::read() seek failed\n";
-  // throw std::runtime_error("posix_client::read() seek failed");
-  size_t count = read(fd, data, task.source.size); // FIXME rename DTIO API to avoid name conflicts
+    std::cerr << "stdio_client::read() seek failed\n";
+  // throw std::runtime_error("stdio_client::read() seek failed");
+  size_t count = fread(data, sizeof(char), task.source.size, fh);
   if (count != task.source.size)
-    std::cerr << "posix_client::read() read failed\n";
-  // throw std::runtime_error("posix_client::read() read failed");
+    std::cerr << "stdio_client::read() read failed\n";
+  // throw std::runtime_error("stdio_client::read() read failed");
 
   auto map_client = dtio_system::getInstance(WORKER)->map_client();
   serialization_manager sm = serialization_manager();
@@ -55,21 +55,21 @@ int posix_client::dtio_read(read_task task) {
                   std::to_string(task.destination.server));
 #ifdef TIMERDM
   std::stringstream stream;
-  stream << "posix_client::read()::send_data," << std::fixed
+  stream << "stdio_client::read()::send_data," << std::fixed
          << std::setprecision(10) << t0.pauseTime() << "\n";
   std::cout << stream.str();
 #endif
   // std::cout<<task.destination.filename<<","<<task.destination.server<<"\n";
-  close(fd);
+  fclose(fh);
   free(data);
   if (task.local_copy) {
     int file_id = static_cast<int>(
         duration_cast<milliseconds>(system_clock::now().time_since_epoch())
             .count());
     std::string file_path = dir + std::to_string(file_id);
-    int fd1 = open64(file_path.c_str(), O_RDWR); // "w+"
-    write(fd1, data, task.source.size);
-    close(fd1);
+    FILE *fh1 = fopen(file_path.c_str(), "w+");
+    fwrite(data, task.source.size, sizeof(char), fh1);
+    fclose(fh1);
     size_t chunk_index = (task.source.offset / MAX_IO_UNIT);
     size_t base_offset =
         chunk_index * MAX_IO_UNIT + task.source.offset % MAX_IO_UNIT;
@@ -90,19 +90,19 @@ int posix_client::dtio_read(read_task task) {
                     task.source.filename + std::to_string(base_offset),
                     chunk_str, std::to_string(-1));
 #ifdef TIMERMDM
-    std::cout << "posix_client::read()::update_meta," << t1.pauseTime() << "\n";
+    std::cout << "stdio_client::read()::update_meta," << t1.pauseTime() << "\n";
 #endif
   }
 #ifdef TIMERW
   std::stringstream stream1;
-  stream1 << "posix_client::read()," << std::fixed << std::setprecision(10)
+  stream1 << "stdio_client::read()," << std::fixed << std::setprecision(10)
           << t.pauseTime() << "\n";
   std::cout << stream1.str();
 #endif
   return 0;
 }
 
-int posix_client::dtio_write(write_task task) {
+int stdio_client::dtio_write(write_task task) {
 #ifdef TIMERW
   Timer t = Timer();
   t.resumeTime();
@@ -130,7 +130,7 @@ int posix_client::dtio_write(write_task task) {
 				     std::to_string(task.destination.server));
 #ifdef TIMERDM
   std::stringstream stream;
-  stream << "posix_client::write()::get_data," << std::fixed
+  stream << "stdio_client::write()::get_data," << std::fixed
          << std::setprecision(10) << t0.pauseTime() << "\n";
   std::cout << stream.str();
 #endif
@@ -150,11 +150,11 @@ int posix_client::dtio_write(write_task task) {
               << " created filename:" << file_path
               << " clientId: " << task.destination.server << "\n";
 #endif
-    int fd = open64(file_path.c_str(), O_RDWR); // "w+"
-    auto count = write(fd, data.c_str(), task.destination.size);
+    FILE *fh = fopen(file_path.c_str(), "w+");
+    auto count = fwrite(data.c_str(), sizeof(char), task.destination.size, fh);
     if (count != task.destination.size)
       std::cerr << "written less" << count << "\n";
-    close(fd);
+    fclose(fh);
   } else {
     /*cd
      * existing I/O
@@ -167,10 +167,10 @@ int posix_client::dtio_write(write_task task) {
 #endif
 
     file_path = chunk_meta1.destination.filename;
-    int fd = open64(chunk_meta1.destination.filename.c_str(), O_RDWR); // "r+"
-    lseek64(fd, task.source.offset - base_offset, SEEK_SET);
-    write(fd, data.c_str(), task.source.size);
-    close(fd);
+    FILE *fh = fopen(chunk_meta1.destination.filename.c_str(), "r+");
+    fseek(fh, task.source.offset - base_offset, SEEK_SET);
+    fwrite(data.c_str(), sizeof(char), task.source.size, fh);
+    fclose(fh);
   }
   chunk_meta1.actual_user_chunk = task.source;
   chunk_meta1.destination.location = BUFFERS;
@@ -190,34 +190,34 @@ int posix_client::dtio_write(write_task task) {
 //    map_client->remove(DATASPACE_DB,task.destination.filename,
 //    std::to_string(task.destination.server));
 #ifdef TIMERMDM
-  std::cout << "posix_client::write()::update_meta," << t1.pauseTime() << "\n";
+  std::cout << "stdio_client::write()::update_meta," << t1.pauseTime() << "\n";
 #endif
   map_server->put(table::WRITE_FINISHED_DB, task.destination.filename,
                   std::to_string(-1), std::to_string(-1));
 #ifdef TIMERW
   std::stringstream stream1;
-  stream1 << "posix_client::write()," << std::fixed << std::setprecision(10)
+  stream1 << "stdio_client::write()," << std::fixed << std::setprecision(10)
           << t.pauseTime() << "\n";
   std::cout << stream1.str();
 #endif
   return 0;
 }
 
-int posix_client::dtio_delete_file(delete_task task) {
-  unlink(task.source.filename.c_str());
+int stdio_client::dtio_delete_file(delete_task task) {
+  remove(task.source.filename.c_str());
   // TODO:update metadata of delete
   return 0;
 }
 
-int posix_client::dtio_flush_file(flush_task task) {
-  int fd_source = open64(task.source.filename.c_str(), O_RDWR); // "rb+"
-  int fd_destination = open64(task.destination.filename.c_str(), O_RDWR); // "rb+"
+int stdio_client::dtio_flush_file(flush_task task) {
+  FILE *fh_source = fopen(task.source.filename.c_str(), "rb+");
+  FILE *fh_destination = fopen(task.destination.filename.c_str(), "rb+");
   char *data = static_cast<char *>(malloc(sizeof(char) * task.source.size));
-  lseek64(fd_source, task.source.offset, SEEK_SET);
-  read(fd_source, data, task.source.size);
-  lseek64(fd_destination, task.destination.offset, SEEK_SET);
-  write(fd_destination, data, task.destination.size);
-  close(fd_destination);
-  close(fd_source);
+  fseek(fh_source, task.source.offset, SEEK_SET);
+  fread(data, task.source.size, sizeof(char), fh_source);
+  fseek(fh_destination, task.destination.offset, SEEK_SET);
+  fwrite(data, task.destination.size, sizeof(char), fh_destination);
+  fclose(fh_destination);
+  fclose(fh_source);
   return 0;
 }

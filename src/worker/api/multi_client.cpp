@@ -20,11 +20,27 @@
  * <http://www.gnu.org/licenses/>.
  */
 //
-// Created by anthony on 4/24/18.
+// Created by hdevarajan on 5/10/18.
 //
 
-#ifndef DTIO_MAIN_DTIO_H
-#define DTIO_MAIN_DTIO_H
+#include "multi_client.h"
+#include <iomanip>
+#include <dtio/common/client_interface/distributed_hashmap.h>
+#include <hcl/common/debug.h>
+#include <dtio/dtio_system.h>
 
-#include <dtio/drivers/stdio.h>
-#endif // DTIO_MAIN_DTIO_H
+int multi_client::dtio_read(read_task task) {
+  return clients[task.iface]->dtio_read(task);
+}
+
+int multi_client::dtio_write(write_task task) {
+  return clients[task.iface]->dtio_write(task);
+}
+
+int multi_client::dtio_delete_file(delete_task task) {
+  return clients[task.iface]->dtio_delete_file(task);
+}
+
+int multi_client::dtio_flush_file(flush_task task) {
+  return clients[task.iface]->dtio_flush_file(task);
+}

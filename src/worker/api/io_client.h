@@ -34,9 +34,9 @@ protected:
 
 public:
   io_client(int worker_index) : worker_index(worker_index) {}
-  virtual int write(write_task task) = 0;
-  virtual int read(read_task task) = 0;
-  virtual int delete_file(delete_task task) = 0;
-  virtual int flush_file(flush_task task) = 0;
+  virtual int dtio_write(write_task task) = 0;
+  virtual int dtio_read(read_task task) = 0;
+  virtual int dtio_delete_file(delete_task task) = 0;
+  virtual int dtio_flush_file(flush_task task) = 0;
 };
 #endif // DTIO_MAIN_IO_CLIENT_H

@@ -57,7 +57,7 @@ int worker::run() {
                   << "\tOffset:" << wt->source.offset
                   << "\tSize:" << wt->destination.size << "\n";
 #endif
-        client->write(*wt);
+        client->dtio_write(*wt);
         break;
       }
       case task_type::READ_TASK: {
@@ -68,17 +68,17 @@ int worker::run() {
                   << "\tSize:" << rt->source.size
                   << "\tFilename:" << rt->source.filename << "\n";
 #endif
-        client->read(*rt);
+        client->dtio_read(*rt);
         break;
       }
       case task_type::FLUSH_TASK: {
         auto *ft = reinterpret_cast<flush_task *>(task_i);
-        client->flush_file(*ft);
+        client->dtio_flush_file(*ft);
         break;
       }
       case task_type::DELETE_TASK: {
         auto *dt = reinterpret_cast<delete_task *>(task_i);
-        client->delete_file(*dt);
+        client->dtio_delete_file(*dt);
         break;
       }
       default:

@@ -22,33 +22,32 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
-#include <fcntl.h>
 #include <iomanip>
 #include <dtio/common/return_codes.h>
 #include <dtio/common/task_builder/task_builder.h>
 #include <hcl/common/debug.h>
-#include <dtio/drivers/posix.h>
+#include <dtio/drivers/stdio.h>
 #include <zconf.h>
 
 /******************************************************************************
  *Interface
  ******************************************************************************/
-FILE *dtio::open(const char *filename, int flags) {
+FILE *dtio::fopen(const char *filename, const char *mode) {
   auto mdm = metadata_manager::getInstance(LIB);
   FILE *fh = nullptr;
   if (!mdm->is_created(filename)) {
-    if (flags == O_RDONLY || flags == O_WRONLY ||
-	flags == O_RDWR) {
+    if (strcmp(mode, "r") == 0 || strcmp(mode, "w") == 0 ||
+        strcmp(mode, "a") == 0) {
       return nullptr;
     } else {
       if (mdm->create(filename, mode, fh) != SUCCESS) {
-        throw std::runtime_error("dtio::open() create failed!");
+        throw std::runtime_error("dtio::fopen() create failed!");
       }
     }
   } else {
     if (!mdm->is_opened(filename)) {
       if (mdm->update_on_open(filename, mode, fh) != SUCCESS) {
-        throw std::runtime_error("dtio::open() update failed!");
+        throw std::runtime_error("dtio::fopen() update failed!");
       }
     } else
       return nullptr;
@@ -56,112 +55,23 @@ FILE *dtio::open(const char *filename, int flags) {
   return fh;
 }
 
-FILE *dtio::open(const char *filename, int flags, mode_t mode) {
+int dtio::fclose(FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
-  FILE *fh = nullptr;
-  if (!mdm->is_created(filename)) {
-    if (flags == O_RDONLY || flags == O_WRONLY ||
-	flags == O_RDWR) {
-      return nullptr;
-    } else {
-      if (mdm->create(filename, mode, fh) != SUCCESS) {
-        throw std::runtime_error("dtio::open() create failed!");
-      }
-    }
-  } else {
-    if (!mdm->is_opened(filename)) {
-      if (mdm->update_on_open(filename, mode, fh) != SUCCESS) {
-        throw std::runtime_error("dtio::open() update failed!");
-      }
-    } else
-      return nullptr;
-  }
-  return fh;
-}
-
-FILE *dtio::open64(const char *filename, int flags) {
-  auto mdm = metadata_manager::getInstance(LIB);
-  FILE *fh = nullptr;
-  if (!mdm->is_created(filename)) {
-    if (flags == O_RDONLY || flags == O_WRONLY ||
-	flags == O_RDWR) {
-      return nullptr;
-    } else {
-      if (mdm->create(filename, mode, fh) != SUCCESS) {
-        throw std::runtime_error("dtio::open() create failed!");
-      }
-    }
-  } else {
-    if (!mdm->is_opened(filename)) {
-      if (mdm->update_on_open(filename, mode, fh) != SUCCESS) {
-        throw std::runtime_error("dtio::open() update failed!");
-      }
-    } else
-      return nullptr;
-  }
-  return fh;
-}
-
-FILE *dtio::open64(const char *filename, int flags, mode_t mode) {
-  auto mdm = metadata_manager::getInstance(LIB);
-  FILE *fh = nullptr;
-  if (!mdm->is_created(filename)) {
-    if (flags == O_RDONLY || flags == O_WRONLY ||
-	flags == O_RDWR) {
-      return nullptr;
-    } else {
-      if (mdm->create(filename, mode, fh) != SUCCESS) {
-        throw std::runtime_error("dtio::open() create failed!");
-      }
-    }
-  } else {
-    if (!mdm->is_opened(filename)) {
-      if (mdm->update_on_open(filename, mode, fh) != SUCCESS) {
-        throw std::runtime_error("dtio::open() update failed!");
-      }
-    } else
-      return nullptr;
-  }
-  return fh;
-}
-
-int unlink(const char *pathname) {
-  // FIXME not implemented
-  return 0;
-}
-
-int rename(const char *oldpath, const char *newpath) {
-  // FIXME not implemented
-  return 0;
-}
-
-int stat(const char *pathname, struct stat *statbuf) {
-  // FIXME not implemented
-  return 0;
-}
-
-int mknod(const char *pathname, mode_t mode, dev_t dev) {
-  // FIXME not implemented
-  return 0;
-}
-
-int dtio::close(int fd) {
-  auto mdm = metadata_manager::getInstance(LIB);
-  if (!mdm->is_opened(fd))
+  if (!mdm->is_opened(stream))
     return LIB__FCLOSE_FAILED;
-  if (mdm->update_on_close(fd) != SUCCESS)
+  if (mdm->update_on_close(stream) != SUCCESS)
     return LIB__FCLOSE_FAILED;
   return SUCCESS;
 }
 
-off_t dtio::lseek(int fd, off_t offset, int whence) {
+int dtio::fseek(FILE *stream, long int offset, int origin) {
   auto mdm = metadata_manager::getInstance(LIB);
-  auto filename = mdm->get_filename(fd);
+  auto filename = mdm->get_filename(stream);
   if (mdm->get_mode(filename) == "a" || mdm->get_mode(filename) == "a+")
     return 0;
   auto size = mdm->get_filesize(filename);
   auto fp = mdm->get_fp(filename);
-  switch (whence) {
+  switch (origin) {
   case SEEK_SET:
     if (offset > size)
       return -1;
@@ -178,22 +88,23 @@ off_t dtio::lseek(int fd, off_t offset, int whence) {
     fprintf(stderr, "Seek origin fault!\n");
     return -1;
   }
-  if (!mdm->is_opened(fd))
+  if (!mdm->is_opened(stream))
     return -1;
   return mdm->update_on_seek(filename, static_cast<size_t>(offset),
-                             static_cast<size_t>(whence));
+                             static_cast<size_t>(origin));
 }
 
-std::vector<read_task> dtio::read_async(int fd, size_t count) {
+std::vector<read_task> dtio::fread_async(size_t size, size_t count,
+                                           FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
   auto task_m = task_builder::getInstance(LIB);
-  auto filename = mdm->get_filename(fd);
+  auto filename = mdm->get_filename(stream);
   auto offset = mdm->get_fp(filename);
   if (!mdm->is_opened(filename))
     return std::vector<read_task>();
-  auto r_task = read_task(file(filename, offset, count), file());
+  auto r_task = read_task(file(filename, offset, size * count), file());
 #ifdef TIMERTB
   Timer t = Timer();
   t.resumeTime();
@@ -226,7 +137,7 @@ std::vector<read_task> dtio::read_async(int fd, size_t count) {
   return tasks;
 }
 
-std::size_t dtio::read_wait(void *ptr, std::vector<read_task> &tasks,
+std::size_t dtio::fread_wait(void *ptr, std::vector<read_task> &tasks,
                                std::string filename) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto data_m = data_manager::getInstance(LIB);
@@ -281,17 +192,17 @@ std::size_t dtio::read_wait(void *ptr, std::vector<read_task> &tasks,
   return size_read;
 }
 
-size_t dtio::read(int fd, void *buf, size_t count) {
+size_t dtio::fread(void *ptr, size_t size, size_t count, FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
   auto task_m = task_builder::getInstance(LIB);
   auto data_m = data_manager::getInstance(LIB);
-  auto filename = mdm->get_filename(fd);
+  auto filename = mdm->get_filename(stream);
   auto offset = mdm->get_fp(filename);
   if (!mdm->is_opened(filename))
     return 0;
-  auto r_task = read_task(file(filename, offset, count), file());
+  auto r_task = read_task(file(filename, offset, size * count), file());
 #ifdef TIMERTB
   Timer t = Timer();
   t.resumeTime();
@@ -323,7 +234,7 @@ size_t dtio::read(int fd, void *buf, size_t count) {
 
       data_m->remove(DATASPACE_DB, task.destination.filename,
                      std::to_string(task.destination.server));
-      memcpy(buf + ptr_pos, data.c_str() + task.destination.offset,
+      memcpy(ptr + ptr_pos, data.c_str() + task.destination.offset,
              task.destination.size);
       size_read += task.destination.size;
       break;
@@ -331,7 +242,7 @@ size_t dtio::read(int fd, void *buf, size_t count) {
     case CACHE: {
       data = data_m->get(DATASPACE_DB, task.source.filename,
                          std::to_string(task.destination.server));
-      memcpy(buf + ptr_pos, data.c_str() + task.source.offset,
+      memcpy(ptr + ptr_pos, data.c_str() + task.source.offset,
              task.source.size);
       size_read += task.source.size;
       break;
@@ -344,22 +255,23 @@ size_t dtio::read(int fd, void *buf, size_t count) {
   return size_read;
 }
 
-std::vector<write_task *> dtio::write_async(int fd, const void *buf, size_t count) {
+std::vector<write_task *> dtio::fwrite_async(void *ptr, size_t size,
+                                               size_t count, FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
   auto task_m = task_builder::getInstance(LIB);
   auto data_m = data_manager::getInstance(LIB);
-  auto filename = mdm->get_filename(fd);
+  auto filename = mdm->get_filename(stream);
   auto offset = mdm->get_fp(filename);
   if (!mdm->is_opened(filename))
-    throw std::runtime_error("dtio::write() file not opened!");
-  auto w_task = write_task(file(filename, offset, count), file());
+    throw std::runtime_error("dtio::fwrite() file not opened!");
+  auto w_task = write_task(file(filename, offset, size * count), file());
 #ifdef TIMERTB
   Timer t = Timer();
   t.resumeTime();
 #endif
-  auto write_tasks = task_m->build_write_task(w_task, static_cast<char *>(buf));
+  auto write_tasks = task_m->build_write_task(w_task, static_cast<char *>(ptr));
 #ifdef TIMERTB
   std::stringstream stream1;
   stream1 << "build_write_task()," << std::fixed << std::setprecision(10)
@@ -368,7 +280,7 @@ std::vector<write_task *> dtio::write_async(int fd, const void *buf, size_t coun
 #endif
 
   int index = 0;
-  std::string write_data(static_cast<const char *>(buf));
+  std::string write_data(static_cast<char *>(ptr));
   for (auto task : write_tasks) {
     if (task->addDataspace) {
       if (write_data.length() >= task->source.offset + task->source.size) {
@@ -381,8 +293,8 @@ std::vector<write_task *> dtio::write_async(int fd, const void *buf, size_t coun
       }
     }
     if (task->publish) {
-      if (count < task->source.size)
-        mdm->update_write_task_info(*task, filename, count);
+      if (size * count < task->source.size)
+        mdm->update_write_task_info(*task, filename, size * count);
       else
         mdm->update_write_task_info(*task, filename, task->source.size);
       client_queue->publish_task(task);
@@ -394,7 +306,7 @@ std::vector<write_task *> dtio::write_async(int fd, const void *buf, size_t coun
   return write_tasks;
 }
 
-size_t dtio::write_wait(std::vector<write_task *> tasks) {
+size_t dtio::fwrite_wait(std::vector<write_task *> tasks) {
   size_t total_size_written = 0;
   auto map_client = dtio_system::getInstance(LIB)->map_client();
   auto map_server = dtio_system::getInstance(LIB)->map_server();
@@ -426,7 +338,7 @@ size_t dtio::write_wait(std::vector<write_task *> tasks) {
   return total_size_written;
 }
 
-ssize_t dtio::write(int fd, const void *buf, size_t count) {
+size_t dtio::fwrite(void *ptr, size_t size, size_t count, FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
@@ -434,16 +346,16 @@ ssize_t dtio::write(int fd, const void *buf, size_t count) {
   auto map_server = dtio_system::getInstance(LIB)->map_server();
   auto task_m = task_builder::getInstance(LIB);
   auto data_m = data_manager::getInstance(LIB);
-  auto filename = mdm->get_filename(fd);
+  auto filename = mdm->get_filename(stream);
   auto offset = mdm->get_fp(filename);
   if (!mdm->is_opened(filename))
-    throw std::runtime_error("dtio::write() file not opened!");
-  auto w_task = write_task(file(filename, offset, count), file());
+    throw std::runtime_error("dtio::fwrite() file not opened!");
+  auto w_task = write_task(file(filename, offset, size * count), file());
 #ifdef TIMERTB
   Timer t = Timer();
   t.resumeTime();
 #endif
-  auto write_tasks = task_m->build_write_task(w_task, static_cast<const char *>(buf));
+  auto write_tasks = task_m->build_write_task(w_task, static_cast<char *>(ptr));
 #ifdef TIMERTB
   std::stringstream stream1;
   stream1 << "build_write_task()," << std::fixed << std::setprecision(10)
@@ -452,7 +364,7 @@ ssize_t dtio::write(int fd, const void *buf, size_t count) {
 #endif
 
   int index = 0;
-  std::string write_data(static_cast<const char *>(buf));
+  std::string write_data(static_cast<char *>(ptr));
   std::vector<std::pair<std::string, std::string>> task_ids =
       std::vector<std::pair<std::string, std::string>>();
   for (auto task : write_tasks) {
@@ -467,8 +379,8 @@ ssize_t dtio::write(int fd, const void *buf, size_t count) {
       }
     }
     if (task->publish) {
-      if (count < task->source.size)
-        mdm->update_write_task_info(*task, filename, count);
+      if (size * count < task->source.size)
+        mdm->update_write_task_info(*task, filename, size * count);
       else
         mdm->update_write_task_info(*task, filename, task->source.size);
       client_queue->publish_task(task);
@@ -490,5 +402,5 @@ ssize_t dtio::write(int fd, const void *buf, size_t count) {
                        std::to_string(-1));
     map_client->remove(table::DATASPACE_DB, task_id.first, task_id.second);
   }
-  return count;
+  return size * count;
 }
