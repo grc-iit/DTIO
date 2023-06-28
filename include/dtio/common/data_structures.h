@@ -163,8 +163,11 @@ struct dataspace
 struct file_stat
 {
   FILE *fh;
+  int fd; // Adding this to file stat could be expensive, should it replace fh?
   std::size_t file_pointer;
   std::size_t file_size;
+  int flags;
+  mode_t posix_mode;
   std::string mode;
   bool is_open;
 

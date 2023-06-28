@@ -51,7 +51,7 @@ set(COMMON_SRC
     # src/common/external_clients/hcl_queue_impl.cpp
     src/common/external_clients/hcl_map_impl.cpp
     src/common/task_builder/task_builder.cpp)
-set(DTIO_LIB_SRC src/lib/stdio.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
+set(DTIO_LIB_SRC src/lib/stdio.cpp src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
 # set(DTIO_CLIENT_SRC src/client/main.cpp src/client/client.cpp
 #                       src/common/threadPool.cpp)
 # set(DTIO_SERVER_SRC src/system_manager/main.cpp

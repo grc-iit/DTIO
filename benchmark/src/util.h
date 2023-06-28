@@ -10,6 +10,7 @@
 #include <hcl/common/debug.h>
 #include "dtio/common/utilities.h"
 #include "dtio/drivers/stdio.h"
+#include "dtio/drivers/posix.h"
 #include <fcntl.h>
 #include <fstream>
 #include <iomanip>

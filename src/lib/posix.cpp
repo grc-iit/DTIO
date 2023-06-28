@@ -33,96 +33,92 @@
 /******************************************************************************
  *Interface
  ******************************************************************************/
-FILE *dtio::open(const char *filename, int flags) {
+int dtio::open(const char *filename, int flags) {
   auto mdm = metadata_manager::getInstance(LIB);
-  FILE *fh = nullptr;
+  int fd;
   if (!mdm->is_created(filename)) {
-    if (flags == O_RDONLY || flags == O_WRONLY ||
-	flags == O_RDWR) {
-      return nullptr;
+    if (!(flags & O_RDWR)) {
+      return -1;
     } else {
-      if (mdm->create(filename, mode, fh) != SUCCESS) {
+      if (mdm->create(filename, flags, 0, &fd) != SUCCESS) {
         throw std::runtime_error("dtio::open() create failed!");
       }
     }
   } else {
     if (!mdm->is_opened(filename)) {
-      if (mdm->update_on_open(filename, mode, fh) != SUCCESS) {
+      if (mdm->update_on_open(filename, flags, 0, &fd) != SUCCESS) {
         throw std::runtime_error("dtio::open() update failed!");
       }
     } else
-      return nullptr;
+      return -1;
   }
-  return fh;
+  return fd;
 }
 
-FILE *dtio::open(const char *filename, int flags, mode_t mode) {
+int dtio::open(const char *filename, int flags, mode_t mode) {
   auto mdm = metadata_manager::getInstance(LIB);
-  FILE *fh = nullptr;
+  int fd;
   if (!mdm->is_created(filename)) {
-    if (flags == O_RDONLY || flags == O_WRONLY ||
-	flags == O_RDWR) {
-      return nullptr;
+    if (!(flags & O_RDWR)) {
+      return -1;
     } else {
-      if (mdm->create(filename, mode, fh) != SUCCESS) {
+      if (mdm->create(filename, flags, mode, &fd) != SUCCESS) {
         throw std::runtime_error("dtio::open() create failed!");
       }
     }
   } else {
     if (!mdm->is_opened(filename)) {
-      if (mdm->update_on_open(filename, mode, fh) != SUCCESS) {
+      if (mdm->update_on_open(filename, flags, mode, &fd) != SUCCESS) {
         throw std::runtime_error("dtio::open() update failed!");
       }
     } else
-      return nullptr;
+      return -1;
   }
-  return fh;
+  return fd;
 }
 
-FILE *dtio::open64(const char *filename, int flags) {
+int dtio::open64(const char *filename, int flags) {
   auto mdm = metadata_manager::getInstance(LIB);
-  FILE *fh = nullptr;
+  int fd;
   if (!mdm->is_created(filename)) {
-    if (flags == O_RDONLY || flags == O_WRONLY ||
-	flags == O_RDWR) {
-      return nullptr;
+    if (!(flags & O_RDWR)) {
+      return -1;
     } else {
-      if (mdm->create(filename, mode, fh) != SUCCESS) {
+      if (mdm->create(filename, flags, 0, &fd) != SUCCESS) {
         throw std::runtime_error("dtio::open() create failed!");
       }
     }
   } else {
     if (!mdm->is_opened(filename)) {
-      if (mdm->update_on_open(filename, mode, fh) != SUCCESS) {
+      if (mdm->update_on_open(filename, flags, 0, &fd) != SUCCESS) {
         throw std::runtime_error("dtio::open() update failed!");
       }
     } else
-      return nullptr;
+      return -1;
   }
-  return fh;
+  return fd;
 }
 
-FILE *dtio::open64(const char *filename, int flags, mode_t mode) {
+int dtio::open64(const char *filename, int flags, mode_t mode) {
   auto mdm = metadata_manager::getInstance(LIB);
-  FILE *fh = nullptr;
+  int fd;
   if (!mdm->is_created(filename)) {
-    if (flags == O_RDONLY || flags == O_WRONLY ||
-	flags == O_RDWR) {
-      return nullptr;
+    if (!(flags & O_RDWR)) {
+      return -1;
     } else {
-      if (mdm->create(filename, mode, fh) != SUCCESS) {
+      if (mdm->create(filename, flags, mode, &fd) != SUCCESS) {
         throw std::runtime_error("dtio::open() create failed!");
       }
     }
   } else {
     if (!mdm->is_opened(filename)) {
-      if (mdm->update_on_open(filename, mode, fh) != SUCCESS) {
+      if (mdm->update_on_open(filename, flags, mode, &fd) != SUCCESS) {
         throw std::runtime_error("dtio::open() update failed!");
       }
     } else
-      return nullptr;
+      return -1;
   }
-  return fh;
+  return fd;
 }
 
 int unlink(const char *pathname) {
@@ -157,7 +153,37 @@ int dtio::close(int fd) {
 off_t dtio::lseek(int fd, off_t offset, int whence) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto filename = mdm->get_filename(fd);
-  if (mdm->get_mode(filename) == "a" || mdm->get_mode(filename) == "a+")
+  if (mdm->get_flags(filename) & O_APPEND)
+    return 0;
+  auto size = mdm->get_filesize(filename);
+  auto fp = mdm->get_fp(filename);
+  switch (whence) {
+  case SEEK_SET:
+    if (offset > size)
+      return -1;
+    break;
+  case SEEK_CUR:
+    if (fp + offset > size || fp + offset < 0)
+      return -1;
+    break;
+  case SEEK_END:
+    if (offset > 0)
+      return -1;
+    break;
+  default:
+    fprintf(stderr, "Seek origin fault!\n");
+    return -1;
+  }
+  if (!mdm->is_opened(fd))
+    return -1;
+  return mdm->update_on_seek(filename, static_cast<size_t>(offset),
+                             static_cast<size_t>(whence));
+}
+
+off_t dtio::lseek64(int fd, off_t offset, int whence) {
+  auto mdm = metadata_manager::getInstance(LIB);
+  auto filename = mdm->get_filename(fd);
+  if (mdm->get_flags(filename) & O_APPEND)
     return 0;
   auto size = mdm->get_filesize(filename);
   auto fp = mdm->get_fp(filename);
@@ -281,7 +307,7 @@ std::size_t dtio::read_wait(void *ptr, std::vector<read_task> &tasks,
   return size_read;
 }
 
-size_t dtio::read(int fd, void *buf, size_t count) {
+ssize_t dtio::read(int fd, void *buf, size_t count) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
@@ -359,7 +385,7 @@ std::vector<write_task *> dtio::write_async(int fd, const void *buf, size_t coun
   Timer t = Timer();
   t.resumeTime();
 #endif
-  auto write_tasks = task_m->build_write_task(w_task, static_cast<char *>(buf));
+  auto write_tasks = task_m->build_write_task(w_task, static_cast<const char *>(buf));
 #ifdef TIMERTB
   std::stringstream stream1;
   stream1 << "build_write_task()," << std::fixed << std::setprecision(10)
