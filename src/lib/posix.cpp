@@ -22,6 +22,7 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
+#include "dtio/common/enumerations.h"
 #include <fcntl.h>
 #include <iomanip>
 #include <dtio/common/return_codes.h>
@@ -220,6 +221,7 @@ std::vector<read_task> dtio::read_async(int fd, size_t count) {
   if (!mdm->is_opened(filename))
     return std::vector<read_task>();
   auto r_task = read_task(file(filename, offset, count), file());
+  r_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
   Timer t = Timer();
   t.resumeTime();
@@ -318,6 +320,7 @@ ssize_t dtio::read(int fd, void *buf, size_t count) {
   if (!mdm->is_opened(filename))
     return 0;
   auto r_task = read_task(file(filename, offset, count), file());
+  r_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
   Timer t = Timer();
   t.resumeTime();
@@ -381,6 +384,7 @@ std::vector<write_task *> dtio::write_async(int fd, const void *buf, size_t coun
   if (!mdm->is_opened(filename))
     throw std::runtime_error("dtio::write() file not opened!");
   auto w_task = write_task(file(filename, offset, count), file());
+  w_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
   Timer t = Timer();
   t.resumeTime();
@@ -465,6 +469,7 @@ ssize_t dtio::write(int fd, const void *buf, size_t count) {
   if (!mdm->is_opened(filename))
     throw std::runtime_error("dtio::write() file not opened!");
   auto w_task = write_task(file(filename, offset, count), file());
+  w_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
   Timer t = Timer();
   t.resumeTime();
