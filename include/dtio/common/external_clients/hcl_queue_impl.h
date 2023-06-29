@@ -35,8 +35,8 @@ class HCLQueueImpl : public distributed_queue
 private:
   hcl::queue<task> *hcl_queue;
   std::string subject;
-  int64_t tail_subscription;
-  int64_t head_subscription;
+  uint16_t tail_subscription;
+  uint16_t head_subscription;
   // DONE: comm needs to be a vector(? or arrays or pointers)
   // and barrier over all the barriers
   MPI_Comm comm[4];
@@ -51,7 +51,7 @@ public:
   // need to know what service it is
   // look into barriers and comms at the same time
   // when initing hcl queues put barriers to ensure rpc init
-  HCLQueueImpl (service service, std::string &subject, std::string queuename,
+  HCLQueueImpl (service service, const std::string &subject, std::string queuename,
                 int my_server, int num_servers, bool subscribe)
       : distributed_queue (service)
   {

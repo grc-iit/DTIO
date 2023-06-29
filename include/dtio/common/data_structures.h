@@ -42,41 +42,6 @@
 #include <rpc/rpc_error.h>
 #include <rpc/server.h>
 
-struct HCLTaskKey
-{
-  size_t a;
-  HCLTaskKey () : a (0) {}
-  HCLTaskKey (size_t a_) : a (a_) {}
-  HCLTaskKey (task a_) : a (std::hash<task>{}(a_)) {}
-  MSGPACK_DEFINE (a);
-  bool
-  operator== (const HCLTaskKey &o) const
-  {
-    return a == o.a;
-  }
-  HCLTaskKey &
-  operator= (const HCLTaskKey &other)
-  {
-    a = other.a;
-    return *this;
-  }
-  bool
-  operator< (const HCLTaskKey &o) const
-  {
-    return a < o.a;
-  }
-  bool
-  operator> (const HCLTaskKey &o) const
-  {
-    return a > o.a;
-  }
-  bool
-  Contains (const HCLTaskKey &o) const
-  {
-    return a == o.a;
-  }
-};
-
 struct HCLKeyType
 {
   size_t a;
@@ -250,6 +215,11 @@ struct task
   bool addDataspace;
   bool async;
 
+  task ()
+      : t_type (task_type::READ_TASK), task_id (0), publish (false),
+        addDataspace (true), async (true)
+  {
+  }
   explicit task (task_type t_type)
       : t_type (t_type), task_id (0), publish (false), addDataspace (true),
         async (true)
@@ -278,6 +248,11 @@ namespace std
 template <> struct hash<task>
 {
   size_t
+  operator() (const task *k) const
+  {
+    return k->task_id % HCL_CONF->NUM_SERVERS;
+  }
+  size_t
   operator() (const task &k) const
   {
     return k.task_id % HCL_CONF->NUM_SERVERS;
@@ -289,6 +264,41 @@ template <> struct hash<task>
   }
 };
 }
+
+struct HCLTaskKey
+{
+  size_t a;
+  HCLTaskKey () : a (0) {}
+  HCLTaskKey (size_t a_) : a (a_) {}
+  HCLTaskKey (task a_) : a (std::hash<task>{}(a_)) {}
+  MSGPACK_DEFINE (a);
+  bool
+  operator== (const HCLTaskKey &o) const
+  {
+    return a == o.a;
+  }
+  HCLTaskKey &
+  operator= (const HCLTaskKey &other)
+  {
+    a = other.a;
+    return *this;
+  }
+  bool
+  operator< (const HCLTaskKey &o) const
+  {
+    return a < o.a;
+  }
+  bool
+  operator> (const HCLTaskKey &o) const
+  {
+    return a > o.a;
+  }
+  bool
+  Contains (const HCLTaskKey &o) const
+  {
+    return a == o.a;
+  }
+};
 
 // write_task structure
 struct write_task : public task

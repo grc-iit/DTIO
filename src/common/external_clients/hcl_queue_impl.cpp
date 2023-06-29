@@ -21,9 +21,11 @@
  */
 #include "dtio/common/constants.h"
 #include "dtio/common/data_structures.h"
+#include <cstdint>
 #include <dtio/common/external_clients/hcl_queue_impl.h>
 #include <future>
 #include <mpi.h>
+#include <sys/types.h>
 
 int
 HCLQueueImpl::publish_task (task *task_t)
@@ -35,7 +37,11 @@ HCLQueueImpl::publish_task (task *task_t)
   head_subscription
       = head_subscription == -1 ? task_t->task_id : head_subscription;
   tail_subscription = task_t->task_id;
-  return !hcl_queue->Push (task_t, task_hash (*task_t));
+  // return !hcl_queue->Push (task_t, task_hash (*task_t));
+  // return !hcl_queue->Push(*task_t, task_hash.operator()(task_t));
+  uint16_t hashValue = static_cast<uint16_t>(task_hash.operator()(task_t));
+  return !hcl_queue->Push(*task_t, hashValue);
+
 }
 
 task *
@@ -44,7 +50,8 @@ HCLQueueImpl::subscribe_task_helper ()
   if (head_subscription < tail_subscription)
     {
       // can be all 0
-      auto queue_pop = hcl_queue->Pop (head_subscription++);
+      auto queue_pop = hcl_queue->Pop (head_subscription);
+      head_subscription++;
       auto queue_bool = queue_pop.first;
       task hcl_task = queue_pop.second;
       return &hcl_task;
@@ -92,7 +99,8 @@ HCLQueueImpl::subscribe_task (int &status)
 int
 HCLQueueImpl::get_queue_size ()
 {
-  return hcl_queue->Size (0);
+  uint16_t pos = 0;
+  return hcl_queue->Size (pos);
   // return hcl_queue->Size (task_hash (head_subscription));
 }
 
@@ -102,7 +110,8 @@ HCLQueueImpl::get_queue_count ()
   // this is for direct nats compat
   // should ultimately be something like
   // `return hcl_queue->Size (task_hash (head_subscription));`
-  return hcl_queue->Size (0);
+  u_int16_t pos = 0;
+  return hcl_queue->Size (pos);
 }
 
 int
