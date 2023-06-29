@@ -85,11 +85,13 @@ public:
                             std::string filename);
   int update_write_task_info(std::vector<write_task> task_ks,
                              std::string filename);
+  int update_delete_task_info(delete_task task_ks, std::string filename);
   int update_write_task_info(write_task task_ks, std::string filename,
                              std::size_t io_size);
   std::vector<chunk_meta> fetch_chunks(read_task task);
   void update_on_read(std::string filename, size_t size);
   void update_on_write(std::string filename, size_t size, size_t offset);
+  void update_on_delete(std::string filename);
   /******************************************************************************
    *Destructor
    ******************************************************************************/

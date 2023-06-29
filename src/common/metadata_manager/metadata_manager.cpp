@@ -392,6 +392,18 @@ void metadata_manager::update_on_write(std::string filename, size_t size,
   }
 }
 
+void metadata_manager::update_on_delete(std::string filename) {
+  auto map = dtio_system::getInstance(service_i)->map_client();
+  serialization_manager sm = serialization_manager();
+  auto iter = file_map.find(filename);
+  if (iter != file_map.end()) {
+    file_map.erase(filename);
+    file_stat fs = iter->second;
+    std::string fs_str = sm.serialize_file_stat(fs);
+    map->remove(table::FILE_DB, filename, fs_str);
+  }
+}
+
 std::vector<chunk_meta> metadata_manager::fetch_chunks(read_task task) {
 #ifdef TIMERMDM
   Timer t = Timer();
@@ -443,6 +455,36 @@ std::vector<chunk_meta> metadata_manager::fetch_chunks(read_task task) {
   std::cout << "metadata_manager::fetch_chunks()," << t.pauseTime() << "\n";
 #endif
   return chunks;
+}
+
+int metadata_manager::update_delete_task_info(delete_task task_k,
+                                             std::string filename) {
+#ifdef TIMERMDM
+  Timer t = Timer();
+  t.resumeTime();
+#endif
+  auto map = dtio_system::getInstance(service_i)->map_client();
+  file_stat fs;
+  auto iter = file_map.find(filename);
+  if (iter != file_map.end())
+    fs = iter->second;
+  update_on_delete(task_k.source.filename);
+  // if (!task_k.meta_updated) {
+  //   auto chunk_index = (task_k.source.offset / MAX_IO_UNIT);
+  //   auto base_offset = (task_k.source.offset / MAX_IO_UNIT) * MAX_IO_UNIT;
+  //   chunk_meta cm;
+  //   cm.actual_user_chunk = task_k.source;
+  //   cm.destination = task_k.destination;
+  //   std::string chunk_str = serialization_manager().serialize_chunk(cm);
+  //   map->remove(table::CHUNK_DB, filename + std::to_string(base_offset), chunk_str);
+  // }
+  std::string fs_str = serialization_manager().serialize_file_stat(fs);
+  map->remove(table::FILE_DB, filename, fs_str);
+#ifdef TIMERMDM
+  std::cout << "metadata_manager::update_delete_task_info()," << t.pauseTime()
+            << "\n";
+#endif
+  return 0;
 }
 
 int metadata_manager::update_write_task_info(write_task task_k,

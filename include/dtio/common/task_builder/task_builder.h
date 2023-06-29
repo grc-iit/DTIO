@@ -60,6 +60,8 @@ public:
   }
   std::vector<write_task *> build_write_task(write_task task, std::string data);
   std::vector<read_task> build_read_task(read_task task);
+  std::vector<delete_task> build_delete_task(delete_task task);
+
   /******************************************************************************
    *Destructor
    ******************************************************************************/

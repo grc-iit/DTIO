@@ -278,3 +278,14 @@ std::vector<read_task> task_builder::build_read_task(read_task task) {
   }
   return tasks;
 }
+
+std::vector<delete_task> task_builder::build_delete_task(delete_task task) {
+  auto tasks = std::vector<delete_task>();
+  auto mdm = metadata_manager::getInstance(LIB);
+  auto map_server = dtio_system::getInstance(service_i)->map_server();
+  auto map_client = dtio_system::getInstance(service_i)->map_client();
+  int server = static_cast<int>(dtio_system::getInstance(LIB)->rank /
+                                PROCS_PER_MEMCACHED);
+  tasks.push_back(task);
+  return tasks;
+}
