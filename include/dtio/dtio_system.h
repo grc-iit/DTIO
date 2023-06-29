@@ -120,8 +120,7 @@ public:
             //     service_i, ConfigManager::get_instance ()->NATS_URL_CLIENT,
             //     CLIENT_TASK_SUBJECT, std::to_string (service_i), false);
             client_queue = std::make_shared<HCLQueueImpl> (
-                service_i, CLIENT_TASK_SUBJECT, std::to_string (service_i), 0,
-                num_clients, false);
+                service_i, CLIENT_TASK_SUBJECT, 0, num_clients, false);
           }
         else
           {
@@ -129,8 +128,7 @@ public:
             //     service_i, ConfigManager::get_instance ()->NATS_URL_CLIENT,
             //     CLIENT_TASK_SUBJECT, std::to_string (service_i), true);
             client_queue = std::make_shared<HCLQueueImpl> (
-                service_i, CLIENT_TASK_SUBJECT, std::to_string (service_i), 0,
-                num_clients, true);
+                service_i, CLIENT_TASK_SUBJECT, 0, num_clients, true);
           }
       }
     return client_queue;
@@ -140,9 +138,7 @@ public:
   {
     if (worker_queues[worker_index] == nullptr)
       worker_queues[worker_index] = std::make_shared<HCLQueueImpl> (
-          service_i, std::to_string (worker_index),
-          std::to_string (service_i) + "_" + to_string (worker_index), 0,
-          num_clients, true);
+          service_i, std::to_string (worker_index), 0, num_clients, true);
     // worker_queues[worker_index] = std::make_shared<NatsImpl> (
     //     service_i, ConfigManager::get_instance ()->NATS_URL_SERVER,
     //     std::to_string (worker_index),

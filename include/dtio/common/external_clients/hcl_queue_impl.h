@@ -29,6 +29,7 @@
 #include <dtio/common/client_interface/distributed_queue.h>
 #include <dtio/common/config_manager.h>
 #include <dtio/common/data_structures.h>
+#include <string>
 
 class HCLQueueImpl : public distributed_queue
 {
@@ -51,11 +52,11 @@ public:
   // need to know what service it is
   // look into barriers and comms at the same time
   // when initing hcl queues put barriers to ensure rpc init
-  HCLQueueImpl (service service, const std::string &subject, std::string queuename,
-                int my_server, int num_servers, bool subscribe)
+  HCLQueueImpl (service service, const std::string &subject, int my_server,
+                int num_servers, bool subscribe)
       : distributed_queue (service)
   {
-    queuename = "";
+    std::string queuename = "";
     // task sched == server, lib != server
     if (service == TASK_SCHEDULER)
       {
