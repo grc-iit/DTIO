@@ -103,6 +103,8 @@ public:
     // scheduler) in server client, need to ensure rpc is initiated
     // comm changes based on kind of queue
 
+    DTIO_LOG_INFO ("[Queue] Barrier :: Subject " << subject
+                                                 << "\tName: " << queuename);
     for (size_t i = 0; i < comm_size; i++)
       {
         MPI_Barrier (comm[i]);
@@ -117,7 +119,8 @@ public:
     //                      ->QUEUE_CLIENT_COMM); // Tell the workers we've
     //                                            // initialized queues
     //   }
-    DTIO_LOG_INFO ("[Queue] Created :: Subject ", subject, "\tName: ", queuename);
+    DTIO_LOG_INFO ("[Queue] Created :: Subject " << subject
+                                                 << "\tName: " << queuename);
     head_subscription = tail_subscription = -1;
     hcl_queue = new hcl::queue<task> (queuename);
   }

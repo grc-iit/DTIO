@@ -22,10 +22,10 @@
 //
 // Created by anthony on 4/24/18.
 //
-#include "mpi.h"
 #include "dtio/common/config_manager.h"
 #include "dtio/common/enumerations.h"
 #include "dtio/common/logger.h"
+#include "mpi.h"
 #include <dtio/common/utilities.h>
 #include <dtio/drivers/mpi.h>
 #include <iostream>
@@ -46,14 +46,14 @@ dtio::MPI_Init (int *argc, char ***argv)
   int rank;
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
   DTIO_LOG_INFO ("[MPI] Comm: "
-                 "thread: ",
-                 provided, "\tprocess:", rank);
+                 "thread: "
+                 << provided << "\tprocess:" << rank);
   MPI_Comm_split (MPI_COMM_WORLD, CLIENT_COLOR,
                   rank - ConfigManager::get_instance ()->NUM_WORKERS
                       - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1,
                   &ConfigManager::get_instance ()->PROCESS_COMM);
 
-  DTIO_LOG_INFO ("[MPI] Comm: Client\trank: ",
+  DTIO_LOG_INFO ("[MPI] Comm: Client\trank: "<<
                  rank - ConfigManager::get_instance ()->NUM_WORKERS
                      - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1);
 
