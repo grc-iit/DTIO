@@ -29,8 +29,9 @@
 #include <dtio/common/client_interface/distributed_queue.h>
 #include <dtio/common/config_manager.h>
 #include <dtio/common/data_structures.h>
+#include <dtio/common/logger.h>
 #include <iostream>
-#include <spdlog/spdlog.h>
+#include <ostream>
 #include <string>
 
 class HCLQueueImpl : public distributed_queue
@@ -58,80 +59,67 @@ public:
                 int num_servers, bool subscribe)
       : distributed_queue (service)
   {
-    std::stringstream ss;
-    ss << "[Queue] Subject " << subject;
-    spdlog::info (ss.str ());
-    try
+    std::string queuename = "";
+    // task sched == server, lib != server
+    if (service == TASK_SCHEDULER)
       {
-        std::string queuename = "";
-        // task sched == server, lib != server
-        if (service == TASK_SCHEDULER)
-          {
-            HCL_CONF->IS_SERVER = true;
-            queuename = "taskscheduler+";
-            comm[comm_size++]
-                = ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM;
-          }
-        else if (service == WORKER)
-          {
-            HCL_CONF->IS_SERVER = true;
-            queuename = "taskscheduler+";
-            comm[comm_size++]
-                = ConfigManager::get_instance ()->QUEUE_WORKER_COMM;
-          }
-        else if (service == LIB)
-          {
-            // Apparently the task scheduler has access to this too?
-            HCL_CONF->IS_SERVER = false;
-            queuename = "taskscheduler+";
-            comm[comm_size++]
-                = ConfigManager::get_instance ()->QUEUE_CLIENT_COMM;
-          }
-        else
-          {
-            std::cout << "I'm uncertain why this happens " << service
-                      << std::endl;
-            queuename = "help+";
-            comm[comm_size++]
-                = ConfigManager::get_instance ()->QUEUE_CLIENT_COMM;
-            // NOTE: shouldnt we just fail and exit here?
-          }
-        queuename += (subject + "+");
-
-        HCL_CONF->MY_SERVER = my_server;
-        HCL_CONF->NUM_SERVERS = num_servers;
-        HCL_CONF->SERVER_ON_NODE = true; // service == LIB
-        HCL_CONF->SERVER_LIST_PATH
-            = ConfigManager::get_instance ()->HCL_SERVER_LIST_PATH;
-
-        if (service == WORKER || service == TASK_SCHEDULER)
-          {
-            // DONE: need to change how barrier works
-            // one for (worker + task scheduler) and (client/lib + task
-            // scheduler) in server client, need to ensure rpc is initiated
-            // comm changes based on kind of queue
-
-            for (size_t i = 0; i < comm_size; i++)
-              {
-                MPI_Barrier (comm[i]);
-              }
-            // Wait for clients to initialize maps
-            MPI_Barrier (ConfigManager::get_instance ()->QUEUE_CLIENT_COMM);
-          }
-
-        if (service == LIB)
-          {
-            MPI_Barrier (ConfigManager::get_instance ()
-                             ->QUEUE_CLIENT_COMM); // Tell the workers we've
-                                                   // initialized queues
-          }
-        head_subscription = tail_subscription = -1;
-        hcl_queue = new hcl::queue<task> (queuename);
+        HCL_CONF->IS_SERVER = true;
+        queuename = "taskscheduler+";
+        comm[comm_size++]
+            = ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM;
       }
-    catch (const std::logic_error &e)
+    else if (service == WORKER)
       {
-        std::cerr << "Error: " << e.what () << std::endl;
+        HCL_CONF->IS_SERVER = true;
+        queuename = "taskscheduler+";
+        comm[comm_size++] = ConfigManager::get_instance ()->QUEUE_WORKER_COMM;
       }
+    else if (service == LIB)
+      {
+        // Apparently the task scheduler has access to this too?
+        HCL_CONF->IS_SERVER = false;
+        queuename = "taskscheduler+";
+        comm[comm_size++] = ConfigManager::get_instance ()->QUEUE_CLIENT_COMM;
+      }
+    else
+      {
+        std::cout << "I'm uncertain why this happens " << service << std::endl;
+        queuename = "help+";
+        comm[comm_size++] = ConfigManager::get_instance ()->QUEUE_CLIENT_COMM;
+        // NOTE: shouldnt we just fail and exit here?
+      }
+    queuename += (subject + "+");
+
+    HCL_CONF->MY_SERVER = my_server;
+    HCL_CONF->NUM_SERVERS = num_servers;
+    HCL_CONF->SERVER_ON_NODE = true; // service == LIB
+    HCL_CONF->SERVER_LIST_PATH
+        = ConfigManager::get_instance ()->HCL_SERVER_LIST_PATH;
+
+    // if (service == WORKER || service == TASK_SCHEDULER)
+    //   {
+    // DONE: need to change how barrier works
+    // one for (worker + task scheduler) and (client/lib + task
+    // scheduler) in server client, need to ensure rpc is initiated
+    // comm changes based on kind of queue
+
+    for (size_t i = 0; i < comm_size; i++)
+      {
+        MPI_Barrier (comm[i]);
+      }
+    // Wait for clients to initialize maps
+    // MPI_Barrier (ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
+    // }
+
+    // if (service == LIB)
+    //   {
+    //     MPI_Barrier (ConfigManager::get_instance ()
+    //                      ->QUEUE_CLIENT_COMM); // Tell the workers we've
+    //                                            // initialized queues
+    //   }
+    DTIO_LOG_INFO ("[Queue] Created :: Subject ", subject, "\tName: ", queuename);
+    head_subscription = tail_subscription = -1;
+    hcl_queue = new hcl::queue<task> (queuename);
   }
 
   int publish_task (task *task_t) override;

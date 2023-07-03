@@ -41,7 +41,6 @@
 #include <dtio/common/solver/solver.h>
 #include <memory>
 #include <mpi.h>
-#include <spdlog/spdlog.h>
 #include <string>
 #include <vector>
 
@@ -113,7 +112,7 @@ public:
   inline std::shared_ptr<distributed_queue>
   get_client_queue (const std::string &subject)
   {
-    spdlog::info("[DTIO] Getting client queue");
+    DTIO_LOG_INFO("[DTIO] Getting client queue");
     if (client_queue == nullptr)
       {
         if (service_i == LIB)
@@ -138,7 +137,7 @@ public:
   inline std::shared_ptr<distributed_queue>
   get_worker_queue (const int &worker_index)
   {
-    spdlog::info("[DTIO] Getting worker queue");
+   DTIO_LOG_INFO("[DTIO] Getting worker queue");
     if (worker_queues[worker_index] == nullptr)
       worker_queues[worker_index] = std::make_shared<HCLQueueImpl> (
           service_i, std::to_string (worker_index), 0, num_clients, true);
