@@ -20,20 +20,33 @@
  * <http://www.gnu.org/licenses/>.
  */
 #include "worker_manager_service.h"
-#include <iostream>
 #include <dtio/common/utilities.h>
+#include <iostream>
 #include <mpi.h>
 
-int main(int argc, char **argv) {
-  MPI_Init(&argc, &argv);
-  ConfigManager::get_instance()->LoadConfig(argv[1]);
+int
+main (int argc, char **argv)
+{
+  MPI_Init (&argc, &argv);
+  ConfigManager::get_instance ()->LoadConfig (argv[1]);
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_split(MPI_COMM_WORLD, WORKER_COLOR, 0, & ConfigManager::get_instance()->PROCESS_COMM);
-  MPI_Comm_split(MPI_COMM_WORLD, DATASPACE_NULL_COLOR, 0, & ConfigManager::get_instance()->DATASPACE_COMM);
-  std::shared_ptr<worker_manager_service> worker_manager_service_i =
-      worker_manager_service::getInstance(service::WORKER_MANAGER);
-  worker_manager_service_i->run();
-  MPI_Finalize();
+  MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+  MPI_Comm_split (MPI_COMM_WORLD, WORKER_COLOR, 0,
+                  &ConfigManager::get_instance ()->PROCESS_COMM);
+  MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_NULL_COLOR, 0,
+                  &ConfigManager::get_instance ()->DATASPACE_COMM);
+
+  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_CLIENT_COLOR,
+                  rank - ConfigManager::get_instance ()->NUM_WORKERS
+                      - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1,
+                  &ConfigManager::get_instance ()->QUEUE_CLIENT_COMM);
+  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, rank - 1,
+                  &ConfigManager::get_instance ()->QUEUE_WORKER_COMM);
+  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_TASKSCHED_COLOR, rank - 1,
+                  &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
+  std::shared_ptr<worker_manager_service> worker_manager_service_i
+      = worker_manager_service::getInstance (service::WORKER_MANAGER);
+  worker_manager_service_i->run ();
+  MPI_Finalize ();
   return 0;
 }

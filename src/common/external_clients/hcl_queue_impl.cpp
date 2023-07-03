@@ -39,9 +39,8 @@ HCLQueueImpl::publish_task (task *task_t)
   tail_subscription = task_t->task_id;
   // return !hcl_queue->Push (task_t, task_hash (*task_t));
   // return !hcl_queue->Push(*task_t, task_hash.operator()(task_t));
-  uint16_t hashValue = static_cast<uint16_t>(task_hash.operator()(task_t));
-  return !hcl_queue->Push(*task_t, hashValue);
-
+  uint16_t hashValue = static_cast<uint16_t> (task_hash.operator() (task_t));
+  return !hcl_queue->Push (*task_t, hashValue);
 }
 
 task *

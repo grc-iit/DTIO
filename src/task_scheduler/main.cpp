@@ -33,16 +33,29 @@
 /******************************************************************************
  *Main
  ******************************************************************************/
-int main(int argc, char **argv) {
-  MPI_Init(&argc, &argv);
-  ConfigManager::get_instance()->LoadConfig(argv[1]);
+int
+main (int argc, char **argv)
+{
+  MPI_Init (&argc, &argv);
+  ConfigManager::get_instance ()->LoadConfig (argv[1]);
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank (MPI_COMM_WORLD, &rank);
   // Assumption: one worker manager
-  MPI_Comm_split(MPI_COMM_WORLD, SCHEDULER_COLOR, rank - ConfigManager::get_instance()->NUM_WORKERS - 1, & ConfigManager::get_instance()->PROCESS_COMM);
-  MPI_Comm_split(MPI_COMM_WORLD, DATASPACE_COLOR, rank - 1, & ConfigManager::get_instance()->DATASPACE_COMM);
-  auto scheduler_service = task_scheduler::getInstance(TASK_SCHEDULER);
-  scheduler_service->run();
-  MPI_Finalize();
+  MPI_Comm_split (MPI_COMM_WORLD, SCHEDULER_COLOR,
+                  rank - ConfigManager::get_instance ()->NUM_WORKERS - 1,
+                  &ConfigManager::get_instance ()->PROCESS_COMM);
+  MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_COLOR, rank - 1,
+                  &ConfigManager::get_instance ()->DATASPACE_COMM);
+  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_CLIENT_COLOR,
+                  rank - ConfigManager::get_instance ()->NUM_WORKERS
+                      - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1,
+                  &ConfigManager::get_instance ()->QUEUE_CLIENT_COMM);
+  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, rank - 1,
+                  &ConfigManager::get_instance ()->QUEUE_WORKER_COMM);
+  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_TASKSCHED_COLOR, rank - 1,
+                  &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
+  auto scheduler_service = task_scheduler::getInstance (TASK_SCHEDULER);
+  scheduler_service->run ();
+  MPI_Finalize ();
   return 0;
 }
