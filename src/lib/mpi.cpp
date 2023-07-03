@@ -22,10 +22,13 @@
 //
 // Created by anthony on 4/24/18.
 //
-#include "mpi.h"
+#include "dtio/common/config_manager.h"
 #include "dtio/common/enumerations.h"
+#include "mpi.h"
 #include <dtio/common/utilities.h>
 #include <dtio/drivers/mpi.h>
+#include <iostream>
+#include <spdlog/spdlog.h>
 
 int
 dtio::MPI_Init (int *argc, char ***argv)
@@ -38,21 +41,54 @@ dtio::MPI_Init (int *argc, char ***argv)
                 << std::endl;
     }
   ConfigManager::get_instance ()->LoadConfig ((*argv)[1]);
+  std::stringstream ss;
+
   int rank;
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+  ss << "[MPI] Comm: "
+     << "thread: " << provided << "\tprocess:" << rank;
+  spdlog::info (ss.str ());
   MPI_Comm_split (MPI_COMM_WORLD, CLIENT_COLOR,
                   rank - ConfigManager::get_instance ()->NUM_WORKERS
                       - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1,
                   &ConfigManager::get_instance ()->PROCESS_COMM);
+  ss.str ("");
+  ss.clear ();
+  ss << "[MPI] Comm: Client\trank: "
+     << rank - ConfigManager::get_instance ()->NUM_WORKERS
+            - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1;
+  spdlog::info (ss.str ());
   MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_COLOR, rank - 1,
                   &ConfigManager::get_instance ()->DATASPACE_COMM);
-  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_CLIENT_COLOR, rank - 1,
+  ss.str ("");
+  ss.clear ();
+  ss << "[MPI] Comm: Dataspace";
+  spdlog::info (ss.str ());
+  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_CLIENT_COLOR,
+                  rank - ConfigManager::get_instance ()->NUM_WORKERS
+                      - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1,
                   &ConfigManager::get_instance ()->QUEUE_CLIENT_COMM);
+  ss.str ("");
+  ss.clear ();
+  ss << "[MPI] Comm: Queue Client";
+  spdlog::info (ss.str ());
   MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, rank - 1,
                   &ConfigManager::get_instance ()->QUEUE_WORKER_COMM);
+  ss.str ("");
+  ss.clear ();
+  ss << "[MPI] Comm: Queue Worker";
+  spdlog::info (ss.str ());
   MPI_Comm_split (MPI_COMM_WORLD, QUEUE_TASKSCHED_COLOR, rank - 1,
                   &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
+  ss.str ("");
+  ss.clear ();
+  ss << "[MPI] Comm: Queue Taskscheduler";
+  spdlog::info (ss.str ());
   dtio_system::getInstance (service::LIB);
+  ss.str ("");
+  ss.clear ();
+  ss << "[MPI] Comm: Complete";
+  spdlog::info (ss.str ());
   return 0;
 }
 
