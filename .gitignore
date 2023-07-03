@@ -64,3 +64,4 @@ Mkfile.old
 dkms.conf
 
 build/
+run-test/
