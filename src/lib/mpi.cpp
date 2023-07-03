@@ -59,20 +59,20 @@ dtio::MPI_Init (int *argc, char ***argv)
 
   MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_COLOR, rank - 1,
                   &ConfigManager::get_instance ()->DATASPACE_COMM);
-  DTIO_LOG_INFO ("[MPI] Comm: Dataspace");
+  DTIO_LOG_DEBUG ("[MPI] Comm: Dataspace");
   MPI_Comm_split (MPI_COMM_WORLD, QUEUE_CLIENT_COLOR,
                   rank - ConfigManager::get_instance ()->NUM_WORKERS
                       - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1,
                   &ConfigManager::get_instance ()->QUEUE_CLIENT_COMM);
-  DTIO_LOG_INFO ("[MPI] Comm: Queue Client");
+  DTIO_LOG_DEBUG ("[MPI] Comm: Queue Client");
   MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, rank - 1,
                   &ConfigManager::get_instance ()->QUEUE_WORKER_COMM);
-  DTIO_LOG_INFO ("[MPI] Comm: Queue Worker");
+  DTIO_LOG_DEBUG ("[MPI] Comm: Queue Worker");
   MPI_Comm_split (MPI_COMM_WORLD, QUEUE_TASKSCHED_COLOR, rank - 1,
                   &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
-  DTIO_LOG_INFO ("[MPI] Comm: Queue Taskscheduler");
+  DTIO_LOG_DEBUG ("[MPI] Comm: Queue Taskscheduler");
   dtio_system::getInstance (service::LIB);
-  DTIO_LOG_INFO ("[MPI] Comm: Complete");
+  DTIO_LOG_DEBUG ("[MPI] Comm: Complete");
   return 0;
 }
 
