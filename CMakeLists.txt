@@ -82,6 +82,11 @@ if(DEFINED ROCKS)
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 
+# Variable for setting the log level (1=ERROR, 2=WARN, 3=INFO, 4=DEBUG, 5=TRACE)
+set(LOG_LEVEL 3 CACHE STRING "Set the log level")
+# Define LOG_LEVEL
+add_compile_definitions(LOG_LEVEL=${LOG_LEVEL})
+
 add_library(dtio_common SHARED ${COMMON_SRC})
 add_library(${PROJECT_NAME} SHARED ${DTIO_LIB_SRC})
 # add_executable(dtio_client ${DTIO_CLIENT_SRC})
