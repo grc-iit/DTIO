@@ -22,39 +22,104 @@
 #include <dtio/common/external_clients/hcl_map_impl.h>
 #include <mpi.h>
 
-int HCLMapImpl::put(const table &name, std::string key,
-                       const std::string &value, std::string group_key) {
-  return hcl_client->Put(key, value);
+int
+HCLMapImpl::put (const table &name, std::string key, const std::string &value,
+                 std::string group_key)
+{
+  key = std::to_string (name) + KEY_SEPARATOR + key;
+  auto true_key = HCLKeyType (key);
+  if (hcl_client->Put (true_key, value))
+    {
+      return 0;
+    }
+  else
+    {
+      std::cerr << "put failed for key:" << key << "\n";
+      return 1;
+    }
 }
 
-std::string HCLMapImpl::get(const table &name, std::string key,
-                               std::string group_key) {
-  auto true_key = HCLKeyType(key);
-  auto retval = hcl_client->Get(true_key);
-  if (retval.first) {
-    return retval.second;
-  }
+std::string
+HCLMapImpl::get (const table &name, std::string key, std::string group_key)
+{
+  key = std::to_string (name) + KEY_SEPARATOR + key;
+  auto true_key = HCLKeyType (key);
+  auto retval = hcl_client->Get (true_key);
+  if (retval.first)
+    {
+      return retval.second;
+    }
+  else
+    {
+      return "";
+    }
 }
 
-std::string HCLMapImpl::remove(const table &name, std::string key,
-                                  std::string group_key) {
-  auto true_key = HCLKeyType(key);
-  hcl_client->Erase(true_key);
+std::string
+HCLMapImpl::remove (const table &name, std::string key, std::string group_key)
+{
+  key = std::to_string (name) + KEY_SEPARATOR + key;
+  auto true_key = HCLKeyType (key);
+  hcl_client->Erase (true_key);
 }
 
-bool HCLMapImpl::exists(const table &name, std::string key,
-                           std::string group_key) {
+bool
+HCLMapImpl::exists (const table &name, std::string key, std::string group_key)
+{
+  key = std::to_string (name) + KEY_SEPARATOR + key;
+  auto true_key = HCLKeyType (key);
+  auto retval = hcl_client->Get (true_key);
+  return retval.first;
 }
 
-bool HCLMapImpl::purge() { }
-
-size_t HCLMapImpl::counter_init(const table &name, std::string key,
-                                   std::string group_key) {
+bool
+HCLMapImpl::purge ()
+{
+  // Not necessary, nothing calls it at the moment and memcached just does a
+  // flush
 }
 
-size_t HCLMapImpl::counter_inc(const table &name, std::string key,
-                                  std::string group_key) {
+size_t
+HCLMapImpl::counter_init (const table &name, std::string key,
+                          std::string group_key)
+{
+  key = std::to_string (name) + KEY_SEPARATOR + key;
+  if (group_key == "-1")
+    {
+      group_key = get_server (key);
+    }
+  return distributed_hashmap::counter_init (name, key, group_key);
 }
 
-std::string HCLMapImpl::get_server(std::string key) {
+size_t
+HCLMapImpl::counter_inc (const table &name, std::string key,
+                         std::string group_key)
+{
+  key = std::to_string (name) + KEY_SEPARATOR + key;
+  if (group_key == "-1")
+    {
+      group_key = get_server (key);
+    }
+  if (exists (name, key, group_key))
+    {
+      auto val = get (name, key, group_key);
+      size_t numeric_val = atoi (val.c_str ());
+      numeric_val++;
+      put (name, key, std::to_string (numeric_val), group_key);
+      return numeric_val;
+    }
+  else
+    {
+      put (name, key, "0", group_key);
+      return 0;
+    }
+}
+
+std::string
+HCLMapImpl::get_server (std::string key)
+{
+  auto true_key = HCLKeyType (key);
+  std::hash<HCLKeyType> keyHash;
+  size_t server = keyHash (true_key) % num_servers;
+  return std::to_string (server);
 }

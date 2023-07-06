@@ -21,45 +21,119 @@
  */
 #ifndef DTIO_MAIN_HCLQUEUEIMPL_H
 #define DTIO_MAIN_HCLQUEUEIMPL_H
-/******************************************************************************
- *include files
- ******************************************************************************/
+
+#include "dtio/common/enumerations.h"
+#include "hcl/queue/queue.h"
 #include <city.h>
 #include <cstring>
 #include <dtio/common/client_interface/distributed_queue.h>
-#include <hcl.h>
+#include <dtio/common/config_manager.h>
+#include <dtio/common/data_structures.h>
+#include <dtio/common/logger.h>
+#include <iostream>
+#include <string>
 
-class HCLQueueImpl : public distributed_queue {
+class HCLQueueImpl : public distributed_queue
+{
 private:
-  /******************************************************************************
-   *Variables and members
-   ******************************************************************************/
-  hcl::queue<std::string> *hcl_client;
+  hcl::queue<task> *hcl_queue;
   std::string subject;
+  uint16_t tail_subscription;
+  uint16_t head_subscription;
+  // DONE: comm needs to be a vector(? or arrays or pointers)
+  // and barrier over all the barriers
+  MPI_Comm comm[4];
+  size_t comm_size = 0;
 
 public:
-  /******************************************************************************
-   *Constructor
-   ******************************************************************************/
-  HCLQueueImpl(service service)
-      : distributed_queue(service) {
-    hcl_client = new hcl::queue<std::string>();
+  // DONE: make HCLKeyType based on Map
+  std::hash<task> task_hash;
 
-    // natsConnection_SubscribeSync(&sub, nc, subject.c_str());
+  // TODO: config is the same as map but
+  // order might be different.
+  // need to know what service it is
+  // look into barriers and comms at the same time
+  // when initing hcl queues put barriers to ensure rpc init
+  HCLQueueImpl (service service, const std::string &subject, int my_server,
+                int num_servers, bool subscribe)
+      : distributed_queue (service)
+  {
+    std::string queuename = "";
+    // task sched == server, lib != server
+    if (service == TASK_SCHEDULER)
+      {
+        HCL_CONF->IS_SERVER = true;
+        queuename = "taskscheduler+";
+        comm[comm_size++]
+            = ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM;
+      }
+    else if (service == WORKER)
+      {
+        HCL_CONF->IS_SERVER = true;
+        queuename = "taskscheduler+";
+        comm[comm_size++] = ConfigManager::get_instance ()->QUEUE_WORKER_COMM;
+      }
+    else if (service == LIB)
+      {
+        // Apparently the task scheduler has access to this too?
+        HCL_CONF->IS_SERVER = false;
+        queuename = "taskscheduler+";
+        comm[comm_size++] = ConfigManager::get_instance ()->QUEUE_CLIENT_COMM;
+      }
+    else
+      {
+        std::cout << "I'm uncertain why this happens " << service << std::endl;
+        queuename = "help+";
+        comm[comm_size++] = ConfigManager::get_instance ()->QUEUE_CLIENT_COMM;
+        // NOTE: shouldnt we just fail and exit here?
+      }
+    queuename += (subject + "+");
+
+    HCL_CONF->MY_SERVER = my_server;
+    HCL_CONF->NUM_SERVERS = num_servers;
+    HCL_CONF->SERVER_ON_NODE = true; // service == LIB
+    HCL_CONF->SERVER_LIST_PATH
+        = ConfigManager::get_instance ()->HCL_SERVER_LIST_PATH;
+
+    // if (service == WORKER || service == TASK_SCHEDULER)
+    //   {
+    // DONE: need to change how barrier works
+    // one for (worker + task scheduler) and (client/lib + task
+    // scheduler) in server client, need to ensure rpc is initiated
+    // comm changes based on kind of queue
+
+    DTIO_LOG_INFO ("[Queue] Barrier :: Subject " << subject
+                                                 << "\tName: " << queuename);
+    for (size_t i = 0; i < comm_size; i++)
+      {
+        // FIX: Barrier is not used, and it needs to be used
+        DTIO_LOG_INFO ("[Queue] Barrier :: " << subject << "\tindex " << i);
+        // MPI_Barrier (comm[i]);
+      }
+    // Wait for clients to initialize maps
+    // MPI_Barrier (ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
+    // }
+
+    // if (service == LIB)
+    //   {
+    //     MPI_Barrier (ConfigManager::get_instance ()
+    //                      ->QUEUE_CLIENT_COMM); // Tell the workers we've
+    //                                            // initialized queues
+    //   }
+    DTIO_LOG_INFO ("[Queue] Created :: Subject " << subject
+                                                 << "\tName: " << queuename);
+    head_subscription = tail_subscription = -1;
+    hcl_queue = new hcl::queue<task> (queuename);
   }
-  /******************************************************************************
-   *Interface
-   ******************************************************************************/
-  int publish_task(task *task_t) override;
-  task *subscribe_task_with_timeout(int &status) override;
-  task *subscribe_task(int &status) override;
-  int get_queue_count() override;
-  int get_queue_size() override;
-  int get_queue_count_limit() override;
-  /******************************************************************************
-   *Destructor
-   ******************************************************************************/
-  virtual ~HCLQueueImpl() {}
+
+  int publish_task (task *task_t) override;
+  task *subscribe_task_with_timeout (int &status) override;
+  task *subscribe_task (int &status) override;
+  task *subscribe_task_helper ();
+  int get_queue_count () override;
+  int get_queue_size () override;
+  int get_queue_count_limit () override;
+  virtual ~HCLQueueImpl () {}
 };
 
 #endif // DTIO_MAIN_HCLQUEUEimpl_H

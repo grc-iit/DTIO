@@ -27,6 +27,8 @@
 #ifndef DTIO_MAIN_STRUCTURE_H
 #define DTIO_MAIN_STRUCTURE_H
 
+#include "dtio/common/data_structures.h"
+#include "hcl/common/macros.h"
 #include <cereal/types/common.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/string.hpp>
@@ -35,35 +37,62 @@
 #include <utility>
 #include <vector>
 
+#include <hcl.h>
 #include <rpc/client.h>
 #include <rpc/rpc_error.h>
 #include <rpc/server.h>
-#include <hcl.h>
 
 struct HCLKeyType
 {
   size_t a;
-  HCLKeyType() : a(0) {}
-  HCLKeyType(size_t a_) : a(a_) {}
-  HCLKeyType(std::string a_) : a(std::hash<std::string>{}(a_)) {}
-  MSGPACK_DEFINE(a);
-  bool operator==(const HCLKeyType &o) const { return a == o.a; }
-  HCLKeyType &operator=(const HCLKeyType &other) {
+  HCLKeyType () : a (0) {}
+  HCLKeyType (size_t a_) : a (a_) {}
+  HCLKeyType (std::string a_) : a (std::hash<std::string>{}(a_)) {}
+  MSGPACK_DEFINE (a);
+  bool
+  operator== (const HCLKeyType &o) const
+  {
+    return a == o.a;
+  }
+  HCLKeyType &
+  operator= (const HCLKeyType &other)
+  {
     a = other.a;
     return *this;
   }
-  bool operator<(const HCLKeyType &o) const { return a < o.a; }
-  bool operator>(const HCLKeyType &o) const { return a > o.a; }
-  bool Contains(const HCLKeyType &o) const { return a == o.a; }
+  bool
+  operator< (const HCLKeyType &o) const
+  {
+    return a < o.a;
+  }
+  bool
+  operator> (const HCLKeyType &o) const
+  {
+    return a > o.a;
+  }
+  bool
+  Contains (const HCLKeyType &o) const
+  {
+    return a == o.a;
+  }
 };
-namespace std {
-template <>
-struct hash<HCLKeyType> {
-  size_t operator()(const HCLKeyType &k) const { return k.a; }
+namespace std
+{
+template <> struct hash<HCLKeyType>
+{
+  size_t
+  operator() (const HCLKeyType &k) const
+  {
+    return k.a;
+  }
 };
 }
-typedef boost::interprocess::allocator<char, boost::interprocess::managed_mapped_file::segment_manager> CharAllocator;
-typedef boost::interprocess::basic_string<char, std::char_traits<char>, CharAllocator> MappedUnitString;
+typedef boost::interprocess::allocator<
+    char, boost::interprocess::managed_mapped_file::segment_manager>
+    CharAllocator;
+typedef boost::interprocess::basic_string<char, std::char_traits<char>,
+                                          CharAllocator>
+    MappedUnitString;
 
 /******************************************************************************
  *message_key structure
@@ -186,6 +215,11 @@ struct task
   bool addDataspace;
   bool async;
 
+  task ()
+      : t_type (task_type::READ_TASK), task_id (0), publish (false),
+        addDataspace (true), async (true)
+  {
+  }
   explicit task (task_type t_type)
       : t_type (t_type), task_id (0), publish (false), addDataspace (true),
         async (true)
@@ -206,6 +240,63 @@ struct task
   serialize (Archive &archive)
   {
     archive (this->t_type, this->task_id);
+  }
+};
+
+namespace std
+{
+template <> struct hash<task>
+{
+  size_t
+  operator() (const task *k) const
+  {
+    return k->task_id % HCL_CONF->NUM_SERVERS;
+  }
+  size_t
+  operator() (const task &k) const
+  {
+    return k.task_id % HCL_CONF->NUM_SERVERS;
+  }
+  size_t
+  operator() (const int64_t &task_id) const
+  {
+    return task_id % HCL_CONF->NUM_SERVERS;
+  }
+};
+}
+
+struct HCLTaskKey
+{
+  size_t a;
+  HCLTaskKey () : a (0) {}
+  HCLTaskKey (size_t a_) : a (a_) {}
+  HCLTaskKey (task a_) : a (std::hash<task>{}(a_)) {}
+  MSGPACK_DEFINE (a);
+  bool
+  operator== (const HCLTaskKey &o) const
+  {
+    return a == o.a;
+  }
+  HCLTaskKey &
+  operator= (const HCLTaskKey &other)
+  {
+    a = other.a;
+    return *this;
+  }
+  bool
+  operator< (const HCLTaskKey &o) const
+  {
+    return a < o.a;
+  }
+  bool
+  operator> (const HCLTaskKey &o) const
+  {
+    return a > o.a;
+  }
+  bool
+  Contains (const HCLTaskKey &o) const
+  {
+    return a == o.a;
   }
 };
 

@@ -40,9 +40,9 @@
 #include <dtio/common/external_clients/rocksdb_impl.h>
 #include <dtio/common/solver/solver.h>
 #include <memory>
-#include <vector>
 #include <mpi.h>
 #include <string>
+#include <vector>
 
 class dtio_system
 {
@@ -55,10 +55,25 @@ private:
       : service_i (service), application_id (), client_comm (), client_rank (),
         rank ()
   {
-    worker_queues = (std::shared_ptr<distributed_queue> *)calloc(ConfigManager::get_instance()->NUM_WORKERS, sizeof(std::shared_ptr<distributed_queue>));
+    worker_queues = (std::shared_ptr<distributed_queue> *)calloc (
+        ConfigManager::get_instance ()->NUM_WORKERS,
+        sizeof (std::shared_ptr<distributed_queue>));
 
-    MPI_Comm_size(ConfigManager::get_instance()->PROCESS_COMM, &num_clients); // FIXME: do we need to transfer the number to non-client processes?
-    hcl_map_client_ = (std::shared_ptr<distributed_hashmap> *)calloc(num_clients, sizeof(std::shared_ptr<distributed_hashmap>));
+    if (service == LIB)
+      {
+        MPI_Comm_size (ConfigManager::get_instance ()->PROCESS_COMM,
+                       &num_clients);
+      }
+    else
+      {
+        int size;
+        MPI_Comm_size (MPI_COMM_WORLD, &size);
+        num_clients = size - 1 - ConfigManager::get_instance ()->NUM_WORKERS
+                      - ConfigManager::get_instance ()->NUM_SCHEDULERS;
+      }
+
+    hcl_map_client_ = (std::shared_ptr<distributed_hashmap> *)calloc (
+        num_clients, sizeof (std::shared_ptr<distributed_hashmap>));
     init (service_i);
     return;
   }
@@ -97,19 +112,24 @@ public:
   inline std::shared_ptr<distributed_queue>
   get_client_queue (const std::string &subject)
   {
+    DTIO_LOG_INFO("[DTIO] Getting client queue");
     if (client_queue == nullptr)
       {
         if (service_i == LIB)
           {
-	    client_queue = std::make_shared<NatsImpl> (
-                service_i, ConfigManager::get_instance ()->NATS_URL_CLIENT,
-                CLIENT_TASK_SUBJECT, std::to_string (service_i), false);
+            // client_queue = std::make_shared<NatsImpl> (
+            //     service_i, ConfigManager::get_instance ()->NATS_URL_CLIENT,
+            //     CLIENT_TASK_SUBJECT, std::to_string (service_i), false);
+            client_queue = std::make_shared<HCLQueueImpl> (
+                service_i, CLIENT_TASK_SUBJECT, 0, num_clients, false);
           }
         else
           {
-            client_queue = std::make_shared<NatsImpl> (
-                service_i, ConfigManager::get_instance ()->NATS_URL_CLIENT,
-                CLIENT_TASK_SUBJECT, std::to_string (service_i), true);
+            // client_queue = std::make_shared<NatsImpl> (
+            //     service_i, ConfigManager::get_instance ()->NATS_URL_CLIENT,
+            //     CLIENT_TASK_SUBJECT, std::to_string (service_i), true);
+            client_queue = std::make_shared<HCLQueueImpl> (
+                service_i, CLIENT_TASK_SUBJECT, 0, num_clients, true);
           }
       }
     return client_queue;
@@ -117,19 +137,26 @@ public:
   inline std::shared_ptr<distributed_queue>
   get_worker_queue (const int &worker_index)
   {
+   DTIO_LOG_INFO("[DTIO] Getting worker queue");
     if (worker_queues[worker_index] == nullptr)
-      worker_queues[worker_index] = std::make_shared<NatsImpl> (
-          service_i, ConfigManager::get_instance ()->NATS_URL_SERVER,
-          std::to_string (worker_index),
-          std::to_string (service_i) + "_" + std::to_string (worker_index),
-          true);
+      worker_queues[worker_index] = std::make_shared<HCLQueueImpl> (
+          service_i, std::to_string (worker_index), 0, num_clients, true);
+    // worker_queues[worker_index] = std::make_shared<NatsImpl> (
+    //     service_i, ConfigManager::get_instance ()->NATS_URL_SERVER,
+    //     std::to_string (worker_index),
+    //     std::to_string (service_i) + "_" + std::to_string (worker_index),
+    //     true);
     return worker_queues[worker_index];
   }
   int build_message_key (MPI_Datatype &message);
   int build_message_file (MPI_Datatype &message_file);
   int build_message_chunk (MPI_Datatype &message_chunk);
 
-  virtual ~dtio_system () { free(worker_queues); free(hcl_map_client_); };
+  virtual ~dtio_system ()
+  {
+    free (worker_queues);
+    free (hcl_map_client_);
+  };
 };
 
 #endif // DTIO_MAIN_SYSTEM_H

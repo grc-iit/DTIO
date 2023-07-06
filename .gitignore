@@ -45,6 +45,7 @@
 *.Plo
 
 *.*~
+*~
 .*~
 \#*\#
 *.swp
@@ -64,3 +65,7 @@ Mkfile.old
 dkms.conf
 
 build/
+run-test/
+
+# config file
+conf/default.yaml
