@@ -28,15 +28,57 @@
 
 #include <cstdint>
 
-enum request_status { COMPLETED = 0, PENDING = 1 };
+enum request_status
+{
+  COMPLETED = 0,
+  PENDING = 1
+};
 
-enum message_type { METADATA = 0, DATASPACE = 1 };
-enum operation { WRITE = 0, READ = 1, DELETE = 2, FLUSH = 3 };
-enum map_type { META_FH = 0, META_CHUNK = 1 };
-enum location_type { BUFFERS = 0, CACHE = 1, PFS = 2 };
-enum mpi_comms { CLIENT_COLOR = 0, WORKER_COLOR = 1, SCHEDULER_COLOR = 2 };
-enum mpi_dataspace_comms { DATASPACE_NULL_COLOR = 0, DATASPACE_COLOR = 1 };
-enum service {
+enum message_type
+{
+  METADATA = 0,
+  DATASPACE = 1
+};
+enum operation
+{
+  WRITE = 0,
+  READ = 1,
+  DELETE = 2,
+  FLUSH = 3
+};
+enum map_type
+{
+  META_FH = 0,
+  META_CHUNK = 1
+};
+enum location_type
+{
+  BUFFERS = 0,
+  CACHE = 1,
+  PFS = 2
+};
+enum mpi_comms
+{
+  CLIENT_COLOR = 0,
+  WORKER_COLOR = 1,
+  SCHEDULER_COLOR = 2
+};
+enum mpi_dataspace_comms
+{
+  DATASPACE_NULL_COLOR = 0,
+  DATASPACE_COLOR = 1
+};
+
+enum mpi_queue_comms
+{
+  QUEUE_CLIENT_COLOR = 0,
+  QUEUE_WORKER_COLOR = 1,
+  QUEUE_TASKSCHED_COLOR = 2
+
+};
+
+enum service
+{
   LIB = 0,
   CLIENT = 1,
   SYSTEM_MANAGER = 2,
@@ -44,7 +86,8 @@ enum service {
   WORKER = 4,
   WORKER_MANAGER = 5
 };
-enum class task_type : int64_t {
+enum class task_type : int64_t
+{
   READ_TASK = 0,
   WRITE_TASK = 1,
   FLUSH_TASK = 2,
@@ -52,7 +95,8 @@ enum class task_type : int64_t {
   DUMMY = 4,
 };
 
-enum table {
+enum table
+{
   FILE_DB = 0,
   FILE_CHUNK_DB = 1,
   CHUNK_DB = 2,
@@ -64,9 +108,19 @@ enum table {
   WRITE_FINISHED_DB = 8,
   COUNTER_DB = 9
 };
-enum map_impl_type { ROCKS_DB = 0, MEMCACHE_D = 1, HCLMAP = 2 };
-enum queue_impl_type { NATS = 0, HCLQUEUE = 1 };
-enum solver_impl_type {
+enum map_impl_type
+{
+  ROCKS_DB = 0,
+  MEMCACHE_D = 1,
+  HCLMAP = 2
+};
+enum queue_impl_type
+{
+  NATS = 0,
+  HCLQUEUE = 1
+};
+enum solver_impl_type
+{
   DP = 0,
   GREEDY = 1,
   ROUND_ROBIN = 2,
@@ -76,8 +130,18 @@ enum solver_impl_type {
 
 // NOTE: MULTI should always be the last interface type, and should not be used in tasks
 // It's used to get the number of interfaces for the purpose of the worker-side multi client
-enum io_client_type { STDIO = 0, POSIX = 1, MULTI = 2 };
+enum io_client_type
+{
+  STDIO = 0,
+  POSIX = 1,
+  MULTI = 2
+};
 
-enum Distribution { UNIFORM, LINEAR, EXPONENTIAL };
+enum Distribution
+{
+  UNIFORM,
+  LINEAR,
+  EXPONENTIAL
+};
 
 #endif // DTIO_MAIN_ENUMERATION_H

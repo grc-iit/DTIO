@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
 
   Timer timer = Timer();
   timer.resumeTime();
-  std::cerr << "This is a simple WRITE test.\n";
+  std::cerr << "This is a simple WRITE test.\nPerforming OPEN\n";
 
   // open/create file
   fp = dtio::fopen(argv[2], "w+");
@@ -27,10 +27,12 @@ int main(int argc, char **argv) {
   }
 
   // write message to file
+  std::cerr << "Performing WRITE\n";
   rv = dtio::fwrite(write_buf, sizeof(write_buf), 1, fp);
   std::cerr << "(Return value: " << rv << ")\n";
   std::cerr << "Written to: " << argv[2] << "\n";
 
+  std::cerr << "Performing CLOSE\n";
   dtio::fclose(fp);
   timer.pauseTime();
   auto time = timer.getElapsedTime();
@@ -42,6 +44,7 @@ int main(int argc, char **argv) {
   std::cerr << "This is a simple READ test.\n";
 
   // open file for reading
+  std::cerr << "Performing OPEN\n";
   fp = dtio::fopen(argv[2], "rb");
   if (fp == NULL) {
     std::cerr << "Failed to find file. Aborting...\n";
@@ -49,10 +52,12 @@ int main(int argc, char **argv) {
   }
 
   // read
+  std::cerr << "Performing READ\n";
   rv = dtio::fread(read_buf, sizeof(read_buf), 1, fp);
   std::cerr << "(Return value: " << rv << ")\n";
   std::cerr << read_buf << "\n";
 
+  std::cerr << "Performing CLOSE\n";
   dtio::fclose(fp);
   timer.pauseTime();
   time = timer.getElapsedTime();
