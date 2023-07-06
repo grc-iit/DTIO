@@ -31,7 +31,6 @@
 #include <dtio/common/data_structures.h>
 #include <dtio/common/logger.h>
 #include <iostream>
-#include <ostream>
 #include <string>
 
 class HCLQueueImpl : public distributed_queue
@@ -107,7 +106,9 @@ public:
                                                  << "\tName: " << queuename);
     for (size_t i = 0; i < comm_size; i++)
       {
-        MPI_Barrier (comm[i]);
+        // FIX: Barrier is not used, and it needs to be used
+        DTIO_LOG_INFO ("[Queue] Barrier :: " << subject << "\tindex " << i);
+        // MPI_Barrier (comm[i]);
       }
     // Wait for clients to initialize maps
     // MPI_Barrier (ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
