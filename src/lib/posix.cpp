@@ -122,50 +122,51 @@ int dtio::open64(const char *filename, int flags, mode_t mode) {
   return fd;
 }
 
-int unlink(const char *pathname) {
-  auto mdm = metadata_manager::getInstance(LIB);
-  auto client_queue =
-      dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
-  auto map_client = dtio_system::getInstance(LIB)->map_client();
-  auto map_server = dtio_system::getInstance(LIB)->map_server();
-  auto task_m = task_builder::getInstance(LIB);
-  auto data_m = data_manager::getInstance(LIB);
-  auto offset = mdm->get_fp(pathname);
-  if (!mdm->is_opened(pathname))
-    throw std::runtime_error("dtio::unlink() file not opened!");
-  auto f = file(std::string(pathname), offset, 0);
-  auto d_task = delete_task(f);
-  d_task.iface = io_client_type::POSIX;
-#ifdef TIMERTB
-  Timer t = Timer();
-  t.resumeTime();
-#endif
-  auto delete_tasks = task_m->build_delete_task(d_task);
-#ifdef TIMERTB
-  std::stringstream stream1;
-  stream1 << "build_delete_task()," << std::fixed << std::setprecision(10)
-          << t.pauseTime() << "\n";
-  std::cout << stream1.str();
-#endif
+// FIXME POSIX unlink causes an infinite loop when used with HCL 
+// int unlink(const char *pathname) {
+//   auto mdm = metadata_manager::getInstance(LIB);
+//   auto client_queue =
+//       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
+//   auto map_client = dtio_system::getInstance(LIB)->map_client();
+//   auto map_server = dtio_system::getInstance(LIB)->map_server();
+//   auto task_m = task_builder::getInstance(LIB);
+//   auto data_m = data_manager::getInstance(LIB);
+//   auto offset = mdm->get_fp(pathname);
+//   if (!mdm->is_opened(pathname))
+//     throw std::runtime_error("dtio::unlink() file not opened!");
+//   auto f = file(std::string(pathname), offset, 0);
+//   auto d_task = delete_task(f);
+//   d_task.iface = io_client_type::POSIX;
+// #ifdef TIMERTB
+//   Timer t = Timer();
+//   t.resumeTime();
+// #endif
+//   auto delete_tasks = task_m->build_delete_task(d_task);
+// #ifdef TIMERTB
+//   std::stringstream stream1;
+//   stream1 << "build_delete_task()," << std::fixed << std::setprecision(10)
+//           << t.pauseTime() << "\n";
+//   std::cout << stream1.str();
+// #endif
 
-  int index = 0;
-  std::vector<std::pair<std::string, std::string>> task_ids =
-      std::vector<std::pair<std::string, std::string>>();
-  for (auto task : delete_tasks) {
-    if (task.publish) {
-      mdm->update_delete_task_info(task, pathname);
-      client_queue->publish_task(&task);
-      task_ids.emplace_back(
-          std::make_pair(task.source.filename,
-                         std::to_string(task.source.server)));
-    } else {
-      mdm->update_delete_task_info(task, pathname);
-    }
+//   int index = 0;
+//   std::vector<std::pair<std::string, std::string>> task_ids =
+//       std::vector<std::pair<std::string, std::string>>();
+//   for (auto task : delete_tasks) {
+//     if (task.publish) {
+//       mdm->update_delete_task_info(task, pathname);
+//       client_queue->publish_task(&task);
+//       task_ids.emplace_back(
+//           std::make_pair(task.source.filename,
+//                          std::to_string(task.source.server)));
+//     } else {
+//       mdm->update_delete_task_info(task, pathname);
+//     }
 
-    index++;
-  }
-  return 0;
-}
+//     index++;
+//   }
+//   return 0;
+// }
 
 int rename(const char *oldpath, const char *newpath) {
   // FIXME not implemented

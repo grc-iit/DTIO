@@ -47,7 +47,8 @@ int open64(const char *filename, int flags);
 int open64(const char *filename, int flags, mode_t mode);
 
 // Not present in Labios, but needed for POSIX emulation in IOR
-int unlink(const char *pathname);
+// FIXME POSIX unlink is currently commented to avoid problems in HCL
+// int unlink(const char *pathname);
 int rename(const char *oldpath, const char *newpath);
 int stat(const char *pathname, struct stat *statbuf);
 int mknod(const char *pathname, mode_t mode, dev_t dev);
