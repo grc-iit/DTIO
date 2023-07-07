@@ -23,8 +23,8 @@
  * Created by hariharan on 2/16/18.
  * Updated by akougkas on 6/26/2018
  ******************************************************************************/
-#ifndef DTIO_MAIN_POSIX_H
-#define DTIO_MAIN_POSIX_H
+#ifndef DTIO_MAIN_STDIO_H
+#define DTIO_MAIN_STDIO_H
 /******************************************************************************
  *include files
  ******************************************************************************/
@@ -41,29 +41,17 @@ namespace dtio {
 /******************************************************************************
  *Interface
  ******************************************************************************/
-int open(const char *filename, int flags);
-int open(const char *filename, int flags, mode_t mode);
-int open64(const char *filename, int flags);
-int open64(const char *filename, int flags, mode_t mode);
-
-// Not present in Labios, but needed for POSIX emulation in IOR
-// FIXME POSIX unlink is currently commented to avoid problems in HCL
-// int unlink(const char *pathname);
-int rename(const char *oldpath, const char *newpath);
-int stat(const char *pathname, struct stat *statbuf);
-int mknod(const char *pathname, mode_t mode, dev_t dev);
-// int fcntl(int fd, int cmd, ...);
-
-int close(int fd);
-off_t lseek(int fd, off_t offset, int whence);
-off_t lseek64(int fd, off_t offset, int whence);
-ssize_t read(int fd, void *buf, size_t count);
-std::vector<read_task> read_async(int fd, size_t count);
-std::size_t read_wait(void *ptr, std::vector<read_task> &tasks,
+FILE *fopen(const char *filename, const char *mode);
+int fclose(FILE *stream);
+int fseek(FILE *stream, long int offset, int origin);
+size_t fread(void *ptr, size_t size, size_t count, FILE *stream);
+std::vector<read_task> fread_async(size_t size, size_t count, FILE *stream);
+std::size_t fread_wait(void *ptr, std::vector<read_task> &tasks,
                        std::string filename);
-std::vector<write_task *> write_async(int fd, const void *buf, size_t count);
-size_t write_wait(std::vector<write_task *> tasks);
-ssize_t write(int fd, const void *buf, size_t count);
+std::vector<write_task *> fwrite_async(void *ptr, size_t size, size_t count,
+                                       FILE *stream);
+size_t fwrite_wait(std::vector<write_task *> tasks);
+size_t fwrite(void *ptr, size_t size, size_t count, FILE *stream);
 } // namespace dtio
 
-#endif // DTIO_MAIN_POSIX_H
+#endif // DTIO_MAIN_STDIO_H

@@ -35,8 +35,9 @@ dtio_system::init (service service)
 {
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
   int comm_size;
-  MPI_Comm_rank (MPI_COMM_WORLD, &comm_size);
+  MPI_Comm_size (MPI_COMM_WORLD, &comm_size);
   comm_size = comm_size == 0 ? 1 : comm_size;
+
   if (map_impl_type_t == map_impl_type::MEMCACHE_D)
     {
       map_server_ = std::make_shared<MemcacheDImpl> (

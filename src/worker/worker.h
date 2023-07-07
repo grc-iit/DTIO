@@ -31,6 +31,8 @@
 #include "../task_scheduler/task_scheduler.h"
 #include "api/io_client.h"
 #include "api/posix_client.h"
+#include "api/stdio_client.h"
+#include "api/multi_client.h"
 #include <dtio/common/external_clients/memcached_impl.h>
 #include <dtio/dtio_system.h>
 /******************************************************************************
@@ -55,6 +57,13 @@ private:
     if (io_client_type_t == io_client_type::POSIX) {
       client = std::make_shared<posix_client>(posix_client(worker_index));
     }
+    else if (io_client_type_t == io_client_type::STDIO) {
+      client = std::make_shared<stdio_client>(stdio_client(worker_index));
+    }
+    else if (io_client_type_t == io_client_type::MULTI) {
+      client = std::make_shared<multi_client>(multi_client(worker_index));
+    }
+
     queue =
         dtio_system::getInstance(service_i)->get_worker_queue(worker_index);
     map = dtio_system::getInstance(service_i)->map_server();

@@ -45,11 +45,33 @@ int metadata_manager::create(std::string filename, std::string mode,
     return MDM__FILENAME_MAX_LENGTH;
   auto map = dtio_system::getInstance(service_i)->map_client();
   fh = fmemopen(nullptr, 1, mode.c_str());
-  file_stat stat = {fh, 0, 0, mode, true};
+  file_stat stat = {fh, -1, 0, 0, 0, 0, mode, true};
   auto iter = file_map.find(filename);
   if (iter != file_map.end())
     file_map.erase(iter);
   fh_map.emplace(fh, filename);
+  file_map.emplace(filename, stat);
+  std::string fs_str = serialization_manager().serialize_file_stat(stat);
+  map->put(table::FILE_DB, filename, fs_str, std::to_string(-1));
+  /**
+   * TODO: put in map for outstanding operations-> on fclose create a file
+   * in the destination and flush buffer contents
+   **/
+  return SUCCESS;
+}
+
+int metadata_manager::create(std::string filename, int flags, mode_t mode,
+                             int *fd) {
+  if (filename.length() > FILENAME_MAX)
+    return MDM__FILENAME_MAX_LENGTH;
+  auto map = dtio_system::getInstance(service_i)->map_client();
+
+  *fd = random(); // random number, maybe use an HCL sequencer
+  file_stat stat = {nullptr, *fd, 0, 0, flags, mode, "", true};
+  auto iter = file_map.find(filename);
+  if (iter != file_map.end())
+    file_map.erase(iter);
+  fd_map.emplace(*fd, filename);
   file_map.emplace(filename, stat);
   std::string fs_str = serialization_manager().serialize_file_stat(stat);
   map->put(table::FILE_DB, filename, fs_str, std::to_string(-1));
@@ -107,9 +129,60 @@ int metadata_manager::update_on_open(std::string filename, std::string mode,
   return SUCCESS;
 }
 
+int metadata_manager::update_on_open(std::string filename, int flags,
+				     mode_t mode, int *fd) {
+#ifdef TIMERMDM
+  Timer t = Timer();
+  t.resumeTime();
+#endif
+  if (filename.length() > FILENAME_MAX)
+    return MDM__FILENAME_MAX_LENGTH;
+  auto map = dtio_system::getInstance(service_i)->map_client();
+  auto iter = file_map.find(filename);
+  file_stat stat;
+  if (iter != file_map.end()) {
+    stat = iter->second;
+    *fd = stat.fd;
+  } else {
+    *fd = random();
+    stat.file_size = 0;
+    stat.fd = *fd;
+    stat.is_open = true;
+    if (flags == O_RDONLY) {
+      stat.file_pointer = 0;
+    } else if (flags == O_WRONLY) {
+      stat.file_pointer = 0;
+      stat.file_size = 0;
+      remove_chunks(filename);
+    } else if (flags == O_RDWR) {
+      stat.file_pointer = stat.file_size;
+    }
+  }
+  iter = file_map.find(filename);
+  if (iter != file_map.end())
+    file_map.erase(iter);
+  fd_map.emplace(*fd, filename);
+  file_map.emplace(filename, stat);
+  std::string fs_str = serialization_manager().serialize_file_stat(stat);
+  map->put(table::FILE_DB, filename, fs_str, std::to_string(-1));
+#ifdef TIMERMDM
+  std::cout << "metadata_manager::update_on_open()," << t.pauseTime() << "\n";
+#endif
+  return SUCCESS;
+}
+
 bool metadata_manager::is_opened(FILE *fh) {
   auto iter1 = fh_map.find(fh);
   if (iter1 != fh_map.end()) {
+    auto iter = file_map.find(iter1->second);
+    return iter != file_map.end() && iter->second.is_open;
+  }
+  return false;
+}
+
+bool metadata_manager::is_opened(int fd) {
+  auto iter1 = fd_map.find(fd);
+  if (iter1 != fd_map.end()) {
     auto iter = file_map.find(iter1->second);
     return iter != file_map.end() && iter->second.is_open;
   }
@@ -140,9 +213,28 @@ int metadata_manager::update_on_close(FILE *&fh) {
   return SUCCESS;
 }
 
+int metadata_manager::update_on_close(int fd) {
+  auto iter = fd_map.find(fd);
+  if (iter != fd_map.end()) {
+    auto iter2 = file_map.find(iter->second);
+    if (iter2 != file_map.end()) {
+      file_map.erase(iter2);
+    }
+    fd_map.erase(iter);
+  }
+  return SUCCESS;
+}
+
 std::string metadata_manager::get_filename(FILE *fh) {
   auto iter = fh_map.find(fh);
   if (iter != fh_map.end())
+    return iter->second;
+  return nullptr;
+}
+
+std::string metadata_manager::get_filename(int fd) {
+  auto iter = fd_map.find(fd);
+  if (iter != fd_map.end())
     return iter->second;
   return nullptr;
 }
@@ -159,6 +251,20 @@ std::string metadata_manager::get_mode(std::string filename) {
   if (iter != file_map.end())
     return iter->second.mode;
   return nullptr;
+}
+
+int metadata_manager::get_flags(std::string filename) {
+  auto iter = file_map.find(filename);
+  if (iter != file_map.end())
+    return iter->second.flags;
+  return 0;
+}
+
+mode_t metadata_manager::get_posix_mode(std::string filename) {
+  auto iter = file_map.find(filename);
+  if (iter != file_map.end())
+    return iter->second.posix_mode;
+  return 0;
 }
 
 long long int metadata_manager::get_fp(const std::string &filename) {
@@ -286,6 +392,18 @@ void metadata_manager::update_on_write(std::string filename, size_t size,
   }
 }
 
+void metadata_manager::update_on_delete(std::string filename) {
+  auto map = dtio_system::getInstance(service_i)->map_client();
+  serialization_manager sm = serialization_manager();
+  auto iter = file_map.find(filename);
+  if (iter != file_map.end()) {
+    file_map.erase(filename);
+    file_stat fs = iter->second;
+    std::string fs_str = sm.serialize_file_stat(fs);
+    map->remove(table::FILE_DB, filename, fs_str);
+  }
+}
+
 std::vector<chunk_meta> metadata_manager::fetch_chunks(read_task task) {
 #ifdef TIMERMDM
   Timer t = Timer();
@@ -337,6 +455,36 @@ std::vector<chunk_meta> metadata_manager::fetch_chunks(read_task task) {
   std::cout << "metadata_manager::fetch_chunks()," << t.pauseTime() << "\n";
 #endif
   return chunks;
+}
+
+int metadata_manager::update_delete_task_info(delete_task task_k,
+                                             std::string filename) {
+#ifdef TIMERMDM
+  Timer t = Timer();
+  t.resumeTime();
+#endif
+  auto map = dtio_system::getInstance(service_i)->map_client();
+  file_stat fs;
+  auto iter = file_map.find(filename);
+  if (iter != file_map.end())
+    fs = iter->second;
+  update_on_delete(task_k.source.filename);
+  // if (!task_k.meta_updated) {
+  //   auto chunk_index = (task_k.source.offset / MAX_IO_UNIT);
+  //   auto base_offset = (task_k.source.offset / MAX_IO_UNIT) * MAX_IO_UNIT;
+  //   chunk_meta cm;
+  //   cm.actual_user_chunk = task_k.source;
+  //   cm.destination = task_k.destination;
+  //   std::string chunk_str = serialization_manager().serialize_chunk(cm);
+  //   map->remove(table::CHUNK_DB, filename + std::to_string(base_offset), chunk_str);
+  // }
+  std::string fs_str = serialization_manager().serialize_file_stat(fs);
+  map->remove(table::FILE_DB, filename, fs_str);
+#ifdef TIMERMDM
+  std::cout << "metadata_manager::update_delete_task_info()," << t.pauseTime()
+            << "\n";
+#endif
+  return 0;
 }
 
 int metadata_manager::update_write_task_info(write_task task_k,

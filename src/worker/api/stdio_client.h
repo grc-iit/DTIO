@@ -20,11 +20,31 @@
  * <http://www.gnu.org/licenses/>.
  */
 //
-// Created by anthony on 4/24/18.
+// Created by hdevarajan on 5/10/18.
 //
 
-#ifndef DTIO_MAIN_DTIO_H
-#define DTIO_MAIN_DTIO_H
+#ifndef DTIO_MAIN_STDIOCLIENT_H
+#define DTIO_MAIN_STDIOCLIENT_H
 
-#include <dtio/drivers/stdio.h>
-#endif // DTIO_MAIN_DTIO_H
+#include "io_client.h"
+#include "dtio/common/config_manager.h"
+#include <chrono>
+#include <dtio/common/data_structures.h>
+
+using namespace std::chrono;
+
+class stdio_client : public io_client {
+  std::string dir;
+
+public:
+  stdio_client(int worker_index) : io_client(worker_index) {
+    dir = ConfigManager::get_instance()->WORKER_PATH + "/" +
+          std::to_string(worker_index) + "/";
+  }
+  int dtio_write(write_task task) override;
+  int dtio_read(read_task task) override;
+  int dtio_delete_file(delete_task task) override;
+  int dtio_flush_file(flush_task task) override;
+};
+
+#endif // DTIO_MAIN_STDIOCLIENT_H

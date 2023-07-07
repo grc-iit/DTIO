@@ -72,15 +72,12 @@ private:
                       - ConfigManager::get_instance ()->NUM_SCHEDULERS;
       }
 
-    hcl_map_client_ = (std::shared_ptr<distributed_hashmap> *)calloc (
-        num_clients, sizeof (std::shared_ptr<distributed_hashmap>));
     init (service_i);
     return;
   }
 
   void init (service service);
   std::shared_ptr<distributed_hashmap> map_client_, map_server_;
-  std::shared_ptr<distributed_hashmap> *hcl_map_client_;
 
 public:
   int num_clients;
@@ -155,7 +152,6 @@ public:
   virtual ~dtio_system ()
   {
     free (worker_queues);
-    free (hcl_map_client_);
   };
 };
 

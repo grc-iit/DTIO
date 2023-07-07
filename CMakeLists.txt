@@ -51,7 +51,7 @@ set(COMMON_SRC
     src/common/external_clients/hcl_queue_impl.cpp
     src/common/external_clients/hcl_map_impl.cpp
     src/common/task_builder/task_builder.cpp)
-set(DTIO_LIB_SRC src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
+set(DTIO_LIB_SRC src/lib/stdio.cpp src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
 # set(DTIO_CLIENT_SRC src/client/main.cpp src/client/client.cpp
 #                       src/common/threadPool.cpp)
 # set(DTIO_SERVER_SRC src/system_manager/main.cpp
@@ -62,7 +62,7 @@ set(DTIO_TS_SRC
 set(DTIO_WM_SRC src/worker_manager/main.cpp
                   src/worker_manager/worker_manager_service.cpp)
 set(DTIO_WS_SRC
-    src/worker/api/posix_client.cpp src/worker/program_repo/statistics.cpp
+    src/worker/api/posix_client.cpp src/worker/api/stdio_client.cpp src/worker/api/multi_client.cpp src/worker/program_repo/statistics.cpp
     src/worker/main.cpp src/worker/worker.cpp)
 
 if(DEFINED MPI)
@@ -97,6 +97,10 @@ add_executable(dtio_worker ${DTIO_WS_SRC})
 
 function(dtio_set_libs target)
   target_link_libraries(${target} yaml-cpp)
+  find_package(FMT REQUIRED)
+  if(FMT_FOUND)
+    target_link_libraries(${target} -lfmt)
+  endif()
   if(DEFINED MPI)
     target_link_libraries(${target} ${MPI_LIBRARIES})
   endif()

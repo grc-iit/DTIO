@@ -127,9 +127,14 @@ enum solver_impl_type
   RANDOM_SELECT = 3,
   DEFAULT = 4
 };
+
+// NOTE: MULTI should always be the last interface type, and should not be used in tasks
+// It's used to get the number of interfaces for the purpose of the worker-side multi client
 enum io_client_type
 {
-  POSIX = 0
+  STDIO = 0,
+  POSIX = 1,
+  MULTI = 2
 };
 
 enum Distribution
