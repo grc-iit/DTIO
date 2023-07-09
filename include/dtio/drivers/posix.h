@@ -35,7 +35,9 @@
 #include <dtio/dtio_system.h>
 
 // DTIO Namespace
-namespace dtio::posix
+namespace dtio
+{
+namespace posix
 {
 
 // Interface
@@ -63,6 +65,7 @@ std::size_t read_wait (void *ptr, std::vector<read_task> &tasks,
 std::vector<write_task *> write_async (int fd, const void *buf, size_t count);
 size_t write_wait (std::vector<write_task *> tasks);
 ssize_t write (int fd, const void *buf, size_t count);
+}
 } // namespace dtio
 
 #endif // DTIO_MAIN_POSIX_H

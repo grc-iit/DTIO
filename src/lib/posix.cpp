@@ -361,7 +361,7 @@ dtio::posix::read_async (int fd, size_t count)
 
 std::size_t
 dtio::posix::read_wait (void *ptr, std::vector<read_task> &tasks,
-                 std::string filename)
+                        std::string filename)
 {
   auto mdm = metadata_manager::getInstance (LIB);
   auto data_m = data_manager::getInstance (LIB);
