@@ -69,10 +69,11 @@ public:
   std::string HCL_SERVER_LIST_PATH;
   int test;
   MPI_Comm DATASPACE_COMM;
+  MPI_Comm METADATA_COMM;
   MPI_Comm PROCESS_COMM;
-  MPI_Comm QUEUE_CLIENT_COMM;
-  MPI_Comm QUEUE_WORKER_COMM;
-  MPI_Comm QUEUE_TASKSCHED_COMM;
+  // MPI_Comm QUEUE_CLIENT_COMM;
+  MPI_Comm *QUEUE_WORKER_COMM;
+  // MPI_Comm QUEUE_TASKSCHED_COMM;
   int TS_NUM_WORKER_THREADS;
   std::size_t NUM_WORKERS; // FIXME: make private
   std::size_t NUM_SCHEDULERS; // FIXME: make private
@@ -96,11 +97,12 @@ public:
     TS_NUM_WORKER_THREADS = config_["TS_NUM_WORKER_THREADS"].as<int>();
     NUM_WORKERS = config_["NUM_WORKERS"].as<int>();
     NUM_SCHEDULERS = config_["NUM_SCHEDULERS"].as<int>();
+    QUEUE_WORKER_COMM = (MPI_Comm *)calloc(NUM_WORKERS, sizeof(MPI_Comm));
   }
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~ConfigManager() {}
+  virtual ~ConfigManager() { free(QUEUE_WORKER_COMM); }
 };
 
 #endif // DTIO_CONFIGURATION_MANAGER_H

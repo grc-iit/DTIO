@@ -21,6 +21,7 @@
  */
 
 #include "dtio/common/config_manager.h"
+#include "dtio/common/enumerations.h"
 #include <dtio/common/solver/default_solver.h>
 #include <dtio/common/solver/dp_solver.h>
 #include <dtio/common/solver/random_solver.h>
@@ -50,7 +51,7 @@ dtio_system::init (service service)
   else if (map_impl_type_t == map_impl_type::HCLMAP)
     {
       map_server_
-          = std::make_shared<HCLMapImpl> (service, "server", 0, num_clients);
+	= std::make_shared<HCLMapImpl> (service, "dataspace", 0, 1);
     }
 
   if (solver_impl_type_t == solver_impl_type::DP)
@@ -90,8 +91,7 @@ dtio_system::init (service service)
             std::size_t t = map_server ()->counter_inc (
                 COUNTER_DB, DATASPACE_ID, std::to_string (-1));
           }
-        MPI_Barrier (
-            ConfigManager::get_instance ()->PROCESS_COMM); // MPI_COMM_WORLD
+        MPI_Barrier (MPI_COMM_WORLD);
         break;
       }
     case CLIENT:
@@ -131,7 +131,7 @@ dtio_system::init (service service)
   else if (map_impl_type_t == map_impl_type::HCLMAP)
     {
       map_client_
-          = std::make_shared<HCLMapImpl> (service, "client", 0, num_clients);
+	= std::make_shared<HCLMapImpl> (service, "metadata", 0, 1);
     }
 }
 

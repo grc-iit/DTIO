@@ -26,7 +26,7 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
-#include "task_scheduler.h"
+#include <dtio/common/external_clients/hcl_map_impl.h>
 #include <dtio/common/data_structures.h>
 #include <dtio/common/utilities.h>
 #include <mpi.h>
@@ -41,22 +41,37 @@ main (int argc, char **argv)
   int rank;
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
   // Assumption: one worker manager
-  MPI_Comm_split (MPI_COMM_WORLD, SCHEDULER_COLOR,
-                  rank - ConfigManager::get_instance ()->NUM_WORKERS - 1,
+  MPI_Comm_split (MPI_COMM_WORLD, HCLMAP_COLOR,
+                  rank - ConfigManager::get_instance ()->NUM_WORKERS - 1 - ConfigManager::get_instance ()->NUM_SCHEDULERS,
                   &ConfigManager::get_instance ()->PROCESS_COMM);
   int process_rank;
   MPI_Comm_rank(ConfigManager::get_instance ()->PROCESS_COMM, &process_rank);
-
-  MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_COLOR, rank - 1,
-                  &ConfigManager::get_instance ()->DATASPACE_COMM);
-  MPI_Comm_split (MPI_COMM_WORLD, METADATA_COLOR, rank - 1,
-                  &ConfigManager::get_instance ()->METADATA_COMM);
+  if (process_rank == 0) {
+    MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_COLOR, rank - 1,
+		    &ConfigManager::get_instance ()->DATASPACE_COMM);
+    MPI_Comm_split (MPI_COMM_WORLD, METADATA_NULL_COLOR, 1,
+		    &ConfigManager::get_instance ()->METADATA_COMM);
+  }
+  else {
+    MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_NULL_COLOR, 1,
+		    &ConfigManager::get_instance ()->DATASPACE_COMM);
+    MPI_Comm_split (MPI_COMM_WORLD, METADATA_COLOR, rank - 2,
+		    &ConfigManager::get_instance ()->METADATA_COMM);
+  }
   for (int i = 0; i < ConfigManager::get_instance ()->NUM_WORKERS; i++) {
-    MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, process_rank + 1,
+    MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_NULL_COLOR,
+		    ConfigManager::get_instance ()->NUM_WORKERS + process_rank,
 		    &ConfigManager::get_instance ()->QUEUE_WORKER_COMM[i]);
   }
-  auto scheduler_service = task_scheduler::getInstance (TASK_SCHEDULER);
-  scheduler_service->run ();
+  std::shared_ptr<HCLMapImpl> map;
+  if (process_rank == 0) {
+    map = std::make_shared<HCLMapImpl> (HCLCLIENT, "dataspace", 0, 1);
+  }
+  else {
+    map = std::make_shared<HCLMapImpl> (HCLCLIENT, "metadata", 0, 1);
+  }
+  map->run ();
+
   MPI_Finalize ();
   return 0;
 }

@@ -35,15 +35,13 @@ main (int argc, char **argv)
                   &ConfigManager::get_instance ()->PROCESS_COMM);
   MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_NULL_COLOR, 0,
                   &ConfigManager::get_instance ()->DATASPACE_COMM);
+  MPI_Comm_split (MPI_COMM_WORLD, METADATA_NULL_COLOR, 0,
+                  &ConfigManager::get_instance ()->METADATA_COMM);
 
-  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_CLIENT_COLOR,
-                  rank - ConfigManager::get_instance ()->NUM_WORKERS
-                      - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1,
-                  &ConfigManager::get_instance ()->QUEUE_CLIENT_COMM);
-  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, rank - 1,
-                  &ConfigManager::get_instance ()->QUEUE_WORKER_COMM);
-  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_TASKSCHED_COLOR, rank - 1,
-                  &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
+  for (int i = 0; i < ConfigManager::get_instance ()->NUM_WORKERS; i++) {
+    MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_NULL_COLOR, 0,
+		    &ConfigManager::get_instance ()->QUEUE_WORKER_COMM[i]);
+  }
   std::shared_ptr<worker_manager_service> worker_manager_service_i
       = worker_manager_service::getInstance (service::WORKER_MANAGER);
   worker_manager_service_i->run ();
