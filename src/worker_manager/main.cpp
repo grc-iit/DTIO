@@ -23,6 +23,7 @@
 #include <dtio/common/utilities.h>
 #include <iostream>
 #include <mpi.h>
+#include <dtio/common/logger.h>
 
 int
 main (int argc, char **argv)
@@ -44,6 +45,7 @@ main (int argc, char **argv)
   }
   std::shared_ptr<worker_manager_service> worker_manager_service_i
       = worker_manager_service::getInstance (service::WORKER_MANAGER);
+  DTIO_LOG_DEBUG("[Worker Manager] Created");
   worker_manager_service_i->run ();
   MPI_Finalize ();
   return 0;

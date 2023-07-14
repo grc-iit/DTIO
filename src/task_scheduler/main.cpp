@@ -30,6 +30,7 @@
 #include <dtio/common/data_structures.h>
 #include <dtio/common/utilities.h>
 #include <mpi.h>
+#include <dtio/common/logger.h>
 /******************************************************************************
  *Main
  ******************************************************************************/
@@ -56,6 +57,7 @@ main (int argc, char **argv)
 		    &ConfigManager::get_instance ()->QUEUE_WORKER_COMM[i]);
   }
   auto scheduler_service = task_scheduler::getInstance (TASK_SCHEDULER);
+  DTIO_LOG_DEBUG("[Task Scheduler] Created");
   scheduler_service->run ();
   MPI_Finalize ();
   return 0;

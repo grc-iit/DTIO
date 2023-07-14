@@ -30,6 +30,7 @@
 #include <dtio/common/data_structures.h>
 #include <dtio/common/utilities.h>
 #include <mpi.h>
+#include <dtio/common/logger.h>
 /******************************************************************************
  *Main
  ******************************************************************************/
@@ -70,6 +71,7 @@ main (int argc, char **argv)
   else {
     map = std::make_shared<HCLMapImpl> (HCLCLIENT, "metadata", 0, 1);
   }
+  DTIO_LOG_DEBUG("[HCL Map] Created");
   map->run ();
 
   MPI_Finalize ();

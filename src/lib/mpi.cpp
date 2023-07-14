@@ -32,6 +32,7 @@
 int
 dtio::MPI_Init (int *argc, char ***argv)
 {
+  DTIO_LOG_DEBUG("[MPI] Init Entered");
   int provided;
   PMPI_Init_thread (argc, argv, MPI_THREAD_MULTIPLE, &provided);
   if (provided < MPI_THREAD_MULTIPLE)
@@ -39,7 +40,10 @@ dtio::MPI_Init (int *argc, char ***argv)
       std::cerr << "Didn't receive appropriate thread specification"
                 << std::endl;
     }
-  ConfigManager::get_instance ()->LoadConfig ((*argv)[1]);
+  /* NOTE: If we're intercepting MPI_Init, we can't assume that
+     argv[1] is the DTIO conf path
+   */
+  ConfigManager::get_instance ()->LoadConfig (); //(*argv)[1]
   std::stringstream ss;
 
   // int rank;

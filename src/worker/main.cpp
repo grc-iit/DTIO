@@ -33,6 +33,7 @@
 #include <dtio/common/utilities.h>
 #include <iostream>
 #include <mpi.h>
+#include <dtio/common/logger.h>
 /******************************************************************************
  *Worker main
  ******************************************************************************/
@@ -67,6 +68,7 @@ main (int argc, char **argv)
 
   std::shared_ptr<worker> worker_service_i
       = worker::getInstance (service::WORKER, worker_index);
+  DTIO_LOG_DEBUG("[Worker] Created :: Worker Number " << worker_index);
   worker_service_i->run ();
   MPI_Finalize ();
   return 0;

@@ -498,6 +498,7 @@ size_t dtio::write_wait(std::vector<write_task *> tasks) {
 }
 
 ssize_t dtio::write(int fd, const void *buf, size_t count) {
+  DTIO_LOG_DEBUG("[POSIX] Write Entered");
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);

@@ -84,6 +84,16 @@ public:
                ? instance = std::shared_ptr<ConfigManager>(new ConfigManager())
                : instance;
   }
+  void LoadConfig() {
+    // This version loads the config with an environment variable path
+    wordexp_t path_traverse;
+    wordexp("${DTIO_CONF_PATH}", &path_traverse, 0);
+    if (path_traverse.we_wordc != 1) {
+      std::cerr << "Passed HCL server list path is more than one word on expansion" << std::endl;
+    }
+    char **words = path_traverse.we_wordv;
+    LoadConfig(words[0]);
+  }
   void LoadConfig(char *path) {
     config_ = YAML::LoadFile(path);
 
