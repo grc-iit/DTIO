@@ -36,6 +36,7 @@
 #include <yaml-cpp/yaml.h>
 #include <mpi.h>
 #include <dtio/common/enumerations.h>
+#include <wordexp.h>
 
 /******************************************************************************
  *Class
@@ -86,7 +87,15 @@ public:
   void LoadConfig(char *path) {
     config_ = YAML::LoadFile(path);
 
-    HCL_SERVER_LIST_PATH = config_["HCL_SERVER_LIST_PATH"].as<std::string>();
+    HCL_SERVER_LIST_PATH = "";
+    wordexp_t path_traverse;
+    wordexp(config_["HCL_SERVER_LIST_PATH"].as<std::string>().c_str(), &path_traverse, 0);
+    if (path_traverse.we_wordc != 1) {
+      std::cerr << "Passed HCL server list path is more than one word on expansion" << std::endl;
+    }
+    char **words = path_traverse.we_wordv;
+    HCL_SERVER_LIST_PATH += words[0];
+    wordfree(&path_traverse);
     NATS_URL_CLIENT = config_["NATS_URL_CLIENT"].as<std::string>();
     NATS_URL_SERVER = config_["NATS_URL_SERVER"].as<std::string>();
     MEMCACHED_URL_CLIENT = config_["MEMCACHED_URL_CLIENT"].as<std::string>();
