@@ -20,12 +20,12 @@
 #include "posix_api.h"
 #include "posix_io_client.h"
 
-namespace hermes::adapter::fs {
+namespace dtio::adapter::fs {
 
 /** A class to represent POSIX IO file system */
-class PosixFs : public hermes::adapter::fs::Filesystem {
+class PosixFs : public dtio::adapter::fs::Filesystem {
  public:
-  PosixFs() : hermes::adapter::fs::Filesystem(HERMES_POSIX_IO_CLIENT,
+  PosixFs() : dtio::adapter::fs::Filesystem(HERMES_POSIX_IO_CLIENT,
                                               AdapterType::kPosix) {}
 
   template<typename StatT>
@@ -53,7 +53,7 @@ class PosixFs : public hermes::adapter::fs::Filesystem {
     } else {
       errno = EBADF;
       HELOG(kError, "File with descriptor {} does not exist in Hermes",
-            f.hermes_fd_)
+            f.dtio_fd_)
       return -1;
     }
   }
@@ -80,8 +80,8 @@ class PosixFs : public hermes::adapter::fs::Filesystem {
     if (!HERMES->IsInitialized() || fd < 8192) {
       return false;
     }
-    hermes::adapter::fs::File f;
-    f.hermes_fd_ = fd;
+    dtio::adapter::fs::File f;
+    f.dtio_fd_ = fd;
     stat = HERMES_FS_METADATA_MANAGER->Find(f);
     return stat != nullptr;
   }
@@ -105,9 +105,9 @@ class PosixFs : public hermes::adapter::fs::Filesystem {
 
 /** Simplify access to the stateless PosixFs Singleton */
 #define HERMES_POSIX_FS \
-  hshm::EasySingleton<hermes::adapter::fs::PosixFs>::GetInstance()
-#define HERMES_POSIX_FS_T hermes::adapter::fs::PosixFs*
+  hshm::EasySingleton<dtio::adapter::fs::PosixFs>::GetInstance()
+#define HERMES_POSIX_FS_T dtio::adapter::fs::PosixFs*
 
-}  // namespace hermes::adapter::fs
+}  // namespace dtio::adapter::fs
 
 #endif  // HERMES_ADAPTER_POSIX_NATIVE_H_
