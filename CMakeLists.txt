@@ -64,6 +64,9 @@ set(DTIO_WM_SRC src/worker_manager/main.cpp
 set(DTIO_WS_SRC
     src/worker/api/posix_client.cpp src/worker/api/stdio_client.cpp src/worker/api/multi_client.cpp src/worker/program_repo/statistics.cpp
     src/worker/main.cpp src/worker/worker.cpp)
+set(DTIO_HM_SRC src/common/external_clients/hcl_map_impl/main.cpp
+    src/common/external_clients/hcl_map_impl.cpp)
+    
 
 if(DEFINED MPI)
   find_package(MPI REQUIRED)
@@ -94,6 +97,7 @@ add_library(${PROJECT_NAME} SHARED ${DTIO_LIB_SRC})
 add_executable(dtio_task_scheduler ${DTIO_TS_SRC})
 add_executable(dtio_worker_manager ${DTIO_WM_SRC})
 add_executable(dtio_worker ${DTIO_WS_SRC})
+add_executable(dtio_hclmap ${DTIO_HM_SRC})
 
 function(dtio_set_libs target)
   target_link_libraries(${target} yaml-cpp)
@@ -130,6 +134,7 @@ dtio_set_libs(dtio_common)
 dtio_set_libs(dtio_task_scheduler)
 dtio_set_libs(dtio_worker_manager)
 dtio_set_libs(dtio_worker)
+dtio_set_libs(dtio_hclmap)
 dtio_set_libs(${PROJECT_NAME})
 
 set_target_properties(
@@ -152,6 +157,7 @@ install(TARGETS dtio_common DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(TARGETS dtio_task_scheduler DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(TARGETS dtio_worker_manager DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(TARGETS dtio_worker DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS dtio_hclmap DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(
   TARGETS ${PROJECT_NAME}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

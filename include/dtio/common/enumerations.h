@@ -59,22 +59,25 @@ enum location_type
 };
 enum mpi_comms
 {
-  CLIENT_COLOR = 0,
-  WORKER_COLOR = 1,
-  SCHEDULER_COLOR = 2
+  WORKER_COLOR = 0,
+  SCHEDULER_COLOR = 1,
+  HCLMAP_COLOR = 2
 };
 enum mpi_dataspace_comms
 {
   DATASPACE_NULL_COLOR = 0,
   DATASPACE_COLOR = 1
 };
+enum mpi_metadata_comms
+{
+  METADATA_NULL_COLOR = 0,
+  METADATA_COLOR = 1
+};
 
 enum mpi_queue_comms
 {
-  QUEUE_CLIENT_COLOR = 0,
-  QUEUE_WORKER_COLOR = 1,
-  QUEUE_TASKSCHED_COLOR = 2
-
+  QUEUE_WORKER_NULL_COLOR = 0,
+  QUEUE_WORKER_COLOR = 1
 };
 
 enum service
@@ -84,7 +87,8 @@ enum service
   SYSTEM_MANAGER = 2,
   TASK_SCHEDULER = 3,
   WORKER = 4,
-  WORKER_MANAGER = 5
+  WORKER_MANAGER = 5,
+  HCLCLIENT = 6
 };
 enum class task_type : int64_t
 {

@@ -591,21 +591,22 @@ dtio::posix::write_wait (std::vector<write_task *> tasks)
   return total_size_written;
 }
 
-ssize_t
-dtio::posix::write (int fd, const void *buf, size_t count)
-{
-  auto mdm = metadata_manager::getInstance (LIB);
-  auto client_queue
-      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
-  auto map_client = dtio_system::getInstance (LIB)->map_client ();
-  auto map_server = dtio_system::getInstance (LIB)->map_server ();
-  auto task_m = task_builder::getInstance (LIB);
-  auto data_m = data_manager::getInstance (LIB);
-  auto filename = mdm->get_filename (fd);
-  auto offset = mdm->get_fp (filename);
-  if (!mdm->is_opened (filename))
-    throw std::runtime_error ("dtio::posix::write() file not opened!");
-  auto w_task = write_task (file (filename, offset, count), file ());
+
+ssize_t dtio::write(int fd, const void *buf, size_t count) {
+  DTIO_LOG_DEBUG("[POSIX] Write Entered");
+  auto mdm = metadata_manager::getInstance(LIB);
+  auto client_queue =
+      dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
+  auto map_client = dtio_system::getInstance(LIB)->map_client();
+  auto map_server = dtio_system::getInstance(LIB)->map_server();
+  auto task_m = task_builder::getInstance(LIB);
+  auto data_m = data_manager::getInstance(LIB);
+  auto filename = mdm->get_filename(fd);
+  auto offset = mdm->get_fp(filename);
+  if (!mdm->is_opened(filename))
+    throw std::runtime_error("dtio::write() file not opened!");
+  auto w_task = write_task(file(filename, offset, count), file());
+
   w_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
   Timer t = Timer ();
