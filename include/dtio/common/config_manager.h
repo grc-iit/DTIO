@@ -36,6 +36,7 @@
 #include <yaml-cpp/yaml.h>
 #include <mpi.h>
 #include <dtio/common/enumerations.h>
+#include <wordexp.h>
 
 /******************************************************************************
  *Class
@@ -69,10 +70,11 @@ public:
   std::string HCL_SERVER_LIST_PATH;
   int test;
   MPI_Comm DATASPACE_COMM;
+  MPI_Comm METADATA_COMM;
   MPI_Comm PROCESS_COMM;
-  MPI_Comm QUEUE_CLIENT_COMM;
-  MPI_Comm QUEUE_WORKER_COMM;
-  MPI_Comm QUEUE_TASKSCHED_COMM;
+  // MPI_Comm QUEUE_CLIENT_COMM;
+  MPI_Comm *QUEUE_WORKER_COMM;
+  // MPI_Comm QUEUE_TASKSCHED_COMM;
   int TS_NUM_WORKER_THREADS;
   std::size_t NUM_WORKERS; // FIXME: make private
   std::size_t NUM_SCHEDULERS; // FIXME: make private
@@ -82,10 +84,28 @@ public:
                ? instance = std::shared_ptr<ConfigManager>(new ConfigManager())
                : instance;
   }
+  void LoadConfig() {
+    // This version loads the config with an environment variable path
+    wordexp_t path_traverse;
+    wordexp("${DTIO_CONF_PATH}", &path_traverse, 0);
+    if (path_traverse.we_wordc != 1) {
+      std::cerr << "Passed HCL server list path is more than one word on expansion" << std::endl;
+    }
+    char **words = path_traverse.we_wordv;
+    LoadConfig(words[0]);
+  }
   void LoadConfig(char *path) {
     config_ = YAML::LoadFile(path);
 
-    HCL_SERVER_LIST_PATH = config_["HCL_SERVER_LIST_PATH"].as<std::string>();
+    HCL_SERVER_LIST_PATH = "";
+    wordexp_t path_traverse;
+    wordexp(config_["HCL_SERVER_LIST_PATH"].as<std::string>().c_str(), &path_traverse, 0);
+    if (path_traverse.we_wordc != 1) {
+      std::cerr << "Passed HCL server list path is more than one word on expansion" << std::endl;
+    }
+    char **words = path_traverse.we_wordv;
+    HCL_SERVER_LIST_PATH += words[0];
+    wordfree(&path_traverse);
     NATS_URL_CLIENT = config_["NATS_URL_CLIENT"].as<std::string>();
     NATS_URL_SERVER = config_["NATS_URL_SERVER"].as<std::string>();
     MEMCACHED_URL_CLIENT = config_["MEMCACHED_URL_CLIENT"].as<std::string>();
@@ -96,11 +116,12 @@ public:
     TS_NUM_WORKER_THREADS = config_["TS_NUM_WORKER_THREADS"].as<int>();
     NUM_WORKERS = config_["NUM_WORKERS"].as<int>();
     NUM_SCHEDULERS = config_["NUM_SCHEDULERS"].as<int>();
+    QUEUE_WORKER_COMM = (MPI_Comm *)calloc(NUM_WORKERS, sizeof(MPI_Comm));
   }
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~ConfigManager() {}
+  virtual ~ConfigManager() { free(QUEUE_WORKER_COMM); }
 };
 
 #endif // DTIO_CONFIGURATION_MANAGER_H

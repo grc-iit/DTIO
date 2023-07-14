@@ -32,6 +32,7 @@
 int
 dtio::MPI_Init (int *argc, char ***argv)
 {
+  DTIO_LOG_DEBUG("[MPI] Init Entered");
   int provided;
   PMPI_Init_thread (argc, argv, MPI_THREAD_MULTIPLE, &provided);
   if (provided < MPI_THREAD_MULTIPLE)
@@ -39,37 +40,40 @@ dtio::MPI_Init (int *argc, char ***argv)
       std::cerr << "Didn't receive appropriate thread specification"
                 << std::endl;
     }
-  ConfigManager::get_instance ()->LoadConfig ((*argv)[1]);
+  /* NOTE: If we're intercepting MPI_Init, we can't assume that
+     argv[1] is the DTIO conf path
+   */
+  ConfigManager::get_instance ()->LoadConfig (); //(*argv)[1]
   std::stringstream ss;
 
-  int rank;
-  PMPI_Comm_rank (MPI_COMM_WORLD, &rank);
-  DTIO_LOG_INFO ("[MPI] Comm: "
-                 "thread: "
-                 << provided << "\tprocess:" << rank);
-  PMPI_Comm_split (MPI_COMM_WORLD, CLIENT_COLOR,
-                  rank - ConfigManager::get_instance ()->NUM_WORKERS
-                      - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1,
-                  &ConfigManager::get_instance ()->PROCESS_COMM);
+  // int rank;
+  // PMPI_Comm_rank (MPI_COMM_WORLD, &rank);
+  // DTIO_LOG_INFO ("[MPI] Comm: "
+  //                "thread: "
+  //                << provided << "\tprocess:" << rank);
+  // PMPI_Comm_split (MPI_COMM_WORLD, CLIENT_COLOR,
+  //                 rank - ConfigManager::get_instance ()->NUM_WORKERS
+  //                     - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1,
+  //                 &ConfigManager::get_instance ()->PROCESS_COMM);
 
-  DTIO_LOG_INFO ("[MPI] Comm: Client\trank: "<<
-                 rank - ConfigManager::get_instance ()->NUM_WORKERS
-                     - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1);
+  // DTIO_LOG_INFO ("[MPI] Comm: Client\trank: "<<
+  //                rank - ConfigManager::get_instance ()->NUM_WORKERS
+  //                    - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1);
 
-  PMPI_Comm_split (MPI_COMM_WORLD, DATASPACE_COLOR, rank - 1,
-                  &ConfigManager::get_instance ()->DATASPACE_COMM);
-  DTIO_LOG_DEBUG ("[MPI] Comm: Dataspace");
-  PMPI_Comm_split (MPI_COMM_WORLD, QUEUE_CLIENT_COLOR,
-                  rank - ConfigManager::get_instance ()->NUM_WORKERS
-                      - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1,
-                  &ConfigManager::get_instance ()->QUEUE_CLIENT_COMM);
-  DTIO_LOG_DEBUG ("[MPI] Comm: Queue Client");
-  PMPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, rank - 1,
-                  &ConfigManager::get_instance ()->QUEUE_WORKER_COMM);
-  DTIO_LOG_DEBUG ("[MPI] Comm: Queue Worker");
-  PMPI_Comm_split (MPI_COMM_WORLD, QUEUE_TASKSCHED_COLOR, rank - 1,
-                  &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
-  DTIO_LOG_DEBUG ("[MPI] Comm: Queue Taskscheduler");
+  // PMPI_Comm_split (MPI_COMM_WORLD, DATASPACE_COLOR, rank - 1,
+  //                 &ConfigManager::get_instance ()->DATASPACE_COMM);
+  // DTIO_LOG_DEBUG ("[MPI] Comm: Dataspace");
+  // PMPI_Comm_split (MPI_COMM_WORLD, QUEUE_CLIENT_COLOR,
+  //                 rank - ConfigManager::get_instance ()->NUM_WORKERS
+  //                     - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1,
+  //                 &ConfigManager::get_instance ()->QUEUE_CLIENT_COMM);
+  // DTIO_LOG_DEBUG ("[MPI] Comm: Queue Client");
+  // PMPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, rank - 1,
+  //                 &ConfigManager::get_instance ()->QUEUE_WORKER_COMM);
+  // DTIO_LOG_DEBUG ("[MPI] Comm: Queue Worker");
+  // PMPI_Comm_split (MPI_COMM_WORLD, QUEUE_TASKSCHED_COLOR, rank - 1,
+  //                 &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
+  // DTIO_LOG_DEBUG ("[MPI] Comm: Queue Taskscheduler");
   dtio_system::getInstance (service::LIB);
   DTIO_LOG_DEBUG ("[MPI] Comm: Complete");
   return 0;

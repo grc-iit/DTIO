@@ -33,6 +33,7 @@
 #include <dtio/common/utilities.h>
 #include <iostream>
 #include <mpi.h>
+#include <dtio/common/logger.h>
 /******************************************************************************
  *Worker main
  ******************************************************************************/
@@ -50,18 +51,24 @@ main (int argc, char **argv)
                   &ConfigManager::get_instance ()->PROCESS_COMM);
   MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_COLOR, worker_index,
                   &ConfigManager::get_instance ()->DATASPACE_COMM);
+  MPI_Comm_split (MPI_COMM_WORLD, METADATA_COLOR, worker_index,
+                  &ConfigManager::get_instance ()->METADATA_COMM);
 
-  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_CLIENT_COLOR,
-                  worker_index - ConfigManager::get_instance ()->NUM_WORKERS
-                      - ConfigManager::get_instance ()->NUM_SCHEDULERS - 1,
-                  &ConfigManager::get_instance ()->QUEUE_CLIENT_COMM);
-  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, worker_index - 1,
-                  &ConfigManager::get_instance ()->QUEUE_WORKER_COMM);
-  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_TASKSCHED_COLOR, worker_index - 1,
-                  &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
+  for (int i = 0; i < ConfigManager::get_instance ()->NUM_WORKERS; i++) {
+    if (i == worker_index) {
+      MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, 0,
+		      &ConfigManager::get_instance ()->QUEUE_WORKER_COMM[i]);
+    }
+    else {
+      MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_NULL_COLOR,
+		      worker_index < i ? (worker_index + 1) : worker_index,
+		      &ConfigManager::get_instance ()->QUEUE_WORKER_COMM[i]);
+    }
+  }
 
   std::shared_ptr<worker> worker_service_i
       = worker::getInstance (service::WORKER, worker_index);
+  DTIO_LOG_DEBUG("[Worker] Created :: Worker Number " << worker_index);
   worker_service_i->run ();
   MPI_Finalize ();
   return 0;

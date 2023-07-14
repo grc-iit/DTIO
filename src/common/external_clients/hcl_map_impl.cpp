@@ -23,6 +23,12 @@
 #include <mpi.h>
 
 int
+HCLMapImpl::run()
+{
+  while (true); // Busy loop, the maps just support the data structures
+}
+
+int
 HCLMapImpl::put (const table &name, std::string key, const std::string &value,
                  std::string group_key)
 {
@@ -95,10 +101,11 @@ size_t
 HCLMapImpl::counter_inc (const table &name, std::string key,
                          std::string group_key)
 {
-  key = std::to_string (name) + KEY_SEPARATOR + key;
+  auto keyname = std::to_string (name) + KEY_SEPARATOR + key;
+
   if (group_key == "-1")
     {
-      group_key = get_server (key);
+      group_key = get_server (keyname);
     }
   if (exists (name, key, group_key))
     {
