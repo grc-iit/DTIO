@@ -27,7 +27,6 @@
 #ifndef DTIO_MAIN_STRUCTURE_H
 #define DTIO_MAIN_STRUCTURE_H
 
-#include "dtio/common/data_structures.h"
 #include "hcl/common/macros.h"
 #include <cereal/types/common.hpp>
 #include <cereal/types/memory.hpp>

@@ -206,21 +206,21 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
 // }
 
 int
-rename (const char *oldpath, const char *newpath)
+dtio::posix::rename (const char *oldpath, const char *newpath)
 {
   // FIXME not implemented
   return 0;
 }
 
 int
-stat (const char *pathname, struct stat *statbuf)
+dtio::posix::stat (const char *pathname, struct stat *statbuf)
 {
   // FIXME not implemented
   return 0;
 }
 
 int
-mknod (const char *pathname, mode_t mode, dev_t dev)
+dtio::posix::mknod (const char *pathname, mode_t mode, dev_t dev)
 {
   // FIXME not implemented
   return 0;
@@ -354,7 +354,7 @@ dtio::posix::read_async (int fd, size_t count)
 }
 
 std::size_t
-dtio::posix::read_wait (void *ptr, std::vector<read_task> &tasks,
+read_wait (void *ptr, std::vector<read_task> &tasks,
                         std::string filename)
 {
   auto mdm = metadata_manager::getInstance (LIB);
@@ -591,21 +591,22 @@ dtio::posix::write_wait (std::vector<write_task *> tasks)
   return total_size_written;
 }
 
-
-ssize_t dtio::write(int fd, const void *buf, size_t count) {
-  DTIO_LOG_DEBUG("[POSIX] Write Entered");
-  auto mdm = metadata_manager::getInstance(LIB);
-  auto client_queue =
-      dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
-  auto map_client = dtio_system::getInstance(LIB)->map_client();
-  auto map_server = dtio_system::getInstance(LIB)->map_server();
-  auto task_m = task_builder::getInstance(LIB);
-  auto data_m = data_manager::getInstance(LIB);
-  auto filename = mdm->get_filename(fd);
-  auto offset = mdm->get_fp(filename);
-  if (!mdm->is_opened(filename))
-    throw std::runtime_error("dtio::write() file not opened!");
-  auto w_task = write_task(file(filename, offset, count), file());
+ssize_t
+dtio::posix::write (int fd, const void *buf, size_t count)
+{
+  DTIO_LOG_DEBUG ("[POSIX] Write Entered");
+  auto mdm = metadata_manager::getInstance (LIB);
+  auto client_queue
+      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
+  auto map_client = dtio_system::getInstance (LIB)->map_client ();
+  auto map_server = dtio_system::getInstance (LIB)->map_server ();
+  auto task_m = task_builder::getInstance (LIB);
+  auto data_m = data_manager::getInstance (LIB);
+  auto filename = mdm->get_filename (fd);
+  auto offset = mdm->get_fp (filename);
+  if (!mdm->is_opened (filename))
+    throw std::runtime_error ("dtio::write() file not opened!");
+  auto w_task = write_task (file (filename, offset, count), file ());
 
   w_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
@@ -673,4 +674,54 @@ ssize_t dtio::write(int fd, const void *buf, size_t count) {
       map_client->remove (table::DATASPACE_DB, task_id.first, task_id.second);
     }
   return count;
+}
+
+int
+dtio::posix::__fxstat64 (int __ver, int fd, struct stat64 *buf)
+{ // TODO: implement
+  return 0;
+}
+
+int
+dtio::posix::__open_2 (const char *path, int oflag)
+{ // TODO: implement
+  return 0;
+}
+
+int
+dtio::posix::__fxstat (int __ver, int fd, struct stat *buf)
+{ // TODO: implement
+  return 0;
+}
+
+int
+dtio::posix::__fxstatat (int __ver, int __fildes, const char *__filename,
+            struct stat *__stat_buf, int __flag)
+{ // TODO: implement
+  return 0;
+}
+
+int
+dtio::posix::__xstat (int __ver, const char *__filename, struct stat *__stat_buf)
+{ // TODO: implement
+  return 0;
+}
+
+int
+dtio::posix::__lxstat (int __ver, const char *__filename, struct stat *__stat_buf)
+{ // TODO: implement
+  return 0;
+}
+
+int
+dtio::posix::__fxstatat64 (int __ver, int __fildes, const char *__filename,
+              struct stat64 *__stat_buf, int __flag)
+{ // TODO: implement
+  return 0;
+}
+
+int
+dtio::posix::__lxstat64 (int __ver, const char *__filename, struct stat64 *__stat_buf)
+{ // TODO: implement
+  return 0;
 }

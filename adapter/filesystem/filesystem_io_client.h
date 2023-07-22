@@ -13,9 +13,9 @@
 #ifndef HERMES_ADAPTER_FILESYSTEM_FILESYSTEM_IO_CLIENT_H_
 #define HERMES_ADAPTER_FILESYSTEM_FILESYSTEM_IO_CLIENT_H_
 
-#include "adapter/mapper/balanced_mapper.h"
-#include "hermes.h"
-#include "bucket.h"
+// #include "adapter/mapper/balanced_mapper.h"
+// #include "hermes.h"
+// #include "bucket.h"
 #include <filesystem>
 #include <limits>
 #include <future>
@@ -23,7 +23,7 @@
 
 namespace stdfs = std::filesystem;
 
-namespace hermes::adapter::fs {
+namespace dtio::adapter::fs {
 
 /** Put or get data directly from I/O client */
 #define HERMES_IO_CLIENT_BYPASS BIT_OPT(uint32_t, 0)
@@ -378,14 +378,14 @@ class FilesystemIoClient : public Trait {
                            FilesystemIoClientState &fs_mdm) = 0;
 };
 
-}  // namespace hermes::adapter::fs
+}  // namespace dtio::adapter::fs
 
 namespace std {
 /** A structure to represent hash */
 template <>
-struct hash<hermes::adapter::fs::File> {
+struct hash<dtio::adapter::fs::File> {
   /** hash creator functor */
-  std::size_t operator()(const hermes::adapter::fs::File &key) const {
+  std::size_t operator()(const dtio::adapter::fs::File &key) const {
     return key.hash();
   }
 };

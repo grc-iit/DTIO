@@ -94,7 +94,7 @@ extern "C"
   typedef int (*unlink_t) (const char *pathname);
 }
 
-namespace hermes::adapter::fs
+namespace dtio::adapter::fs
 {
 
 /** Used for compatability with older kernel versions */
@@ -233,16 +233,16 @@ public:
   }
 };
 
-} // namespace hermes::adapter::fs
+} // namespace dtio::adapter::fs
 
 // Singleton macros
 #include "hermes_shm/util/singleton.h"
 
 #define HERMES_POSIX_API                                                      \
-  hshm::EasySingleton<hermes::adapter::fs::PosixApi>::GetInstance ()
-#define HERMES_POSIX_API_T hermes::adapter::fs::PosixApi *
+  hshm::EasySingleton<dtio::adapter::fs::PosixApi>::GetInstance ()
+#define HERMES_POSIX_API_T dtio::adapter::fs::PosixApi *
 
-namespace hermes::adapter::fs
+namespace dtio::adapter::fs
 {
 /** Used for compatability with older kernel versions */
 static int
@@ -252,6 +252,6 @@ fxstat_to_fstat (int fd, struct stat *stbuf)
   return HERMES_POSIX_API->__fxstat (_STAT_VER, fd, stbuf);
 #endif
 }
-} // namespace hermes::adapter::fs
+} // namespace dtio::adapter::fs
 
 #endif // HERMES_ADAPTER_POSIX_H

@@ -5,6 +5,9 @@
 #include <spdlog/spdlog.h>
 #include <sstream>
 
+#define kFatal 0 /**< A fatal error has occurred */
+#define kError 1 /**< A non-fatal error has occurred */
+
 class Logger
 {
 public:
@@ -21,7 +24,7 @@ public:
   }
 };
 
-#define DTIO_LOG_MESSAGE(logLevel, ...)                                            \
+#define DTIO_LOG_MESSAGE(logLevel, ...)                                       \
   do                                                                          \
     {                                                                         \
       int rank;                                                               \
@@ -51,13 +54,15 @@ public:
 #endif
 
 #if LOG_LEVEL >= 4
-#define DTIO_LOG_DEBUG(...) DTIO_LOG_MESSAGE (spdlog::level::debug, __VA_ARGS__)
+#define DTIO_LOG_DEBUG(...)                                                   \
+  DTIO_LOG_MESSAGE (spdlog::level::debug, __VA_ARGS__)
 #else
 #define DTIO_LOG_DEBUG(...)
 #endif
 
 #if LOG_LEVEL >= 5
-#define DTIO_LOG_TRACE(...) DTIO_LOG_MESSAGE (spdlog::level::trace, __VA_ARGS__)
+#define DTIO_LOG_TRACE(...)                                                   \
+  DTIO_LOG_MESSAGE (spdlog::level::trace, __VA_ARGS__)
 #else
 #define DTIO_LOG_TRACE(...)
 #endif

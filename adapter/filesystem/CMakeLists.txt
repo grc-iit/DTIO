@@ -12,6 +12,8 @@ add_library(dtio_fs_base SHARED
 	${CMAKE_CURRENT_SOURCE_DIR}/filesystem_mdm_singleton.cc)
 add_dependencies(dtio_fs_base
 	dtio)
+install(TARGETS dtio_fs_base
+	DESTINATION ${CMAKE_INSTALL_LIB_DIR})
 target_link_libraries(dtio_fs_base
 	MPI::MPI_CXX
 	dtio)

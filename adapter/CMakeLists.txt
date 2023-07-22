@@ -1,5 +1,5 @@
-# Set hermes to preload if adapter is linked.
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}-DDTIO_PRELOAD -DHERMES_RPC_THALLIUM")
+# Set dtio to preload if adapter is linked.
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}-DDTIO_PRELOAD -DDTIO_RPC_THALLIUM")
 
 set(DTIO_SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 set(DTIO_ADAPTER_DIR ${CMAKE_SOURCE_DIR}/adapter)
@@ -13,9 +13,9 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(filesystem)
-if(DTIO_ENABLE_POSIX_ADAPTER)
+# if(DTIO_ENABLE_POSIX_ADAPTER)
   add_subdirectory(posix)
-endif()
+# endif()
 if(DTIO_ENABLE_STDIO_ADAPTER)
   add_subdirectory(stdio)
 endif()

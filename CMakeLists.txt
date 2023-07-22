@@ -1,12 +1,15 @@
 cmake_minimum_required(VERSION 3.10)
 project(
   dtio
-  VERSION 0.0.0
+  VERSION 0.0.1
   DESCRIPTION "DTIO: A Data Task I/O system")
 
 set(CMAKE_CXX_STANDARD 17)
 include(GNUInstallDirs)
 include_directories(include)
+include_directories("hermes_shm/include")
+
+# include_directories("")
 include_directories(${INCLUDE_PATH})
 link_libraries(${LIBRARY_PATH})
 # define ones we have installed
@@ -164,3 +167,5 @@ install(
   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 add_subdirectory(benchmark)
+add_subdirectory(adapter)
+# add_subdirectory(hermes_shm)
