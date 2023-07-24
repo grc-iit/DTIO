@@ -19,10 +19,10 @@
 #include "posix_api.h"
 
 using hshm::Singleton;
-using hermes::adapter::fs::AdapterStat;
-using hermes::adapter::fs::FsIoOptions;
-using hermes::adapter::fs::IoStatus;
-using hermes::adapter::fs::PosixApi;
+// using hermes::adapter::fs::AdapterStat;
+// using hermes::adapter::fs::FsIoOptions;
+// using hermes::adapter::fs::IoStatus;
+// using hermes::adapter::fs::PosixApi;
 
 namespace hermes::adapter::fs {
 
