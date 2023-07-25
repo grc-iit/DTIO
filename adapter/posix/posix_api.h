@@ -87,21 +87,21 @@ extern "C"
                                         off64_t *off_out, size_t len,
                                         unsigned int flags);
 
-  // TODO(llogan): fadvise
+  // TODO: fadvise
   typedef int (*posix_fadvise_t) (int fd, off_t offset, off_t len, int advice);
   typedef int (*flock_t) (int fd, int operation);
   typedef int (*remove_t) (const char *pathname);
   typedef int (*unlink_t) (const char *pathname);
 }
 
-namespace dtio::adapter::fs
+namespace dtio::posix
 {
 
 /** Used for compatability with older kernel versions */
 static int fxstat_to_fstat (int fd, struct stat *stbuf);
 
 /** Pointers to the real posix API */
-class PosixApi : public RealApi
+class PosixApi : public dtio::adapter::RealApi
 {
 public:
   /** open */
@@ -168,7 +168,7 @@ public:
   /** unlink */
   unlink_t unlink = nullptr;
 
-  PosixApi () : RealApi ("open", "posix_intercepted")
+  PosixApi () : dtio::adapter::RealApi ("open", "posix_intercepted")
   {
     open = (open_t)dlsym (real_lib_, "open");
     REQUIRE_API (open)
@@ -207,7 +207,7 @@ public:
     REQUIRE_API (stat || __xstat || __lxstat)
     if (!fstat)
       {
-        // NOTE(llogan): We use real_api->fstat in a couple of places
+        // NOTE: We use real_api->fstat in a couple of places
         // fstat does need to be mapped always, or Hermes may segfault.
         fstat = fxstat_to_fstat;
       }
@@ -231,16 +231,20 @@ public:
     unlink = (unlink_t)dlsym (real_lib_, "unlink");
     REQUIRE_API (unlink)
   }
+  PosixApi (const PosixApi &) = default;
+  PosixApi (PosixApi &&) = default;
+  PosixApi &operator= (const PosixApi &) = default;
+  PosixApi &operator= (PosixApi &&) = default;
 };
 
-} // namespace dtio::adapter::fs
+} // namespace dtio::posix
 
 // Singleton macros
 #include "hermes_shm/util/singleton.h"
 
 #define HERMES_POSIX_API                                                      \
-  hshm::EasySingleton<dtio::adapter::fs::PosixApi>::GetInstance ()
-#define HERMES_POSIX_API_T dtio::adapter::fs::PosixApi *
+  hshm::EasySingleton<dtio::posix::PosixApi>::GetInstance ()
+#define HERMES_POSIX_API_T dtio::posix::PosixApi *
 
 namespace dtio::adapter::fs
 {
@@ -254,4 +258,4 @@ fxstat_to_fstat (int fd, struct stat *stbuf)
 }
 } // namespace dtio::adapter::fs
 
-#endif // HERMES_ADAPTER_POSIX_H
+#endif // HERMES_ADAPTER_POSIX

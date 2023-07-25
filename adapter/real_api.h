@@ -20,10 +20,10 @@
 #define REQUIRE_API(api_name)                                                 \
   if (!(api_name))                                                            \
     {                                                                         \
-      DTIO_LOG_ERROR (kFatal, "HERMES Adapter failed to map symbol: {}", #api_name);   \
+      DTIO_LOG_ERROR ("HERMES Adapter failed to map symbol: {}", #api_name);   \
     }
 
-namespace dtio::adapter
+namespace  dtio::adapter
 {
 
 struct RealApiIter
