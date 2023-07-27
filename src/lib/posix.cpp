@@ -458,19 +458,21 @@ dtio::posix::read (int fd, void *buf, size_t count)
           {
             Timer timer = Timer ();
             client_queue->publish_task (&task);
-            while (!data_m->exists (DATASPACE_DB, task.destination.filename,
+            while (!data_m->exists (DATASPACE_DB, task.source.filename,
                                     std::to_string (task.destination.server)))
               {
                 // std::cerr<<"looping\n";
               }
-            data = data_m->get (DATASPACE_DB, task.destination.filename,
+            data = data_m->get (DATASPACE_DB, task.source.filename,
                                 std::to_string (task.destination.server));
 
-            data_m->remove (DATASPACE_DB, task.destination.filename,
-                            std::to_string (task.destination.server));
-            memcpy (buf + ptr_pos, data.c_str () + task.destination.offset,
+            memcpy (buf + ptr_pos, data.c_str () + task.source.offset,
                     task.destination.size);
-            size_read += task.destination.size;
+
+            data_m->remove (DATASPACE_DB, task.source.filename,
+                            std::to_string (task.destination.server));
+
+            size_read += task.source.size;
             break;
           }
         case CACHE:
@@ -634,12 +636,12 @@ dtio::posix::write (int fd, const void *buf, size_t count)
             {
               auto data
                   = write_data.substr (task->source.offset, task->source.size);
-              data_m->put (DATASPACE_DB, task->destination.filename, data,
+              data_m->put (DATASPACE_DB, task->source.filename, data,
                            std::to_string (task->destination.server));
             }
           else
             {
-              data_m->put (DATASPACE_DB, task->destination.filename,
+              data_m->put (DATASPACE_DB, task->source.filename,
                            write_data,
                            std::to_string (task->destination.server));
             }
@@ -652,7 +654,7 @@ dtio::posix::write (int fd, const void *buf, size_t count)
             mdm->update_write_task_info (*task, filename, task->source.size);
           client_queue->publish_task (task);
           task_ids.emplace_back (
-              std::make_pair (task->destination.filename,
+              std::make_pair (task->source.filename,
                               std::to_string (task->destination.server)));
         }
       else

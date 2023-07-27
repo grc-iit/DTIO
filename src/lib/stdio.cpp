@@ -22,11 +22,13 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
+#include "dtio/common/logger.h"
 #include <iomanip>
 #include <dtio/common/return_codes.h>
 #include <dtio/common/task_builder/task_builder.h>
 #include <hcl/common/debug.h>
 #include <dtio/drivers/stdio.h>
+#include <rpc/detail/log.h>
 #include <zconf.h>
 
 /******************************************************************************
@@ -49,8 +51,9 @@ FILE *dtio::fopen(const char *filename, const char *mode) {
       if (mdm->update_on_open(filename, mode, fh) != SUCCESS) {
         throw std::runtime_error("dtio::fopen() update failed!");
       }
-    } else
+    } else {
       return nullptr;
+    }
   }
   return fh;
 }
@@ -225,18 +228,21 @@ size_t dtio::fread(void *ptr, size_t size, size_t count, FILE *stream) {
     case BUFFERS: {
       Timer timer = Timer();
       client_queue->publish_task(&task);
-      while (!data_m->exists(DATASPACE_DB, task.destination.filename,
+
+      while (!data_m->exists(DATASPACE_DB, task.source.filename,
                              std::to_string(task.destination.server))) {
         // std::cerr<<"looping\n";
       }
-      data = data_m->get(DATASPACE_DB, task.destination.filename,
+      data = data_m->get(DATASPACE_DB, task.source.filename,
                          std::to_string(task.destination.server));
 
-      data_m->remove(DATASPACE_DB, task.destination.filename,
-                     std::to_string(task.destination.server));
       memcpy(ptr + ptr_pos, data.c_str() + task.destination.offset,
-             task.destination.size);
-      size_read += task.destination.size;
+             task.source.size);
+
+      data_m->remove(DATASPACE_DB, task.source.filename,
+                     std::to_string(task.destination.server));
+
+      size_read += task.source.size;
       break;
     }
     case CACHE: {
@@ -371,10 +377,10 @@ size_t dtio::fwrite(void *ptr, size_t size, size_t count, FILE *stream) {
     if (task->addDataspace) {
       if (write_data.length() >= task->source.offset + task->source.size) {
         auto data = write_data.substr(task->source.offset, task->source.size);
-        data_m->put(DATASPACE_DB, task->destination.filename, data,
+        data_m->put(DATASPACE_DB, task->source.filename, data,
                     std::to_string(task->destination.server));
       } else {
-        data_m->put(DATASPACE_DB, task->destination.filename, write_data,
+        data_m->put(DATASPACE_DB, task->source.filename, write_data,
                     std::to_string(task->destination.server));
       }
     }
@@ -385,7 +391,7 @@ size_t dtio::fwrite(void *ptr, size_t size, size_t count, FILE *stream) {
         mdm->update_write_task_info(*task, filename, task->source.size);
       client_queue->publish_task(task);
       task_ids.emplace_back(
-          std::make_pair(task->destination.filename,
+          std::make_pair(task->source.filename,
                          std::to_string(task->destination.server)));
     } else {
       mdm->update_write_task_info(*task, filename, task->source.size);

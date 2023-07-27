@@ -98,24 +98,21 @@ int metadata_manager::update_on_open(std::string filename, std::string mode,
   auto map = dtio_system::getInstance(service_i)->map_client();
   auto iter = file_map.find(filename);
   file_stat stat;
-  if (iter != file_map.end()) {
-    stat = iter->second;
-    fh = stat.fh;
-  } else {
-    fh = fmemopen(nullptr, 1, mode.c_str());
+
+  fh = fmemopen(nullptr, 1, mode.c_str());
+  stat.file_size = 0;
+  stat.fh = fh;
+  stat.is_open = true;
+  if (mode == "r" || mode == "r+") {
+    stat.file_pointer = 0;
+  } else if (mode == "w" || mode == "w+") {
+    stat.file_pointer = 0;
     stat.file_size = 0;
-    stat.fh = fh;
-    stat.is_open = true;
-    if (mode == "r" || mode == "r+") {
-      stat.file_pointer = 0;
-    } else if (mode == "w" || mode == "w+") {
-      stat.file_pointer = 0;
-      stat.file_size = 0;
-      remove_chunks(filename);
-    } else if (mode == "a" || mode == "a+") {
-      stat.file_pointer = stat.file_size;
-    }
+    remove_chunks(filename);
+  } else if (mode == "a" || mode == "a+") {
+    stat.file_pointer = stat.file_size;
   }
+
   iter = file_map.find(filename);
   if (iter != file_map.end())
     file_map.erase(iter);
@@ -140,24 +137,21 @@ int metadata_manager::update_on_open(std::string filename, int flags,
   auto map = dtio_system::getInstance(service_i)->map_client();
   auto iter = file_map.find(filename);
   file_stat stat;
-  if (iter != file_map.end()) {
-    stat = iter->second;
-    *fd = stat.fd;
-  } else {
-    *fd = random();
+
+  *fd = random();
+  stat.file_size = 0;
+  stat.fd = *fd;
+  stat.is_open = true;
+  if (flags == O_RDONLY) {
+    stat.file_pointer = 0;
+  } else if (flags == O_WRONLY) {
+    stat.file_pointer = 0;
     stat.file_size = 0;
-    stat.fd = *fd;
-    stat.is_open = true;
-    if (flags == O_RDONLY) {
-      stat.file_pointer = 0;
-    } else if (flags == O_WRONLY) {
-      stat.file_pointer = 0;
-      stat.file_size = 0;
-      remove_chunks(filename);
-    } else if (flags == O_RDWR) {
-      stat.file_pointer = stat.file_size;
-    }
+    remove_chunks(filename);
+  } else if (flags == O_RDWR) {
+    stat.file_pointer = stat.file_size;
   }
+
   iter = file_map.find(filename);
   if (iter != file_map.end())
     file_map.erase(iter);
@@ -205,7 +199,7 @@ int metadata_manager::update_on_close(FILE *&fh) {
   if (iter != fh_map.end()) {
     auto iter2 = file_map.find(iter->second);
     if (iter2 != file_map.end()) {
-      file_map.erase(iter2);
+      iter2->second.is_open = false;
     }
     fh_map.erase(iter);
     std::fclose(fh);
@@ -218,7 +212,7 @@ int metadata_manager::update_on_close(int fd) {
   if (iter != fd_map.end()) {
     auto iter2 = file_map.find(iter->second);
     if (iter2 != file_map.end()) {
-      file_map.erase(iter2);
+      iter2->second.is_open = false;
     }
     fd_map.erase(iter);
   }
@@ -315,7 +309,7 @@ int metadata_manager::update_write_task_info(std::vector<write_task> task_ks,
           (task_k.destination.offset / MAX_IO_UNIT) * MAX_IO_UNIT;
       chunk_meta cm;
       cm.actual_user_chunk = task_k.source;
-      cm.destination = task_k.destination;
+      cm.destination = task_k.source;
       std::string chunk_str = serialization_manager().serialize_chunk(cm);
       map->put(table::CHUNK_DB, filename + std::to_string(base_offset),
                chunk_str, std::to_string(-1));
@@ -505,7 +499,7 @@ int metadata_manager::update_write_task_info(write_task task_k,
     auto base_offset = (task_k.source.offset / MAX_IO_UNIT) * MAX_IO_UNIT;
     chunk_meta cm;
     cm.actual_user_chunk = task_k.source;
-    cm.destination = task_k.destination;
+    cm.destination = task_k.source;
     std::string chunk_str = serialization_manager().serialize_chunk(cm);
     map->put(table::CHUNK_DB, filename + std::to_string(base_offset), chunk_str,
              std::to_string(-1));
