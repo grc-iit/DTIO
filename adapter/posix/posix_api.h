@@ -12,7 +12,7 @@
 
 #ifndef HERMES_ADAPTER_POSIX_H
 #define HERMES_ADAPTER_POSIX_H
-#include "adapter/real_api.h"
+#include "real_api.h"
 #include <fcntl.h>
 #include <iostream>
 #include <string>
