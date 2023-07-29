@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 include(GNUInstallDirs)
 include_directories(include)
 include_directories("hermes_shm/include")
-include_directories("adapter")
+include_directories("adapter") # <-- here 
 
 # include_directories("")
 include_directories(${INCLUDE_PATH})
@@ -155,7 +155,7 @@ set_target_properties(dtio_posix_interception PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories(${PROJECT_NAME} PRIVATE .)
 
 target_link_libraries(dtio ${CMAKE_CXX_LINK_FLAGS})
-target_link_libraries(dtio_posix_interception dtio_common)
+target_link_libraries(dtio_posix_interception PRIVATE "-Wl,--no-as-needed")
 
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
