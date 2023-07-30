@@ -48,17 +48,17 @@ static __attribute__((constructor(101))) void init_posix(void) {
  * POSIX
  */
 int HERMES_DECL(open)(const char *path, int flags, ...) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::open(path, flags);
 }
 
 int HERMES_DECL(open64)(const char *path, int flags, ...) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::open64(path, flags);
 }
 
 int HERMES_DECL(__open_2)(const char *path, int oflag) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::__open_2(path, oflag);
 }
 
@@ -73,12 +73,12 @@ int HERMES_DECL(__open_2)(const char *path, int oflag) {
 // }
 
 ssize_t HERMES_DECL(read)(int fd, void *buf, size_t count) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::read(fd, buf, count);
 }
 
 ssize_t HERMES_DECL(write)(int fd, const void *buf, size_t count) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::write(fd, buf, count);
 }
 
@@ -106,12 +106,12 @@ ssize_t HERMES_DECL(write)(int fd, const void *buf, size_t count) {
 // }
 
 off_t HERMES_DECL(lseek)(int fd, off_t offset, int whence) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::lseek(fd, offset, whence);
 }
 
 off64_t HERMES_DECL(lseek64)(int fd, off64_t offset, int whence) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::lseek64(fd, offset, whence);
 }
 
@@ -127,20 +127,20 @@ int HERMES_DECL(__fxstat)(int __ver, int fd, struct stat *buf) {
 	//   result = real_api->__fxstat(__ver, fd, buf);
 	// }
 	// return result;
-	DTIO_LOG_DEBUG("Intercepted __fxstat.")
+  DTIO_LOG_DEBUG("Intercepted __fxstat.");
 	dtio::posix::__fxstat(__ver, fd, buf);
 }
 
 int HERMES_DECL(__fxstatat)(int __ver, int __fildes,
 			    const char *__filename,
 			    struct stat *__stat_buf, int __flag) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::__fxstatat(__ver, __fildes, __filename, __stat_buf, __flag);
 }
 
 int HERMES_DECL(__xstat)(int __ver, const char *__filename,
 			 struct stat *__stat_buf) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::__xstat(__ver, __filename, __stat_buf);
 }
 
@@ -160,26 +160,26 @@ int HERMES_DECL(__lxstat)(int __ver, const char *__filename,
 // }
 
 int HERMES_DECL(__fxstat64)(int __ver, int fd, struct stat64 *buf) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::__fxstat64(__ver, fd, buf);
 }
 
 int HERMES_DECL(__fxstatat64)(int __ver, int __fildes,
 			      const char *__filename,
 			      struct stat64 *__stat_buf, int __flag) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::__fxstatat64(__ver, __fildes, __filename, __stat_buf, __flag);
 }
 
 int HERMES_DECL(__xstat64)(int __ver, const char *__filename,
 			   struct stat64 *__stat_buf) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::__xstat64(__ver, __filename, __stat_buf);
 }
 
 int HERMES_DECL(__lxstat64)(int __ver, const char *__filename,
 			    struct stat64 *__stat_buf) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::__lxstat64(__ver, __filename, __stat_buf);
 }
 
@@ -200,7 +200,7 @@ int HERMES_DECL(__lxstat64)(int __ver, const char *__filename,
 // }
 
 int HERMES_DECL(close)(int fd) {
-	DTIO_LOG_DEBUG("Intercepted " << __func__)
+  DTIO_LOG_DEBUG("Intercepted " << __func__);
 	dtio::posix::close(fd);
 }
 

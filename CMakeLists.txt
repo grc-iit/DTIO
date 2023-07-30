@@ -56,7 +56,7 @@ set(COMMON_SRC
     src/common/external_clients/hcl_map_impl.cpp
     src/common/task_builder/task_builder.cpp)
 set(DTIO_LIB_SRC src/lib/stdio.cpp src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
-set(DTIO_INTERCEPTION adapter/posix/posix_api.h )
+set(DTIO_INTERCEPTION adapter/posix/posix_api.cc )
 # set(DTIO_CLIENT_SRC src/client/main.cpp src/client/client.cpp
 #                       src/common/threadPool.cpp)
 # set(DTIO_SERVER_SRC src/system_manager/main.cpp
@@ -155,7 +155,7 @@ set_target_properties(dtio_posix_interception PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories(${PROJECT_NAME} PRIVATE .)
 
 target_link_libraries(dtio ${CMAKE_CXX_LINK_FLAGS})
-target_link_libraries(dtio_posix_interception PRIVATE "-Wl,--no-as-needed")
+target_link_libraries(dtio_posix_interception PRIVATE -Wall -fPIC)
 
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
