@@ -155,7 +155,7 @@ set_target_properties(dtio_posix_interception PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories(${PROJECT_NAME} PRIVATE .)
 
 target_link_libraries(dtio ${CMAKE_CXX_LINK_FLAGS})
-target_link_libraries(dtio_posix_interception PRIVATE "-Wl,--no-as-needed")
+target_link_libraries(dtio_posix_interception PRIVATE -Wall -fPIC)
 
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
