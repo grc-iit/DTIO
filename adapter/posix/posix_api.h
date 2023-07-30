@@ -246,7 +246,7 @@ public:
   hshm::EasySingleton<dtio::posix::PosixApi>::GetInstance ()
 #define HERMES_POSIX_API_T dtio::posix::PosixApi *
 
-namespace dtio::adapter::fs
+namespace dtio::posix
 {
 /** Used for compatability with older kernel versions */
 static int
