@@ -19,7 +19,8 @@ set(MEMCACHED false)
 set(NATS false)
 set(MPI true)
 set(HCL true)
-#set(ROCKS true) # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+#set(ROCKS true)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERMDM")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERTS")
@@ -56,7 +57,7 @@ set(COMMON_SRC
     src/common/external_clients/hcl_map_impl.cpp
     src/common/task_builder/task_builder.cpp)
 set(DTIO_LIB_SRC src/lib/stdio.cpp src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
-set(DTIO_INTERCEPTION adapter/posix/posix_api.cc )
+set(DTIO_INTERCEPTION adapter/posix/posix_api.cc)
 # set(DTIO_CLIENT_SRC src/client/main.cpp src/client/client.cpp
 #                       src/common/threadPool.cpp)
 # set(DTIO_SERVER_SRC src/system_manager/main.cpp
@@ -142,6 +143,9 @@ dtio_set_libs(dtio_worker_manager)
 dtio_set_libs(dtio_worker)
 dtio_set_libs(dtio_hclmap)
 dtio_set_libs(${PROJECT_NAME})
+dtio_set_libs(dtio_posix_interception)
+add_dependencies(dtio_posix_interception dtio)
+target_link_libraries(dtio_posix_interception dtio)
 
 set_target_properties(
   ${PROJECT_NAME}
@@ -155,7 +159,8 @@ set_target_properties(dtio_posix_interception PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories(${PROJECT_NAME} PRIVATE .)
 
 target_link_libraries(dtio ${CMAKE_CXX_LINK_FLAGS})
-target_link_libraries(dtio_posix_interception PRIVATE -Wall -fPIC)
+target_link_libraries(dtio_posix_interception ${CMAKE_CXX_LINK_FLAGS})
+# target_link_libraries(dtio_posix_interception PRIVATE -Wall -fPIC)
 
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})

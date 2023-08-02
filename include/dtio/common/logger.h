@@ -22,16 +22,35 @@ public:
     });
     spdlog::log (logLevel, message);
   }
+  static void
+  Log (spdlog::level::level_enum logLevel,
+       const std::string &message)
+  {
+    static std::once_flag flag;
+    std::call_once (flag, [] {
+      spdlog::set_pattern ("[%H:%M:%S %z] [%^%L%$] [thread %t] %v");
+    });
+    spdlog::log (logLevel, message);
+  }
 };
 
 #define DTIO_LOG_MESSAGE(logLevel, ...)                                       \
   do                                                                          \
     {                                                                         \
       int rank;                                                               \
-      MPI_Comm_rank (MPI_COMM_WORLD, &rank);                                  \
       std::stringstream ss;                                                   \
+      MPI_Comm_rank (MPI_COMM_WORLD, &rank);                                  \
       ss << __VA_ARGS__;                                                      \
       Logger::Log (logLevel, rank, ss.str ());                                \
+    }                                                                         \
+  while (0)
+
+#define DTIO_LOG_MESSAGE_RANKLESS(logLevel, ...)			      \
+  do                                                                          \
+    {                                                                         \
+      std::stringstream ss;                                                   \
+      ss << __VA_ARGS__;                                                      \
+      Logger::Log (logLevel, ss.str ());                                      \
     }                                                                         \
   while (0)
 
@@ -56,8 +75,11 @@ public:
 #if LOG_LEVEL >= 4
 #define DTIO_LOG_DEBUG(...)                                                   \
   DTIO_LOG_MESSAGE (spdlog::level::debug, __VA_ARGS__)
+#define DTIO_LOG_DEBUG_RANKLESS(...)                                          \
+  DTIO_LOG_MESSAGE_RANKLESS(spdlog::level::debug, __VA_ARGS__)
 #else
 #define DTIO_LOG_DEBUG(...)
+#define DTIO_LOG_DEBUG_RANKLESS(...)
 #endif
 
 #if LOG_LEVEL >= 5

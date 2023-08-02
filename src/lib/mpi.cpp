@@ -32,7 +32,6 @@
 int
 dtio::MPI_Init (int *argc, char ***argv)
 {
-  DTIO_LOG_DEBUG("[MPI] Init Entered");
   int provided;
   PMPI_Init_thread (argc, argv, MPI_THREAD_MULTIPLE, &provided);
   if (provided < MPI_THREAD_MULTIPLE)
@@ -40,6 +39,13 @@ dtio::MPI_Init (int *argc, char ***argv)
       std::cerr << "Didn't receive appropriate thread specification"
                 << std::endl;
     }
+
+  /* Note: The following log statement was initially at the beginning
+     of initialization, but DTIO logging requires rank so we're going
+     to have to wait to log until after MPI has initialized.
+   */
+  DTIO_LOG_DEBUG("[MPI] Init Entered");
+  
   /* NOTE: If we're intercepting MPI_Init, we can't assume that
      argv[1] is the DTIO conf path
    */

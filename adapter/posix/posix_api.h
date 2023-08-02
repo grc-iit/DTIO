@@ -16,6 +16,8 @@
 #include <fcntl.h>
 #include <iostream>
 #include <string>
+#include <set>
+#include <boost/stacktrace.hpp>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -103,7 +105,12 @@ static int fxstat_to_fstat (int fd, struct stat *stbuf);
 /** Pointers to the real posix API */
 class PosixApi : public dtio::adapter::RealApi
 {
+private:
+  static std::shared_ptr<dtio::posix::PosixApi> instance;
+
 public:
+  std::shared_ptr<std::set<std::string>> interception_whitelist = nullptr;
+
   /** open */
   open_t open = nullptr;
   /** open64 */
@@ -170,6 +177,8 @@ public:
 
   PosixApi () : dtio::adapter::RealApi ("open", "posix_intercepted")
   {
+    interception_whitelist = std::make_shared<std::set<std::string>>();
+
     open = (open_t)dlsym (real_lib_, "open");
     REQUIRE_API (open)
     open64 = (open64_t)dlsym (real_lib_, "open64");
@@ -235,15 +244,35 @@ public:
   PosixApi (PosixApi &&) = default;
   PosixApi &operator= (const PosixApi &) = default;
   PosixApi &operator= (PosixApi &&) = default;
+
+  bool interceptp(std::string sourcename) {
+    if (interception_whitelist == nullptr) {
+      return false;
+    }
+    else {
+      return interception_whitelist->find(sourcename) != interception_whitelist->end();
+    }
+  }
+
+  void add_to_whitelist(std::string execname) {
+    interception_whitelist->insert(execname);
+  }
+
+  inline static std::shared_ptr<dtio::posix::PosixApi>
+  getInstance() {
+    return instance == nullptr ?
+      instance = std::make_shared<dtio::posix::PosixApi>() : instance;
+  }
 };
 
 } // namespace dtio::posix
 
 // Singleton macros
-#include "hermes_shm/util/singleton.h"
+// #include "hermes_shm/util/singleton.h"
+#include <dtio/common/singleton.h>
 
 #define HERMES_POSIX_API                                                      \
-  hshm::EasySingleton<dtio::posix::PosixApi>::GetInstance ()
+  dtio::posix::PosixApi::getInstance ()
 #define HERMES_POSIX_API_T dtio::posix::PosixApi *
 
 namespace dtio::posix
