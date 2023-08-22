@@ -328,21 +328,22 @@ int metadata_manager::update_on_seek(std::string filename, size_t offset,
   if (iter != file_map.end()) {
     switch (origin) {
     case SEEK_SET: {
-      if (offset <= iter->second.file_size && offset >= 0) {
+      // offset <= iter->second.file_size && 
+      if (offset >= 0) {
         iter->second.file_pointer = offset;
       }
       break;
     }
     case SEEK_CUR: {
-      if (iter->second.file_pointer + offset <= iter->second.file_size) {
+      // if (iter->second.file_pointer + offset <= iter->second.file_size) {
         iter->second.file_pointer += offset;
-      }
+      // }
       break;
     }
     case SEEK_END: {
-      if (offset <= iter->second.file_size) {
+      // if (offset <= iter->second.file_size) {
         iter->second.file_pointer = iter->second.file_size - offset;
-      }
+      // }
       break;
     }
     default:
