@@ -84,9 +84,9 @@ int HERMES_DECL(open)(const char *path, int flags, ...) {
 
   std::string caller_name = "";
   if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
+  caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
   }
-
+  
   if (real_api->interceptp(caller_name)) {
     return dtio::posix::open(path, flags);
   }
@@ -305,11 +305,21 @@ int HERMES_DECL(__lxstat)(int __ver, const char *__filename,
 // 	DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
 // 	dtio::posix::stat(fd, buf);
 // }
-//
-// int HERMES_DECL(stat)(const char *pathname, struct stat *buf) {
-// 	DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-// 	dtio::posix::stat(pathname, buf);
-// }
+
+int HERMES_DECL(stat)(const char *pathname, struct stat *buf) {
+  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
+  auto real_api = HERMES_POSIX_API;
+  std::string caller_name = "";
+  if (boost::stacktrace::stacktrace().size() > 1) {
+    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
+  }
+  if (real_api->interceptp(caller_name)) {
+    return dtio::posix::stat(pathname, buf);
+  }
+  else {
+    return real_api->stat(pathname, buf);
+  }
+}
 
 int HERMES_DECL(__fxstat64)(int __ver, int fd, struct stat64 *buf) {
   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
@@ -380,16 +390,37 @@ int HERMES_DECL(__lxstat64)(int __ver, const char *__filename,
 // 	DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
 // 	dtio::posix::fstat64(fd, buf);
 // }
-//
-// int HERMES_DECL(stat64)(const char *pathname, struct stat64 *buf) {
-// 	DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-// 	dtio::posix::stat64(pathname, buf);
-// }
-//
-// int HERMES_DECL(fsync)(int fd) {
-// 	DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-// 	dtio::posix::fsync(fd);
-// }
+
+int HERMES_DECL(stat64)(const char *pathname, struct stat64 *buf) {
+  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
+  auto real_api = HERMES_POSIX_API;
+  std::string caller_name = "";
+  if (boost::stacktrace::stacktrace().size() > 1) {
+    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
+  }
+  if (real_api->interceptp(caller_name)) {
+    return dtio::posix::stat64(pathname, buf);
+  }
+  else {
+    return real_api->stat64(pathname, buf);
+  }
+}
+
+
+int HERMES_DECL(fsync)(int fd) {
+  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
+  auto real_api = HERMES_POSIX_API;
+  std::string caller_name = "";
+  if (boost::stacktrace::stacktrace().size() > 1) {
+    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
+  }
+  if (real_api->interceptp(caller_name)) {
+    return dtio::posix::fsync(fd);
+  }
+  else {
+    return real_api->fsync(fd);
+  }
+}
 
 int HERMES_DECL(close)(int fd) {
   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
@@ -416,9 +447,19 @@ int HERMES_DECL(close)(int fd) {
 // 	dtio::posix::remove(pathname);
 // }
 
-// int HERMES_DECL(unlink)(const char *pathname) {
-// 	DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-// 	dtio::posix::unlink(pathname);
-// }
+int HERMES_DECL(unlink)(const char *pathname) {
+  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
+  auto real_api = HERMES_POSIX_API;
+  std::string caller_name = "";
+  if (boost::stacktrace::stacktrace().size() > 1) {
+    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
+  }
+  if (real_api->interceptp(caller_name)) {
+    return dtio::posix::unlink(pathname);
+  }
+  else {
+    return real_api->unlink(pathname);
+  }
+}
 
 }  // extern C

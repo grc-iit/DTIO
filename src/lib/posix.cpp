@@ -166,44 +166,52 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
 }
 
 // FIXME: POSIX unlink causes an infinite loop when used with HCL
-// int
-// unlink (const char *pathname)
-// {
-//   auto mdm = metadata_manager::getInstance (LIB);
-//   auto client_queue
-//       = dtio_system::getInstance (LIB)->get_client_queue
-//       (CLIENT_TASK_SUBJECT);
-//   auto map_client = dtio_system::getInstance (LIB)->map_client ();
-//   auto map_server = dtio_system::getInstance (LIB)->map_server ();
-//   auto task_m = task_builder::getInstance (LIB);
-//   auto data_m = data_manager::getInstance (LIB);
-//   auto offset = mdm->get_fp (pathname);
-//   if (!mdm->is_opened (pathname))
-//     throw std::runtime_error ("dtio::posix::unlink() file not opened!");
-//   auto f = file (std::string (pathname), offset, 0);
-//   auto d_task = delete_task (f);
-//   d_task.iface = io_client_type::POSIX;
-//   auto delete_tasks = task_m->build_delete_task (d_task);
-//   int index = 0;
-//   std::vector<std::pair<std::string, std::string> > task_ids
-//       = std::vector<std::pair<std::string, std::string> > ();
-//   for (auto task : delete_tasks)
-//     {
-//       if (task.publish)
-//         {
-//           mdm->update_delete_task_info (task, pathname);
-//           client_queue->publish_task (&task);
-//           task_ids.emplace_back (std::make_pair (
-//               task.source.filename, std::to_string (task.source.server)));
-//         }
-//       else
-//         {
-//           mdm->update_delete_task_info (task, pathname);
-//         }
-//       index++;
-//     }
-//   return 0;
-// }
+int
+dtio::posix::unlink (const char *pathname)
+{
+  auto mdm = metadata_manager::getInstance (LIB);
+  auto client_queue
+      = dtio_system::getInstance (LIB)->get_client_queue
+      (CLIENT_TASK_SUBJECT);
+  auto map_client = dtio_system::getInstance (LIB)->map_client ();
+  auto map_server = dtio_system::getInstance (LIB)->map_server ();
+  auto task_m = task_builder::getInstance (LIB);
+  auto data_m = data_manager::getInstance (LIB);
+  auto offset = mdm->get_fp (pathname);
+  if (!mdm->is_created (pathname)) {
+    throw std::runtime_error ("dtio::posix::unlink() file doesn't exist!");
+  }
+  auto f = file (std::string (pathname), offset, 0);
+  auto d_task = delete_task (f);
+  d_task.iface = io_client_type::POSIX;
+  auto delete_tasks = task_m->build_delete_task (d_task);
+  int index = 0;
+  std::vector<std::pair<std::string, std::string> > task_ids
+      = std::vector<std::pair<std::string, std::string> > ();
+  for (auto task : delete_tasks)
+    {
+      if (task.publish)
+        {
+          mdm->update_delete_task_info (task, pathname);
+          client_queue->publish_task (&task);
+          task_ids.emplace_back (std::make_pair (
+              task.source.filename, std::to_string (task.source.server)));
+        }
+      else
+        {
+          mdm->update_delete_task_info (task, pathname);
+        }
+      index++;
+    }
+  return 0;
+}
+
+int
+dtio::posix::fsync(int fd)
+{
+  // We don't want to do anything for flush
+  return 0;
+}
 
 int
 dtio::posix::rename (const char *oldpath, const char *newpath)
@@ -215,7 +223,24 @@ dtio::posix::rename (const char *oldpath, const char *newpath)
 int
 dtio::posix::stat (const char *pathname, struct stat *statbuf)
 {
-  // FIXME not implemented
+  // FIXME right now we just grab file size, which is ok for IOR but also bad
+  auto mdm = metadata_manager::getInstance (LIB);
+  // if (!mdm->is_created (pathname)) {
+  //   throw std::runtime_error ("dtio::posix::stat() file doesn't exist!");
+  // }
+  statbuf->st_size = mdm->get_filesize(pathname);;
+  return 0;
+}
+
+int
+dtio::posix::stat64 (const char *pathname, struct stat64 *statbuf)
+{
+  // FIXME right now we just grab file size, which is ok for IOR but also bad
+  auto mdm = metadata_manager::getInstance (LIB);
+  // if (!mdm->is_created (pathname)) {
+  //   throw std::runtime_error ("dtio::posix::stat64() file doesn't exist!");
+  // }
+  statbuf->st_size = mdm->get_filesize(pathname);;
   return 0;
 }
 
@@ -230,10 +255,12 @@ int
 dtio::posix::close (int fd)
 {
   auto mdm = metadata_manager::getInstance (LIB);
-  if (!mdm->is_opened (fd))
+  if (!mdm->is_opened (fd)) {
     return LIB__FCLOSE_FAILED;
-  if (mdm->update_on_close (fd) != SUCCESS)
+  }
+  if (mdm->update_on_close (fd) != SUCCESS) {
     return LIB__FCLOSE_FAILED;
+  }
   return SUCCESS;
 }
 
@@ -277,21 +304,31 @@ dtio::posix::lseek64 (int fd, off_t offset, int whence)
   auto filename = mdm->get_filename (fd);
   if (mdm->get_flags (filename) & O_APPEND)
     return 0;
+
+  DTIO_LOG_DEBUG ("[POSIX] Seek filename ", filename);
   auto size = mdm->get_filesize (filename);
+  DTIO_LOG_DEBUG ("[POSIX] Seek filesize ", size);
   auto fp = mdm->get_fp (filename);
   switch (whence)
     {
     case SEEK_SET:
-      if (offset > size)
-        return -1;
+      // if (offset > size) {
+      // 	fprintf (stderr, "Seek offset greater than size!\n");
+      //   return -1;
+      // }
       break;
     case SEEK_CUR:
-      if (fp + offset > size || fp + offset < 0)
+      // fp + offset > size || 
+      if (fp + offset < 0) {
+	fprintf (stderr, "Seek offset out of range!\n");
         return -1;
+      }
       break;
     case SEEK_END:
-      if (offset > 0)
-        return -1;
+      // if (offset > 0) {
+      // 	fprintf (stderr, "Seek offset after end of file!\n");
+      //   return -1;
+      // }
       break;
     default:
       fprintf (stderr, "Seek origin fault!\n");

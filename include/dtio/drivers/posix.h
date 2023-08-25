@@ -49,9 +49,12 @@ int open64 (const char *filename, int flags, mode_t mode);
 // Needed for POSIX emulation in IOR
 // FIXME:
 // POSIX unlink is currently commented to avoid problems in HCL
-// int unlink(const char *pathname);
+
+int unlink(const char *pathname);
+int fsync (int fd);
 int rename (const char *oldpath, const char *newpath);
 int stat (const char *pathname, struct stat *statbuf);
+int stat64 (const char *pathname, struct stat64 *statbuf);
 int mknod (const char *pathname, mode_t mode, dev_t dev);
 // int fcntl(int fd, int cmd, ...);
 
