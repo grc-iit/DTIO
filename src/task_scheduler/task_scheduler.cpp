@@ -22,6 +22,7 @@
 
 // include files
 #include "task_scheduler.h"
+#include "dtio/common/logger.h"
 #include <algorithm>
 #include <dtio/common/data_structures.h>
 #include <dtio/common/external_clients/memcached_impl.h>
@@ -41,6 +42,7 @@ task_scheduler::run ()
   Timer t = Timer ();
   int status;
 
+  DTIO_LOG_INFO ("[DTIO-TS] Looping");
   while (!kill)
     {
       status = -1;
@@ -60,6 +62,7 @@ task_scheduler::run ()
           task_list.clear ();
         }
     }
+  DTIO_LOG_ERROR ("[DTIO-TS] DEAD");
   return 0;
 }
 

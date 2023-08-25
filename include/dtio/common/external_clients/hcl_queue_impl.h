@@ -100,25 +100,42 @@ public:
     // scheduler) in server client, need to ensure rpc is initiated
     // comm changes based on kind of queue
 
-    DTIO_LOG_INFO ("[Queue] Barrier :: Subject " << subject
-                                                 << "\tName: " << queuename);
+    DTIO_LOG_INFO ("[Queue] Created & Barriering :: Subject "
+                   << subject << "\tName: " << queuename);
 
-    DTIO_LOG_INFO ("[Queue] Created :: Subject " << subject
-                                                 << "\tName: " << queuename);
     head_subscription = tail_subscription = -1;
 
     int worker_index = -1;
-    if (subject != CLIENT_TASK_SUBJECT) {
-      worker_index = std::stoi(subject);
-    }
+    if (subject != CLIENT_TASK_SUBJECT)
+      {
+        DTIO_LOG_INFO ("[Queue] CLIENT @ " << service << "\t" << subject);
+        worker_index = std::stoi (subject);
+      }
 
-    if (service == TASK_SCHEDULER && subject != CLIENT_TASK_SUBJECT) {
-      MPI_Barrier(ConfigManager::get_instance ()->QUEUE_WORKER_COMM[worker_index]);
-    }
+    if (service == TASK_SCHEDULER && subject != CLIENT_TASK_SUBJECT)
+      {
+        DTIO_LOG_INFO ("[Queue] TASK_SCHEDULER @ " << service << "\t"
+                                                   << subject << "\t in WI#"
+                                                   << worker_index);
+        MPI_Barrier (
+            ConfigManager::get_instance ()->QUEUE_WORKER_COMM[worker_index]);
+      }
     hcl_queue = new hcl::queue<task> (queuename);
-    if (service == WORKER && subject != CLIENT_TASK_SUBJECT) {
-      MPI_Barrier(ConfigManager::get_instance ()->QUEUE_WORKER_COMM[worker_index]);
-    }
+    if (service == WORKER && subject != CLIENT_TASK_SUBJECT)
+      {
+        // NOTE: Trace deps on var `size`
+        // int size;
+        // MPI_Comm_size (
+        //     ConfigManager::get_instance ()->QUEUE_WORKER_COMM[worker_index],
+        //     &size);
+        // DTIO_LOG_TRACE ("[Queue] WORKER Comm size " << size);
+        DTIO_LOG_INFO ("[Queue] WORKER @ " << service << "\t" << subject
+                                           << "\t in WI#" << worker_index);
+        MPI_Barrier (
+            ConfigManager::get_instance ()->QUEUE_WORKER_COMM[worker_index]);
+      }
+    DTIO_LOG_INFO ("[Queue] ===>> FIN <<== @ " << service << "\t" << subject
+                                               << "\t in WI#" << worker_index);
   }
 
   int publish_task (task *task_t) override;
