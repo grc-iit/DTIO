@@ -225,9 +225,9 @@ dtio::posix::stat (const char *pathname, struct stat *statbuf)
 {
   // FIXME right now we just grab file size, which is ok for IOR but also bad
   auto mdm = metadata_manager::getInstance (LIB);
-  // if (!mdm->is_created (pathname)) {
-  //   throw std::runtime_error ("dtio::posix::stat() file doesn't exist!");
-  // }
+  if (!mdm->is_created (pathname)) {
+    return -1;
+  }
   statbuf->st_size = mdm->get_filesize(pathname);;
   return 0;
 }
@@ -237,9 +237,9 @@ dtio::posix::stat64 (const char *pathname, struct stat64 *statbuf)
 {
   // FIXME right now we just grab file size, which is ok for IOR but also bad
   auto mdm = metadata_manager::getInstance (LIB);
-  // if (!mdm->is_created (pathname)) {
-  //   throw std::runtime_error ("dtio::posix::stat64() file doesn't exist!");
-  // }
+  if (!mdm->is_created (pathname)) {
+    return -1;
+  }
   statbuf->st_size = mdm->get_filesize(pathname);;
   return 0;
 }
@@ -276,17 +276,18 @@ dtio::posix::lseek (int fd, off_t offset, int whence)
   switch (whence)
     {
     case SEEK_SET:
-      if (offset > size)
-        return -1;
+      // if (offset > size)
+      //   return -1;
       break;
     case SEEK_CUR:
-      if (fp + offset > size || fp + offset < 0)
+      // fp + offset > size || 
+      if (fp + offset < 0)
         return -1;
       break;
     case SEEK_END:
-      if (offset > 0)
-        return -1;
-      break;
+      // if (offset > 0)
+      //   return -1;
+      // break;
     default:
       fprintf (stderr, "Seek origin fault!\n");
       return -1;
@@ -648,6 +649,7 @@ dtio::posix::write (int fd, const void *buf, size_t count)
   auto w_task = write_task (file (filename, offset, count), file ());
 
   w_task.iface = io_client_type::POSIX;
+  std::cout << filename << " " << w_task.source.offset << std::endl;
 #ifdef TIMERTB
   Timer t = Timer ();
   t.resumeTime ();
