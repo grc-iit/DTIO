@@ -141,7 +141,8 @@ public:
   int publish_task (task *task_t) override;
   task *subscribe_task_with_timeout (int &status) override;
   task *subscribe_task (int &status) override;
-  task *subscribe_task_helper ();
+  task *subscribe_task_getter ();
+  bool subscribe_task_helper ();
   int get_queue_count () override;
   int get_queue_size () override;
   int get_queue_count_limit () override;
