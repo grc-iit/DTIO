@@ -22,6 +22,7 @@
 
 // include files
 #include "task_scheduler.h"
+#include "dtio/common/logger.h"
 #include <algorithm>
 #include <dtio/common/data_structures.h>
 #include <dtio/common/external_clients/memcached_impl.h>
@@ -41,15 +42,20 @@ task_scheduler::run ()
   Timer t = Timer ();
   int status;
 
+  DTIO_LOG_TRACE ("[DTIO-TS] Looping");
   while (!kill)
     {
+    // NOTE: Change to TRACE cause spawn
+    DTIO_LOG_TRACE ("[DTIO-TS] RUN :: START");
       status = -1;
+      DTIO_LOG_TRACE ("[DTIO-TS] RUN :: SUBSCRIBING");
       auto task_i = queue->subscribe_task_with_timeout (status);
       if (status != -1 && task_i != nullptr)
         {
           task_list.push_back (task_i);
         }
       auto time_elapsed = t.pauseTime ();
+      DTIO_LOG_TRACE ("[DTIO-TS] RUN :: SUBSCRIBED");
       if (!task_list.empty ()
           && (task_list.size () >= MAX_NUM_TASKS_IN_QUEUE
               || time_elapsed >= MAX_SCHEDULE_TIMER))
@@ -59,7 +65,9 @@ task_scheduler::run ()
           t.resumeTime ();
           task_list.clear ();
         }
+    DTIO_LOG_TRACE ("[DTIO-TS] RUN :: EoL");
     }
+  DTIO_LOG_ERROR ("[DTIO-TS] DEAD");
   return 0;
 }
 
