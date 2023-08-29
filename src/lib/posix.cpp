@@ -100,12 +100,14 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
 int
 dtio::posix::open64 (const char *filename, int flags)
 {
+  DTIO_LOG_INFO("[POSIX] Open64 filename " << filename);
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
   if (!mdm->is_created (filename))
     {
       if (!(flags & O_CREAT))
         {
+	  DTIO_LOG_INFO("[POSIX] Open64 file not marked created");
           return -1;
         }
       else
@@ -125,8 +127,10 @@ dtio::posix::open64 (const char *filename, int flags)
               throw std::runtime_error ("dtio::posix::open() update failed!");
             }
         }
-      else
+      else {
+	DTIO_LOG_INFO("[POSIX] Open64 file already opened");
         return -1;
+      }
     }
   return fd;
 }
@@ -134,12 +138,14 @@ dtio::posix::open64 (const char *filename, int flags)
 int
 dtio::posix::open64 (const char *filename, int flags, mode_t mode)
 {
+  DTIO_LOG_DEBUG("[POSIX] Open64 filename " << filename);
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
   if (!mdm->is_created (filename))
     {
       if (!(flags & O_CREAT))
         {
+	  DTIO_LOG_DEBUG("[POSIX] Open64 file not marked created");
           return -1;
         }
       else
@@ -159,8 +165,10 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
               throw std::runtime_error ("dtio::posix::open() update failed!");
             }
         }
-      else
+      else {
+	DTIO_LOG_DEBUG("[POSIX] Open64 file already opened");
         return -1;
+      }
     }
   return fd;
 }
@@ -169,6 +177,7 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
 int
 dtio::posix::unlink (const char *pathname)
 {
+  DTIO_LOG_DEBUG("[POSIX] unlinking " << pathname);
   auto mdm = metadata_manager::getInstance (LIB);
   auto client_queue
       = dtio_system::getInstance (LIB)->get_client_queue

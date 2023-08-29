@@ -72,13 +72,21 @@ public:
 #define DTIO_LOG_INFO(...)
 #endif
 
+#if LOG_LEVEL >= 3
+#define DTIO_LOG_INFO_RANKLESS(...) DTIO_LOG_MESSAGE_RANKLESS (spdlog::level::info, __VA_ARGS__)
+#else
+#define DTIO_LOG_INFO_RANKLESS(...)
+#endif
+
 #if LOG_LEVEL >= 4
-#define DTIO_LOG_DEBUG(...)                                                   \
-  DTIO_LOG_MESSAGE (spdlog::level::debug, __VA_ARGS__)
-#define DTIO_LOG_DEBUG_RANKLESS(...)                                          \
-  DTIO_LOG_MESSAGE_RANKLESS(spdlog::level::debug, __VA_ARGS__)
+#define DTIO_LOG_DEBUG(...) DTIO_LOG_MESSAGE (spdlog::level::debug, __VA_ARGS__)
 #else
 #define DTIO_LOG_DEBUG(...)
+#endif
+
+#if LOG_LEVEL >= 4
+#define DTIO_LOG_DEBUG_RANKLESS(...) DTIO_LOG_MESSAGE_RANKLESS(spdlog::level::debug, __VA_ARGS__)
+#else
 #define DTIO_LOG_DEBUG_RANKLESS(...)
 #endif
 

@@ -72,6 +72,7 @@ int HERMES_DECL(MPI_Init)(int *argc, char ***argv) {
  */
 int HERMES_DECL(open)(const char *path, int flags, ...) {
   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
+  DTIO_LOG_INFO_RANKLESS("Intercepted " << __func__);
   auto real_api = HERMES_POSIX_API;
 
   int mode = 0;
@@ -102,6 +103,7 @@ int HERMES_DECL(open)(const char *path, int flags, ...) {
 
 int HERMES_DECL(open64)(const char *path, int flags, ...) {
   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
+  DTIO_LOG_INFO_RANKLESS("Intercepted " << __func__);
   auto real_api = HERMES_POSIX_API;
 
   int mode = 0;
@@ -131,6 +133,7 @@ int HERMES_DECL(open64)(const char *path, int flags, ...) {
 
 int HERMES_DECL(__open_2)(const char *path, int oflag) {
   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
+  DTIO_LOG_INFO_RANKLESS("Intercepted " << __func__);
   auto real_api = HERMES_POSIX_API;
   std::string caller_name = "";
   if (boost::stacktrace::stacktrace().size() > 1) {
@@ -449,6 +452,7 @@ int HERMES_DECL(close)(int fd) {
 
 int HERMES_DECL(unlink)(const char *pathname) {
   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
+  DTIO_LOG_INFO_RANKLESS("Intercepted " << __func__);
   auto real_api = HERMES_POSIX_API;
   std::string caller_name = "";
   if (boost::stacktrace::stacktrace().size() > 1) {
