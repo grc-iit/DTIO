@@ -37,7 +37,7 @@ std::vector<write_task *> task_builder::build_write_task(write_task task,
   auto map_server = dtio_system::getInstance(service_i)->map_server();
   auto tasks = std::vector<write_task *>();
   file source = task.source;
-
+  
   auto number_of_tasks =
       static_cast<int>(std::ceil((float)(source.size) / MAX_IO_UNIT));
   auto dataspace_id =
@@ -58,103 +58,102 @@ std::vector<write_task *> task_builder::build_write_task(write_task task,
         std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::system_clock::now().time_since_epoch())
             .count());
-    /****************** write not aligned to 2 MB offsets
-     * ************************/
+    // write not aligned to 2 MB offsets
     if (base_offset != chunk_index * MAX_IO_UNIT) {
       size_t bucket_offset = base_offset - chunk_index * MAX_IO_UNIT;
       std::string chunk_str = map_client->get(
-          table::CHUNK_DB,
-          source.filename + std::to_string(chunk_index * MAX_IO_UNIT),
-          std::to_string(-1));
+					      table::CHUNK_DB,
+					      source.filename + std::to_string(chunk_index * MAX_IO_UNIT),
+					      std::to_string(-1));
       chunk_meta cm = serialization_manager().deserialize_chunk(chunk_str);
       /*************************** chunk in dataspace
        * ******************************/
       if (cm.destination.location == location_type::CACHE) {
-        /********* update new data in dataspace **********/
-        auto chunk_value =
-            map_client->get(table::DATASPACE_DB, cm.destination.filename,
-                            std::to_string(cm.destination.server));
-        std::size_t size_to_write = 0;
-        if (remaining_data < MAX_IO_UNIT) {
-          size_to_write = remaining_data;
-        } else {
-          size_to_write = MAX_IO_UNIT;
-        }
-        if (remaining_data + bucket_offset > MAX_IO_UNIT) {
-          size_to_write = MAX_IO_UNIT - bucket_offset;
-        }
-        if (chunk_value.length() >= bucket_offset + size_to_write) {
-          chunk_value.replace(bucket_offset, size_to_write,
-                              data.substr(data_offset, bucket_offset));
-        } else {
-          chunk_value = chunk_value.substr(0, bucket_offset) +
-                        data.substr(data_offset, size_to_write);
-        }
-        map_client->put(table::DATASPACE_DB, cm.destination.filename,
-                        chunk_value, std::to_string(cm.destination.server));
-        sub_task->addDataspace = false;
-        if (chunk_value.length() == MAX_IO_UNIT) {
-          sub_task->publish = true;
-          sub_task->destination.size = MAX_IO_UNIT;
-          sub_task->destination.offset = 0;
-          sub_task->source.offset = base_offset;
-          sub_task->source.size = size_to_write;
-          sub_task->source.filename = source.filename;
-          sub_task->destination.location = location_type::CACHE;
-          sub_task->destination.filename = cm.destination.filename;
-          sub_task->destination.server = cm.destination.worker;
-        } else {
-          /********* build new task **********/
-          sub_task->destination.size = chunk_value.length();
-          sub_task->destination.offset = 0;
-          sub_task->source.offset = chunk_index * MAX_IO_UNIT;
-          sub_task->source.size = chunk_value.length();
-          sub_task->source.filename = source.filename;
-          sub_task->destination.location = location_type::CACHE;
-          sub_task->destination.filename = cm.destination.filename;
-          sub_task->destination.server = cm.destination.worker;
-        }
+	/********* update new data in dataspace **********/
+	auto chunk_value =
+	  map_client->get(table::DATASPACE_DB, cm.destination.filename,
+			  std::to_string(cm.destination.server));
+	std::size_t size_to_write = 0;
+	if (remaining_data < MAX_IO_UNIT) {
+	  size_to_write = remaining_data;
+	} else {
+	  size_to_write = MAX_IO_UNIT;
+	}
+	if (remaining_data + bucket_offset > MAX_IO_UNIT) {
+	  size_to_write = MAX_IO_UNIT - bucket_offset;
+	}
+	if (chunk_value.length() >= bucket_offset + size_to_write) {
+	  chunk_value.replace(bucket_offset, size_to_write,
+			      data.substr(data_offset, bucket_offset));
+	} else {
+	  chunk_value = chunk_value.substr(0, bucket_offset) +
+	    data.substr(data_offset, size_to_write);
+	}
+	map_client->put(table::DATASPACE_DB, cm.destination.filename,
+			chunk_value, std::to_string(cm.destination.server));
+	sub_task->addDataspace = false;
+	if (chunk_value.length() == MAX_IO_UNIT) {
+	  sub_task->publish = true;
+	  sub_task->destination.size = MAX_IO_UNIT;
+	  sub_task->destination.offset = 0;
+	  sub_task->source.offset = base_offset;
+	  sub_task->source.size = size_to_write;
+	  sub_task->source.filename = source.filename;
+	  sub_task->destination.location = location_type::CACHE;
+	  sub_task->destination.filename = cm.destination.filename;
+	  sub_task->destination.server = cm.destination.worker;
+	} else {
+	  /********* build new task **********/
+	  // We've modified this, but still don't really understand what it's doing
+	  sub_task->destination.size = chunk_value.length();
+	  sub_task->destination.offset = 0;
+	  sub_task->source.offset = base_offset + chunk_index * MAX_IO_UNIT; // chunk_index * MAX_IO_UNIT;
+	  sub_task->source.size = size_to_write; // chunk_value.length();
+	  sub_task->source.filename = source.filename;
+	  sub_task->destination.location = location_type::CACHE;
+	  sub_task->destination.filename = cm.destination.filename;
+	  sub_task->destination.server = cm.destination.worker;
+	}
 
       } else {
-        /****************************** chunk in file
-         * ********************************/
-        std::size_t size_to_write = 0;
-        if (remaining_data < MAX_IO_UNIT) {
-          size_to_write = remaining_data;
-        } else {
-          size_to_write = MAX_IO_UNIT;
-          sub_task->publish = true;
-        }
-        if (remaining_data + bucket_offset > MAX_IO_UNIT) {
-          size_to_write = MAX_IO_UNIT - bucket_offset;
-        }
-        sub_task->destination.worker = cm.destination.worker;
-        sub_task->destination.size = size_to_write;
-        sub_task->destination.offset = bucket_offset;
-        sub_task->source.offset = base_offset;
-        sub_task->source.size = size_to_write;
-        sub_task->source.filename = source.filename;
-        sub_task->destination.location = location_type::CACHE;
-        sub_task->destination.server = server;
-        sub_task->destination.filename =
-            std::to_string(dataspace_id) + "_" + std::to_string(chunk_index);
-        sub_task->meta_updated = true;
+	/****************************** chunk in file
+	 * ********************************/
+	std::size_t size_to_write = 0;
+	if (remaining_data < MAX_IO_UNIT) {
+	  size_to_write = remaining_data;
+	} else {
+	  size_to_write = MAX_IO_UNIT;
+	  sub_task->publish = true;
+	}
+	if (remaining_data + bucket_offset > MAX_IO_UNIT) {
+	  size_to_write = MAX_IO_UNIT - bucket_offset;
+	}
+	sub_task->destination.worker = cm.destination.worker;
+	sub_task->destination.size = size_to_write;
+	sub_task->destination.offset = bucket_offset;
+	sub_task->source.offset = base_offset;
+	sub_task->source.size = size_to_write;
+	sub_task->source.filename = source.filename;
+	sub_task->destination.location = location_type::CACHE;
+	sub_task->destination.server = server;
+	sub_task->destination.filename =
+	  std::to_string(dataspace_id) + "_" + std::to_string(chunk_index);
+	sub_task->meta_updated = true;
       }
       std::size_t size_to_write = 0;
       if (remaining_data < MAX_IO_UNIT) {
-        size_to_write = remaining_data;
+	size_to_write = remaining_data;
       } else {
-        size_to_write = MAX_IO_UNIT;
+	size_to_write = MAX_IO_UNIT;
       }
       if (remaining_data + bucket_offset > MAX_IO_UNIT) {
-        size_to_write = MAX_IO_UNIT - bucket_offset;
+	size_to_write = MAX_IO_UNIT - bucket_offset;
       }
       base_offset += size_to_write;
       data_offset += size_to_write;
       remaining_data -= size_to_write;
     }
-    /******************** write aligned to 2 MB offsets
-       **************************/
+    // write aligned to 2 MB offsets
     else {
       size_t bucket_offset = 0;
       /******* remaining_data I/O is less than 2 MB *******/
