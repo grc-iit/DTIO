@@ -28,9 +28,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERTB")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERNATS")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERDM")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERW")
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMER") set(CMAKE_CXX_FLAGS
-# "${CMAKE_CXX_FLAGS} -DFTIMER") set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}
-# -DCOLLECT")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMER")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DFTIMER")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCOLLECT")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOVERHEADS")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERBASE")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTABIOS")
@@ -58,6 +58,7 @@ set(COMMON_SRC
     src/common/task_builder/task_builder.cpp)
 set(DTIO_LIB_SRC src/lib/stdio.cpp src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
 set(DTIO_INTERCEPTION adapter/posix/posix_api.cc)
+set(DTIO_BRAHMA_INTERCEPTION adapter/brahma-interceptor/posix_api.cc)
 # set(DTIO_CLIENT_SRC src/client/main.cpp src/client/client.cpp
 #                       src/common/threadPool.cpp)
 # set(DTIO_SERVER_SRC src/system_manager/main.cpp
@@ -99,6 +100,7 @@ add_compile_definitions(LOG_LEVEL=${LOG_LEVEL})
 add_library(dtio_common SHARED ${COMMON_SRC})
 add_library(${PROJECT_NAME} SHARED ${DTIO_LIB_SRC})
 add_library(dtio_posix_interception SHARED ${DTIO_INTERCEPTION})
+add_library(dtio_brahma_interception SHARED ${DTIO_BRAHMA_INTERCEPTION})
 # add_executable(dtio_client ${DTIO_CLIENT_SRC})
 # add_executable(dtio_server ${DTIO_SERVER_SRC})
 add_executable(dtio_task_scheduler ${DTIO_TS_SRC})
@@ -144,8 +146,11 @@ dtio_set_libs(dtio_worker)
 dtio_set_libs(dtio_hclmap)
 dtio_set_libs(${PROJECT_NAME})
 dtio_set_libs(dtio_posix_interception)
+dtio_set_libs(dtio_brahma_interception)
 add_dependencies(dtio_posix_interception dtio)
+add_dependencies(dtio_brahma_interception dtio)
 target_link_libraries(dtio_posix_interception dtio)
+target_link_libraries(dtio_brahma_interception dtio)
 
 set_target_properties(
   ${PROJECT_NAME}
@@ -155,11 +160,13 @@ set_target_properties(
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(dtio_posix_interception PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(dtio_brahma_interception PROPERTIES LINKER_LANGUAGE CXX)
 
 target_include_directories(${PROJECT_NAME} PRIVATE .)
 
 target_link_libraries(dtio ${CMAKE_CXX_LINK_FLAGS})
 target_link_libraries(dtio_posix_interception ${CMAKE_CXX_LINK_FLAGS})
+target_link_libraries(dtio_brahma_interception ${CMAKE_CXX_LINK_FLAGS})
 # target_link_libraries(dtio_posix_interception PRIVATE -Wall -fPIC)
 
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
