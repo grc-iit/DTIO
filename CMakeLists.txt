@@ -92,6 +92,16 @@ if(DEFINED ROCKS)
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 
+find_package(brahma REQUIRED)
+if (${BRAHMA_FOUND})
+    message(STATUS "[DTIO_INTERCEPTOR] found brahma at ${BRAHMA_INCLUDE_DIRS}")
+    include_directories(${BRAHMA_INCLUDE_DIRS})
+    set(DEPENDENCY_LIB ${DEPENDENCY_LIB} ${BRAHMA_LIBRARIES})
+    message(STATUS "[DTIO_INTERCEPTOR] found brahma at ${BRAHMA_INCLUDE_DIRS}")
+else ()
+    message(FATAL_ERROR "-- [DTIO_INTERCEPTOR] brahma is needed for ${PROJECT_NAME} build")
+endif ()
+
 # Variable for setting the log level (1=ERROR, 2=WARN, 3=INFO, 4=DEBUG, 5=TRACE)
 set(LOG_LEVEL 3 CACHE STRING "Set the log level")
 # Define LOG_LEVEL
