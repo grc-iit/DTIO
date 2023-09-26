@@ -8,7 +8,7 @@ and is intended to grow in the intersection of HPC and BigData.
 
 You should be able to intercept using LD_PRELOAD, make sure to set the
 environment variable DTIO\_CONF\_PATH to the path of your DTIO
-configuration file (e.g., /home/user/DTIO/conf/default.yaml),
+configuration file (e.g., /home/$USER/DTIO/conf/default.yaml),
 otherwise we won't be able to find it.
 
 # TODO LIST
