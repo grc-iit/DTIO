@@ -273,7 +273,7 @@ public:
 
 #define HERMES_POSIX_API                                                      \
   dtio::posix::PosixApi::getInstance ()
-#define HERMES_POSIX_API_T dtio::posix::PosixApi *
+#define HERMES_POSIX_API_T std::shared_ptr<dtio::posix::PosixApi>
 
 namespace dtio::posix
 {

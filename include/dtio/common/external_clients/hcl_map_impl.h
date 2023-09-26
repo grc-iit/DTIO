@@ -39,9 +39,11 @@ class HCLMapImpl : public distributed_hashmap
 
 private:
   service map_service;
-  hcl::unordered_map<struct HCLKeyType, std::string, std::hash<HCLKeyType>,
-                     CharAllocator, MappedUnitString> *hcl_client;
+  hcl::unordered_map<struct HCLKeyType, DTIOCharStruct> *hcl_client;
+  // hcl::unordered_map<struct HCLKeyType, std::string, std::hash<HCLKeyType>,
+  //                    CharAllocator, MappedUnitString> *hcl_client;
   size_t num_servers;
+  std::string hclmapname;
   std::string get_server (std::string key);
 
 public:
@@ -61,6 +63,7 @@ public:
 	std::cout << "I'm uncertain why this happens " << service << std::endl;
       }
 
+    hclmapname = mapname;
     num_servers = hcl_servers;
     HCL_CONF->MY_SERVER = my_server;
     HCL_CONF->NUM_SERVERS = num_servers;
@@ -81,9 +84,11 @@ public:
 		     ->METADATA_COMM); // Wait for clients to initialize maps
       }
 
-    hcl_client = new hcl::unordered_map<HCLKeyType, std::string,
-					std::hash<HCLKeyType>, CharAllocator,
-					MappedUnitString> (mapname);
+    hcl_client = new hcl::unordered_map<HCLKeyType, DTIOCharStruct> (mapname);
+
+    // hcl_client = new hcl::unordered_map<HCLKeyType, std::string,
+    // 					std::hash<HCLKeyType>, CharAllocator,
+    // 					MappedUnitString> (mapname);
     if (service == HCLCLIENT && mapname == "dataspace")
       {
 	MPI_Barrier (
@@ -109,7 +114,7 @@ public:
   int put (const table &name, std::string key, const std::string &value,
            std::string group_key) override;
   std::string get (const table &name, std::string key,
-                   std::string group_key) override;
+                   std::string group_key);
   std::string remove (const table &name, std::string key,
                       std::string group_key) override;
   bool exists (const table &name, std::string key,
@@ -122,7 +127,7 @@ public:
   size_t counter_inc (const table &name, std::string key,
                       std::string group_key) override;
 
-  virtual ~HCLMapImpl () {}
+  virtual ~HCLMapImpl () { delete hcl_client; }
 };
 
 #endif // DTIO_MAIN_HCLMAPimpl_H

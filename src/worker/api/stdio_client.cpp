@@ -29,19 +29,19 @@
 #include <hcl/common/debug.h>
 #include <dtio/dtio_system.h>
 
-int stdio_client::dtio_read(read_task task) {
+int stdio_client::dtio_read(task tsk) {
 #ifdef TIMERW
   Timer t = Timer();
   t.resumeTime();
 #endif
-  FILE *fh = fopen(task.source.filename.c_str(), "r+");
-  auto data = static_cast<char *>(malloc(sizeof(char) * task.source.size));
-  long long int pos = fseek(fh, task.source.offset, SEEK_SET);
+  FILE *fh = fopen(tsk.source.filename, "r+");
+  auto data = static_cast<char *>(malloc(sizeof(char) * tsk.source.size));
+  long long int pos = fseek(fh, tsk.source.offset, SEEK_SET);
   if (pos != 0)
     std::cerr << "stdio_client::read() seek failed\n";
   // throw std::runtime_error("stdio_client::read() seek failed");
-  size_t count = fread(data, sizeof(char), task.source.size, fh);
-  if (count != task.source.size)
+  size_t count = fread(data, sizeof(char), tsk.source.size, fh);
+  if (count != tsk.source.size)
     std::cerr << "stdio_client::read() read failed\n";
   // throw std::runtime_error("stdio_client::read() read failed");
 
@@ -51,8 +51,8 @@ int stdio_client::dtio_read(read_task task) {
   Timer t0 = Timer();
   t0.resumeTime();
 #endif
-  map_client->put(DATASPACE_DB, task.destination.filename, data,
-                  std::to_string(task.destination.server));
+  map_client->put(DATASPACE_DB, tsk.destination.filename, data,
+                  std::to_string(tsk.destination.server));
 #ifdef TIMERDM
   std::stringstream stream;
   stream << "stdio_client::read()::send_data," << std::fixed
@@ -62,24 +62,24 @@ int stdio_client::dtio_read(read_task task) {
   // std::cout<<task.destination.filename<<","<<task.destination.server<<"\n";
   fclose(fh);
   free(data);
-  if (task.local_copy) {
+  if (tsk.local_copy) {
     int file_id = static_cast<int>(
         duration_cast<milliseconds>(system_clock::now().time_since_epoch())
             .count());
     std::string file_path = dir + std::to_string(file_id);
     FILE *fh1 = fopen(file_path.c_str(), "w+");
-    fwrite(data, task.source.size, sizeof(char), fh1);
+    fwrite(data, tsk.source.size, sizeof(char), fh1);
     fclose(fh1);
-    size_t chunk_index = (task.source.offset / MAX_IO_UNIT);
+    size_t chunk_index = (tsk.source.offset / MAX_IO_UNIT);
     size_t base_offset =
-        chunk_index * MAX_IO_UNIT + task.source.offset % MAX_IO_UNIT;
+        chunk_index * MAX_IO_UNIT + tsk.source.offset % MAX_IO_UNIT;
 
     chunk_meta chunk_meta1;
-    chunk_meta1.actual_user_chunk = task.source;
+    chunk_meta1.actual_user_chunk = tsk.source;
     chunk_meta1.destination.location = BUFFERS;
-    chunk_meta1.destination.filename = file_path;
+    strncpy(chunk_meta1.destination.filename, file_path.c_str(), DTIO_FILENAME_MAX);
     chunk_meta1.destination.offset = 0;
-    chunk_meta1.destination.size = task.source.size;
+    chunk_meta1.destination.size = tsk.source.size;
     chunk_meta1.destination.worker = worker_index;
 #ifdef TIMERMDM
     Timer t1 = Timer();
@@ -87,7 +87,7 @@ int stdio_client::dtio_read(read_task task) {
 #endif
     std::string chunk_str = sm.serialize_chunk(chunk_meta1);
     map_client->put(table::CHUNK_DB,
-                    task.source.filename + std::to_string(base_offset),
+                    tsk.source.filename + std::to_string(base_offset),
                     chunk_str, std::to_string(-1));
 #ifdef TIMERMDM
     std::cout << "stdio_client::read()::update_meta," << t1.pauseTime() << "\n";
@@ -102,7 +102,7 @@ int stdio_client::dtio_read(read_task task) {
   return 0;
 }
 
-int stdio_client::dtio_write(write_task task) {
+int stdio_client::dtio_write(task tsk) {
 #ifdef TIMERW
   Timer t = Timer();
   t.resumeTime();
@@ -112,12 +112,12 @@ int stdio_client::dtio_write(write_task task) {
   std::shared_ptr<distributed_hashmap> map_server =
       dtio_system::getInstance(WORKER)->map_server();
   serialization_manager sm = serialization_manager();
-  auto source = task.source;
+  auto source = tsk.source;
   size_t chunk_index = (source.offset / MAX_IO_UNIT);
   size_t base_offset = chunk_index * MAX_IO_UNIT + source.offset % MAX_IO_UNIT;
   std::string chunk_str = map_client->get(
       table::CHUNK_DB,
-      task.source.filename + std::to_string(chunk_index * MAX_IO_UNIT),
+      tsk.source.filename + std::to_string(chunk_index * MAX_IO_UNIT),
       std::to_string(-1));
 
   chunk_meta chunk_meta1 = sm.deserialize_chunk(chunk_str);
@@ -126,8 +126,8 @@ int stdio_client::dtio_write(write_task task) {
   t0.resumeTime();
 #endif
   // FIXME: modify the data to pull from local buffers if there is no dataspace (task is sync)
-  std::string data = map_client->get(DATASPACE_DB, task.destination.filename,
-				     std::to_string(task.destination.server));
+  std::string data = map_client->get(DATASPACE_DB, tsk.destination.filename,
+				     std::to_string(tsk.destination.server));
 #ifdef TIMERDM
   std::stringstream stream;
   stream << "stdio_client::write()::get_data," << std::fixed
@@ -146,13 +146,13 @@ int stdio_client::dtio_write(write_task task) {
     file_path = dir + std::to_string(file_id);
 #ifdef DEBUG
     std::cout << data.length() << " chunk index:" << chunk_index
-              << " dataspaceId:" << task.destination.filename
+              << " dataspaceId:" << tsk.destination.filename
               << " created filename:" << file_path
-              << " clientId: " << task.destination.server << "\n";
+              << " clientId: " << tsk.destination.server << "\n";
 #endif
     FILE *fh = fopen(file_path.c_str(), "w+");
-    auto count = fwrite(data.c_str(), sizeof(char), task.destination.size, fh);
-    if (count != task.destination.size)
+    auto count = fwrite(data.c_str(), sizeof(char), tsk.destination.size, fh);
+    if (count != tsk.destination.size)
       std::cerr << "written less" << count << "\n";
     fclose(fh);
   } else {
@@ -162,21 +162,21 @@ int stdio_client::dtio_write(write_task task) {
 #ifdef DEBUG
     std::cout << "update file  " << data.length()
               << " chunk index:" << chunk_index
-              << " dataspaceId:" << task.destination.filename
-              << " clientId: " << task.destination.server << "\n";
+              << " dataspaceId:" << tsk.destination.filename
+              << " clientId: " << tsk.destination.server << "\n";
 #endif
 
     file_path = chunk_meta1.destination.filename;
-    FILE *fh = fopen(chunk_meta1.destination.filename.c_str(), "r+");
-    fseek(fh, task.source.offset - base_offset, SEEK_SET);
-    fwrite(data.c_str(), sizeof(char), task.source.size, fh);
+    FILE *fh = fopen(chunk_meta1.destination.filename, "r+");
+    fseek(fh, tsk.source.offset - base_offset, SEEK_SET);
+    fwrite(data.c_str(), sizeof(char), tsk.source.size, fh);
     fclose(fh);
   }
-  chunk_meta1.actual_user_chunk = task.source;
+  chunk_meta1.actual_user_chunk = tsk.source;
   chunk_meta1.destination.location = BUFFERS;
-  chunk_meta1.destination.filename = file_path;
+  strncpy(chunk_meta1.destination.filename, file_path.c_str(), DTIO_FILENAME_MAX);
   chunk_meta1.destination.offset = 0;
-  chunk_meta1.destination.size = task.destination.size;
+  chunk_meta1.destination.size = tsk.destination.size;
   chunk_meta1.destination.worker = worker_index;
 #ifdef TIMERMDM
   Timer t1 = Timer();
@@ -184,7 +184,7 @@ int stdio_client::dtio_write(write_task task) {
 #endif
   chunk_str = sm.serialize_chunk(chunk_meta1);
   map_client->put(table::CHUNK_DB,
-                  task.source.filename +
+                  tsk.source.filename +
                       std::to_string(chunk_index * MAX_IO_UNIT),
                   chunk_str, std::to_string(-1));
 //    map_client->remove(DATASPACE_DB,task.destination.filename,
@@ -192,7 +192,7 @@ int stdio_client::dtio_write(write_task task) {
 #ifdef TIMERMDM
   std::cout << "stdio_client::write()::update_meta," << t1.pauseTime() << "\n";
 #endif
-  map_server->put(table::WRITE_FINISHED_DB, task.destination.filename,
+  map_server->put(table::WRITE_FINISHED_DB, tsk.destination.filename,
                   std::to_string(-1), std::to_string(-1));
 #ifdef TIMERW
   std::stringstream stream1;
@@ -203,20 +203,20 @@ int stdio_client::dtio_write(write_task task) {
   return 0;
 }
 
-int stdio_client::dtio_delete_file(delete_task task) {
-  remove(task.source.filename.c_str());
+int stdio_client::dtio_delete_file(task tsk) {
+  remove(tsk.source.filename);
   // TODO:update metadata of delete
   return 0;
 }
 
-int stdio_client::dtio_flush_file(flush_task task) {
-  FILE *fh_source = fopen(task.source.filename.c_str(), "rb+");
-  FILE *fh_destination = fopen(task.destination.filename.c_str(), "rb+");
-  char *data = static_cast<char *>(malloc(sizeof(char) * task.source.size));
-  fseek(fh_source, task.source.offset, SEEK_SET);
-  fread(data, task.source.size, sizeof(char), fh_source);
-  fseek(fh_destination, task.destination.offset, SEEK_SET);
-  fwrite(data, task.destination.size, sizeof(char), fh_destination);
+int stdio_client::dtio_flush_file(task tsk) {
+  FILE *fh_source = fopen(tsk.source.filename, "rb+");
+  FILE *fh_destination = fopen(tsk.destination.filename, "rb+");
+  char *data = static_cast<char *>(malloc(sizeof(char) * tsk.source.size));
+  fseek(fh_source, tsk.source.offset, SEEK_SET);
+  fread(data, tsk.source.size, sizeof(char), fh_source);
+  fseek(fh_destination, tsk.destination.offset, SEEK_SET);
+  fwrite(data, tsk.destination.size, sizeof(char), fh_destination);
   fclose(fh_destination);
   fclose(fh_source);
   return 0;

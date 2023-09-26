@@ -41,23 +41,23 @@ solver_output round_robin_solver::solve(solver_input input) {
     worker_id = worker_id % ConfigManager::get_instance()->NUM_WORKERS;
     switch (input.tasks[i]->t_type) {
     case task_type::WRITE_TASK: {
-      auto *wt = reinterpret_cast<write_task *>(input.tasks[i]);
-      if (wt->destination.worker == -1)
+      auto *wt = input.tasks[i]; //reinterpret_cast<write_task *>(input.tasks[i]);
+      if (wt->destination.worker < 0)
         solution.solution[i] = static_cast<int>(worker_id + 1);
       else
         solution.solution[i] = wt->destination.worker;
       break;
     }
     case task_type::READ_TASK: {
-      auto *rt = reinterpret_cast<read_task *>(input.tasks[i]);
-      if (rt->source.worker == -1)
+      auto *rt = input.tasks[i]; //reinterpret_cast<read_task *>()
+      if (rt->source.worker < 0)
         solution.solution[i] = static_cast<int>(worker_id + 1);
       else
         solution.solution[i] = rt->source.worker;
       break;
     }
     case task_type::DELETE_TASK: {
-      auto *dt = reinterpret_cast<delete_task *>(input.tasks[i]);
+      auto *dt = input.tasks[i]; //reinterpret_cast<delete_task *>(input.tasks[i]);
       if (dt->source.worker == -1)
         std::cerr << "round_robin_solver::solve():\t "
                      "delete task failed\n";
@@ -66,7 +66,7 @@ solver_output round_robin_solver::solve(solver_input input) {
       break;
     }
     case task_type::FLUSH_TASK: {
-      auto *ft = reinterpret_cast<flush_task *>(input.tasks[i]);
+      auto *ft = input.tasks[i]; //reinterpret_cast<flush_task *>(input.tasks[i]);
       if (ft->source.worker == -1)
         std::cerr << "round_robin_solver::solve():\t "
                      "flush task failed\n";

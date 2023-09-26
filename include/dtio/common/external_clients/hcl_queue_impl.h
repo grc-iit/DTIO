@@ -103,7 +103,7 @@ public:
     DTIO_LOG_INFO ("[Queue] Created & Barriering :: Subject "
                    << subject << "\tName: " << queuename);
 
-    head_subscription = tail_subscription = -1;
+    head_subscription = tail_subscription = 0;
 
     int worker_index = -1;
     if (subject != CLIENT_TASK_SUBJECT)
@@ -138,6 +138,7 @@ public:
                                                << "\t in WI#" << worker_index);
   }
 
+  void clear() override;
   int publish_task (task *task_t) override;
   task *subscribe_task_with_timeout (int &status) override;
   task *subscribe_task (int &status) override;
@@ -146,7 +147,7 @@ public:
   int get_queue_count () override;
   int get_queue_size () override;
   int get_queue_count_limit () override;
-  virtual ~HCLQueueImpl () {}
+  virtual ~HCLQueueImpl () { delete hcl_queue; }
 };
 
 #endif // DTIO_MAIN_HCLQUEUEimpl_H

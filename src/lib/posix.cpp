@@ -27,18 +27,39 @@
 #include <fcntl.h>
 #include <hcl/common/debug.h>
 #include <iomanip>
+#include <sys/stat.h>
 #include <zconf.h>
+// #include <adapter/posix/posix_api.h>
+
+// #include <filesystem>
+
+// namespace stdfs = std::filesystem;
+// std::shared_ptr<dtio::posix::PosixApi> dtio::posix::PosixApi::instance = nullptr;
 
 int
 dtio::posix::open (const char *filename, int flags)
 {
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
+  bool file_exists_in_fs = false;
   if (!mdm->is_created (filename))
     {
       if (!(flags & O_CREAT))
         {
-          return -1;
+	  if (ConfigManager::get_instance()->CHECKFS) {
+	    struct stat st;
+	    if (stat(filename, &st) == 0) {
+	      file_exists_in_fs = true;
+	    }
+	  }
+	  if (!file_exists_in_fs) {
+	    return -1;
+	  }
+	  else {
+	    if (mdm->update_on_open(filename, flags, 0, &fd) != SUCCESS) {
+	      throw std::runtime_error ("dtio::posix::open() update failed!");
+	    }
+	  }
         }
       else
         {
@@ -68,11 +89,25 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
 {
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
+  bool file_exists_in_fs = false;
   if (!mdm->is_created (filename))
     {
       if (!(flags & O_CREAT))
         {
-          return -1;
+	  if (ConfigManager::get_instance()->CHECKFS) {
+	    struct stat st;
+	    if (stat(filename, &st) == 0) {
+	      file_exists_in_fs = true;
+	    }
+	  }
+	  if (!file_exists_in_fs) {
+	    return -1;
+	  }
+	  else {
+	    if (mdm->update_on_open(filename, flags, mode, &fd) != SUCCESS) {
+	      throw std::runtime_error ("dtio::posix::open() update failed!");
+	    }
+	  }
         }
       else
         {
@@ -103,12 +138,26 @@ dtio::posix::open64 (const char *filename, int flags)
   DTIO_LOG_INFO("[POSIX] Open64 filename " << filename);
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
+  bool file_exists_in_fs = false;
   if (!mdm->is_created (filename))
     {
       if (!(flags & O_CREAT))
         {
 	  DTIO_LOG_INFO("[POSIX] Open64 file not marked created");
-          return -1;
+	  if (ConfigManager::get_instance()->CHECKFS) {
+	    struct stat st;
+	    if (stat(filename, &st) == 0) {
+	      file_exists_in_fs = true;
+	    }
+	  }
+	  if (!file_exists_in_fs) {
+	    return -1;
+	  }
+	  else {
+	    if (mdm->update_on_open(filename, flags, 0, &fd) != SUCCESS) {
+	      throw std::runtime_error ("dtio::posix::open() update failed!");
+	    }
+	  }
         }
       else
         {
@@ -141,12 +190,26 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
   DTIO_LOG_DEBUG("[POSIX] Open64 filename " << filename);
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
+  bool file_exists_in_fs = false;
   if (!mdm->is_created (filename))
     {
       if (!(flags & O_CREAT))
         {
 	  DTIO_LOG_DEBUG("[POSIX] Open64 file not marked created");
-          return -1;
+	  if (ConfigManager::get_instance()->CHECKFS) {
+	    struct stat st;
+	    if (stat(filename, &st) == 0) {
+	      file_exists_in_fs = true;
+	    }
+	  }
+	  if (!file_exists_in_fs) {
+	    return -1;
+	  }
+	  else {
+	    if (mdm->update_on_open(filename, flags, mode, &fd) != SUCCESS) {
+	      throw std::runtime_error ("dtio::posix::open() update failed!");
+	    }
+	  }
         }
       else
         {
@@ -173,7 +236,6 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
   return fd;
 }
 
-// FIXME: POSIX unlink causes an infinite loop when used with HCL
 int
 dtio::posix::unlink (const char *pathname)
 {
@@ -191,7 +253,7 @@ dtio::posix::unlink (const char *pathname)
     throw std::runtime_error ("dtio::posix::unlink() file doesn't exist!");
   }
   auto f = file (std::string (pathname), offset, 0);
-  auto d_task = delete_task (f);
+  auto d_task = task (task_type::DELETE_TASK, f);
   d_task.iface = io_client_type::POSIX;
   auto delete_tasks = task_m->build_delete_task (d_task);
   int index = 0;
@@ -230,8 +292,9 @@ dtio::posix::rename (const char *oldpath, const char *newpath)
 }
 
 int
-dtio::posix::stat (const char *pathname, struct stat *statbuf)
+dtio::posix::mystat (const char *pathname, struct stat *statbuf)
 {
+  // Note: I actually had to rename stat in order to use it for file existence checks
   // FIXME right now we just grab file size, which is ok for IOR but also bad
   auto mdm = metadata_manager::getInstance (LIB);
   if (!mdm->is_created (pathname)) {
@@ -242,7 +305,7 @@ dtio::posix::stat (const char *pathname, struct stat *statbuf)
 }
 
 int
-dtio::posix::stat64 (const char *pathname, struct stat64 *statbuf)
+dtio::posix::mystat64 (const char *pathname, struct stat64 *statbuf)
 {
   // FIXME right now we just grab file size, which is ok for IOR but also bad
   auto mdm = metadata_manager::getInstance (LIB);
@@ -350,7 +413,7 @@ dtio::posix::lseek64 (int fd, off_t offset, int whence)
                               static_cast<size_t> (whence));
 }
 
-std::vector<read_task>
+std::vector<task>
 dtio::posix::read_async (int fd, size_t count)
 {
   auto mdm = metadata_manager::getInstance (LIB);
@@ -360,8 +423,8 @@ dtio::posix::read_async (int fd, size_t count)
   auto filename = mdm->get_filename (fd);
   auto offset = mdm->get_fp (filename);
   if (!mdm->is_opened (filename))
-    return std::vector<read_task> ();
-  auto r_task = read_task (file (filename, offset, count), file ());
+    return std::vector<task> ();
+  auto r_task = task (task_type::READ_TASK, file (filename, offset, count), file ());
   r_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
   Timer t = Timer ();
@@ -401,7 +464,7 @@ dtio::posix::read_async (int fd, size_t count)
 }
 
 std::size_t
-read_wait (void *ptr, std::vector<read_task> &tasks,
+read_wait (void *ptr, std::vector<task> &tasks,
                         std::string filename)
 {
   auto mdm = metadata_manager::getInstance (LIB);
@@ -475,9 +538,20 @@ dtio::posix::read (int fd, void *buf, size_t count)
   auto data_m = data_manager::getInstance (LIB);
   auto filename = mdm->get_filename (fd);
   auto offset = mdm->get_fp (filename);
-  if (!mdm->is_opened (filename))
-    return 0;
-  auto r_task = read_task (file (filename, offset, count), file ());
+  bool check_fs = false;
+  task *task_i;
+  task_i = nullptr;
+
+  if ( !mdm->is_opened (filename)) {
+    if (!ConfigManager::get_instance()->CHECKFS) {
+      return 0;
+    }
+    if (!mdm->is_created (filename)) {
+      check_fs = true;
+    }
+  }
+  auto r_task = task (task_type::READ_TASK, file (filename, offset, count), file ());
+  r_task.check_fs = check_fs;
   r_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
   Timer t = Timer ();
@@ -492,54 +566,79 @@ dtio::posix::read (int fd, void *buf, size_t count)
 #endif
   int ptr_pos = 0;
   size_t size_read = 0;
-  for (auto task : tasks)
+  task *ttp;
+  for (auto t : tasks)
     {
       std::string data;
-      switch (task.source.location)
+      switch (t.source.location)
         {
         case PFS:
           {
-            std::cerr << "in pfs\n";
+	    DTIO_LOG_DEBUG("in pfs");
+	    if (ConfigManager::get_instance()->CHECKFS) {
+	      Timer timer = Timer ();
+	      client_queue->publish_task (&t);
+
+	      while (!data_m->exists (DATASPACE_DB, t.source.filename,
+				      std::to_string (t.destination.server))) {
+	      }
+
+	      data = data_m->get (DATASPACE_DB, t.source.filename,
+				  std::to_string (t.destination.server));
+
+	      strncpy ((char *)buf + ptr_pos, data.c_str () + t.source.offset,
+		      t.destination.size);
+	      auto print_test = std::string((char *)buf);
+
+	      data_m->remove (DATASPACE_DB, t.source.filename,
+			      std::to_string (t.destination.server));
+
+	      size_read += t.source.size;
+	    }
+	    else {
+	      DTIO_LOG_DEBUG("in pfs no checkfs");
+	    }
           }
+	  break;
         case BUFFERS:
           {
             Timer timer = Timer ();
-            client_queue->publish_task (&task);
-            while (!data_m->exists (DATASPACE_DB, task.source.filename,
-                                    std::to_string (task.destination.server)))
+            client_queue->publish_task (&t);
+            while (!data_m->exists (DATASPACE_DB, t.source.filename,
+                                    std::to_string (t.destination.server)))
               {
                 // std::cerr<<"looping\n";
               }
-            data = data_m->get (DATASPACE_DB, task.source.filename,
-                                std::to_string (task.destination.server));
+            data = data_m->get (DATASPACE_DB, t.source.filename,
+                                std::to_string (t.destination.server));
 
-            memcpy (buf + ptr_pos, data.c_str () + task.source.offset,
-                    task.destination.size);
+	    strncpy ((char *)buf + ptr_pos, data.c_str () + t.source.offset,
+                    t.destination.size);
 
-            data_m->remove (DATASPACE_DB, task.source.filename,
-                            std::to_string (task.destination.server));
+            data_m->remove (DATASPACE_DB, t.source.filename,
+                            std::to_string (t.destination.server));
 
-            size_read += task.source.size;
+            size_read += t.source.size;
             break;
           }
         case CACHE:
           {
-            data = data_m->get (DATASPACE_DB, task.source.filename,
-                                std::to_string (task.destination.server));
-            memcpy (buf + ptr_pos, data.c_str () + task.source.offset,
-                    task.source.size);
-            size_read += task.source.size;
+            data = data_m->get (DATASPACE_DB, t.source.filename,
+                                std::to_string (t.destination.server));
+            memcpy (buf + ptr_pos, data.c_str () + t.source.offset,
+                    t.source.size);
+            size_read += t.source.size;
             break;
           }
         }
 
-      ptr_pos += task.destination.size;
+      ptr_pos += t.destination.size;
     }
   mdm->update_read_task_info (tasks, filename);
   return size_read;
 }
 
-std::vector<write_task *>
+std::vector<task *>
 dtio::posix::write_async (int fd, const void *buf, size_t count)
 {
   auto mdm = metadata_manager::getInstance (LIB);
@@ -551,7 +650,7 @@ dtio::posix::write_async (int fd, const void *buf, size_t count)
   auto offset = mdm->get_fp (filename);
   if (!mdm->is_opened (filename))
     throw std::runtime_error ("dtio::posix::write() file not opened!");
-  auto w_task = write_task (file (filename, offset, count), file ());
+  auto w_task = task (task_type::WRITE_TASK, file (filename, offset, count), file ());
   w_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
   Timer t = Timer ();
@@ -604,7 +703,7 @@ dtio::posix::write_async (int fd, const void *buf, size_t count)
 }
 
 size_t
-dtio::posix::write_wait (std::vector<write_task *> tasks)
+dtio::posix::write_wait (std::vector<task *> tasks)
 {
   size_t total_size_written = 0;
   auto map_client = dtio_system::getInstance (LIB)->map_client ();
@@ -655,10 +754,9 @@ dtio::posix::write (int fd, const void *buf, size_t count)
   auto offset = mdm->get_fp (filename);
   if (!mdm->is_opened (filename))
     throw std::runtime_error ("dtio::write() file not opened!");
-  auto w_task = write_task (file (filename, offset, count), file ());
+  auto w_task = task (task_type::WRITE_TASK, file (filename, offset, count), file ());
 
   w_task.iface = io_client_type::POSIX;
-  std::cout << filename << " " << w_task.source.offset << std::endl;
 #ifdef TIMERTB
   Timer t = Timer ();
   t.resumeTime ();
@@ -676,42 +774,42 @@ dtio::posix::write (int fd, const void *buf, size_t count)
   std::string write_data (static_cast<const char *> (buf));
   std::vector<std::pair<std::string, std::string> > task_ids
       = std::vector<std::pair<std::string, std::string> > ();
-  for (auto task : write_tasks)
+  for (auto tsk : write_tasks)
     {
-      if (task->addDataspace)
+      if (tsk->addDataspace)
         {
-          if (write_data.length () >= task->source.offset + task->source.size)
+          if (write_data.length () >= tsk->source.offset + tsk->source.size)
             {
               auto data
-                  = write_data.substr (task->source.offset, task->source.size);
-              data_m->put (DATASPACE_DB, task->source.filename, data,
-                           std::to_string (task->destination.server));
+                  = write_data.substr (tsk->source.offset, tsk->source.size);
+              data_m->put (DATASPACE_DB, tsk->source.filename, data,
+                           std::to_string (tsk->destination.server));
             }
           else
             {
-              data_m->put (DATASPACE_DB, task->source.filename,
+              data_m->put (DATASPACE_DB, tsk->source.filename,
                            write_data,
-                           std::to_string (task->destination.server));
+                           std::to_string (tsk->destination.server));
             }
         }
-      if (task->publish)
+      if (tsk->publish)
         {
-          if (count < task->source.size)
-            mdm->update_write_task_info (*task, filename, count);
+          if (count < tsk->source.size)
+            mdm->update_write_task_info (*tsk, filename, count);
           else
-            mdm->update_write_task_info (*task, filename, task->source.size);
-          client_queue->publish_task (task);
+            mdm->update_write_task_info (*tsk, filename, tsk->source.size);
+          client_queue->publish_task (tsk);
           task_ids.emplace_back (
-              std::make_pair (task->source.filename,
-                              std::to_string (task->destination.server)));
+              std::make_pair (tsk->source.filename,
+                              std::to_string (tsk->destination.server)));
         }
       else
         {
-          mdm->update_write_task_info (*task, filename, task->source.size);
+          mdm->update_write_task_info (*tsk, filename, tsk->source.size);
         }
 
       index++;
-      delete task;
+      delete tsk;
     }
   for (auto task_id : task_ids)
     {
@@ -753,6 +851,12 @@ dtio::posix::__fxstatat (int __ver, int __fildes, const char *__filename,
 
 int
 dtio::posix::__xstat (int __ver, const char *__filename, struct stat *__stat_buf)
+{ // TODO: implement
+  return 0;
+}
+
+int
+dtio::posix::__xstat64 (int __ver, const char *__filename, struct stat64 *__stat_buf)
 { // TODO: implement
   return 0;
 }

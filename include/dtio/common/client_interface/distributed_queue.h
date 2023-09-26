@@ -52,6 +52,10 @@ public:
   /******************************************************************************
    *Interface
    ******************************************************************************/
+  virtual void clear() {
+    throw NotImplementedException("clear");
+  }
+
   virtual int publish_task(task *task_t) {
     throw NotImplementedException("publish_task");
   }

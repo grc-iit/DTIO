@@ -62,7 +62,7 @@ worker::run ()
             {
             case task_type::WRITE_TASK:
               {
-                auto *wt = reinterpret_cast<write_task *> (task_i);
+                auto *wt = task_i; //reinterpret_cast<write_task *> (task_i);
 #ifdef DEBUG
                 std::cout << "Task#" << task_i->task_id << "\tOperation: WRITE"
                           << "\tOffset:" << wt->source.offset
@@ -73,7 +73,7 @@ worker::run ()
               }
             case task_type::READ_TASK:
               {
-                auto *rt = reinterpret_cast<read_task *> (task_i);
+                auto *rt = task_i; //reinterpret_cast<read_task *> ();
 #ifdef DEBUG
                 std::cout << "Task#" << task_i->task_id << "\tOperation: READ"
                           << "\tOffset:" << rt->source.offset
@@ -85,13 +85,13 @@ worker::run ()
               }
             case task_type::FLUSH_TASK:
               {
-                auto *ft = reinterpret_cast<flush_task *> (task_i);
+                auto *ft = task_i; //reinterpret_cast<flush_task *> (task_i);
                 client->dtio_flush_file (*ft);
                 break;
               }
             case task_type::DELETE_TASK:
               {
-                auto *dt = reinterpret_cast<delete_task *> (task_i);
+                auto *dt = task_i; //reinterpret_cast<delete_task *> (task_i);
                 client->dtio_delete_file (*dt);
                 break;
               }

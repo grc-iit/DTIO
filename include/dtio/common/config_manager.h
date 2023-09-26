@@ -82,6 +82,7 @@ public:
   int TS_NUM_WORKER_THREADS;
   std::size_t NUM_WORKERS;    // FIXME: make private
   std::size_t NUM_SCHEDULERS; // FIXME: make private
+  bool CHECKFS; // Check filesystem for file existence, slower but allows convenient data import
 
   static std::shared_ptr<ConfigManager>
   get_instance ()
@@ -139,6 +140,7 @@ public:
     TS_NUM_WORKER_THREADS = config_["TS_NUM_WORKER_THREADS"].as<int> ();
     NUM_WORKERS = config_["NUM_WORKERS"].as<int> ();
     NUM_SCHEDULERS = config_["NUM_SCHEDULERS"].as<int> ();
+    CHECKFS = config_["CHECK_FS"].as<bool> ();
     QUEUE_WORKER_COMM = (MPI_Comm *)calloc (NUM_WORKERS, sizeof (MPI_Comm));
   }
   /******************************************************************************

@@ -44,12 +44,13 @@ const std::string kDBPath_client = "/tmp/rocksdb";
 const std::string kDBPath_server = "/tmp/rocksdb";
 const std::size_t MAX_IO_UNIT = 1 * 1024 * 1024;
 const std::string CLIENT_TASK_SUBJECT = "TASK";
+#define DTIO_FILENAME_MAX FILENAME_MAX
 
 // Configs
 const map_impl_type map_impl_type_t = map_impl_type::HCLMAP;
 const solver_impl_type solver_impl_type_t = solver_impl_type::ROUND_ROBIN;
 const queue_impl_type queue_impl_type_t = queue_impl_type::HCLQUEUE;
-const io_client_type io_client_type_t = io_client_type::MULTI;
+const io_client_type io_client_type_t = io_client_type::POSIX;
 const std::string DATASPACE_ID = "DATASPACE_ID";
 const std::string ROUND_ROBIN_INDEX = "ROUND_ROBIN_INDEX";
 const std::string KEY_SEPARATOR = "#";

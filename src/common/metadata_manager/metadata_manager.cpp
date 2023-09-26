@@ -22,6 +22,7 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
+#include "dtio/common/enumerations.h"
 #include <cstring>
 #include <dtio/common/metadata_manager/metadata_manager.h>
 #include <dtio/common/return_codes.h>
@@ -269,7 +270,7 @@ long long int metadata_manager::get_fp(const std::string &filename) {
     return -1;
 }
 
-int metadata_manager::update_read_task_info(std::vector<read_task> task_ks,
+int metadata_manager::update_read_task_info(std::vector<task> task_ks,
                                             std::string filename) {
 #ifdef TIMERMDM
   Timer t = Timer();
@@ -282,6 +283,7 @@ int metadata_manager::update_read_task_info(std::vector<read_task> task_ks,
     fs = iter->second;
   for (int i = 0; i < task_ks.size(); ++i) {
     auto task_k = task_ks[i];
+    assert(task_k.t_type == task_type::READ_TASK);
     update_on_read(filename, task_k.source.size);
   }
   std::string fs_str = serialization_manager().serialize_file_stat(fs);
@@ -293,7 +295,7 @@ int metadata_manager::update_read_task_info(std::vector<read_task> task_ks,
   return 0;
 }
 
-int metadata_manager::update_write_task_info(std::vector<write_task> task_ks,
+int metadata_manager::update_write_task_info(std::vector<task> task_ks,
                                              std::string filename) {
   auto map = dtio_system::getInstance(service_i)->map_client();
   file_stat fs;
@@ -399,11 +401,13 @@ void metadata_manager::update_on_delete(std::string filename) {
   }
 }
 
-std::vector<chunk_meta> metadata_manager::fetch_chunks(read_task task) {
+std::vector<chunk_meta> metadata_manager::fetch_chunks(task task) {
 #ifdef TIMERMDM
   Timer t = Timer();
   t.resumeTime();
 #endif
+
+  assert(task.t_type == task_type::READ_TASK);
   auto map = dtio_system::getInstance(service_i)->map_client();
 
   auto remaining_data = task.source.size;
@@ -430,11 +434,11 @@ std::vector<chunk_meta> metadata_manager::fetch_chunks(read_task task) {
     } else {
       cm.actual_user_chunk.offset = source_offset;
       cm.actual_user_chunk.size = remaining_data;
-      cm.actual_user_chunk.filename = task.source.filename;
+      strncpy(cm.actual_user_chunk.filename, task.source.filename, DTIO_FILENAME_MAX);
       cm.actual_user_chunk.location = location_type::PFS;
       cm.destination.location = location_type::PFS;
       cm.destination.size = cm.actual_user_chunk.size;
-      cm.destination.filename = cm.actual_user_chunk.filename;
+      strncpy(cm.destination.filename, cm.actual_user_chunk.filename, DTIO_FILENAME_MAX);
       cm.destination.offset = cm.actual_user_chunk.offset;
       cm.destination.worker = -1;
       size_to_read = cm.actual_user_chunk.size;
@@ -452,8 +456,8 @@ std::vector<chunk_meta> metadata_manager::fetch_chunks(read_task task) {
   return chunks;
 }
 
-int metadata_manager::update_delete_task_info(delete_task task_k,
-                                             std::string filename) {
+int metadata_manager::update_delete_task_info(task task_k,
+					      std::string filename) {
 #ifdef TIMERMDM
   Timer t = Timer();
   t.resumeTime();
@@ -482,7 +486,7 @@ int metadata_manager::update_delete_task_info(delete_task task_k,
   return 0;
 }
 
-int metadata_manager::update_write_task_info(write_task task_k,
+int metadata_manager::update_write_task_info(task task_k,
                                              std::string filename,
                                              std::size_t io_size) {
 #ifdef TIMERMDM

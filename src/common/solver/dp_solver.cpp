@@ -44,7 +44,7 @@ solver_output DPSolver::solve(solver_input input) {
   for (auto task_t : input.tasks) {
     switch (task_t->t_type) {
     case task_type::WRITE_TASK: {
-      auto *wt = reinterpret_cast<write_task *>(task_t);
+      auto *wt = task_t; // reinterpret_cast<write_task *>()
       if (wt->destination.worker == -1) {
         solver_task_map.emplace(actual_index, solver_index);
         input.task_size[solver_index] = wt->source.size;
@@ -60,7 +60,7 @@ solver_output DPSolver::solve(solver_input input) {
     }
     case task_type::READ_TASK: {
 
-      auto *rt = reinterpret_cast<read_task *>(task_t);
+      auto *rt = task_t; // reinterpret_cast<read_task *>()
       if (rt->source.worker == -1) {
         solver_task_map.emplace(actual_index, solver_index);
         input.task_size[solver_index] = rt->destination.size;

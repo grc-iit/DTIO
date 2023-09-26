@@ -21,6 +21,7 @@
  */
 
 #include "dtio/common/config_manager.h"
+#include "dtio/common/constants.h"
 #include "dtio/common/enumerations.h"
 #include <dtio/common/solver/default_solver.h>
 #include <dtio/common/solver/dp_solver.h>
@@ -39,6 +40,10 @@ dtio_system::init (service service)
   MPI_Comm_size (MPI_COMM_WORLD, &comm_size);
   comm_size = comm_size == 0 ? 1 : comm_size;
 
+  if (service == LIB) {
+    get_client_queue(CLIENT_TASK_SUBJECT);
+  }
+  
   if (map_impl_type_t == map_impl_type::MEMCACHE_D)
     {
       map_server_ = std::make_shared<MemcacheDImpl> (

@@ -33,13 +33,104 @@
 #include <cereal/types/string.hpp>
 #include <dtio/common/constants.h>
 #include <dtio/common/enumerations.h>
+#include <rpc/msgpack/adaptor/define_decl.hpp>
 #include <utility>
 #include <vector>
 
 #include <hcl.h>
+#include <hcl/common/data_structures.h>
 #include <rpc/client.h>
 #include <rpc/rpc_error.h>
 #include <rpc/server.h>
+
+#include <string.h>
+
+// This exists so that we can make the buffer larger
+typedef struct DTIOCharStruct {
+  char value[MAX_IO_UNIT];
+
+  DTIOCharStruct() {}
+  DTIOCharStruct(const DTIOCharStruct &other)
+      : DTIOCharStruct(other.value) {} /* copy constructor*/
+  DTIOCharStruct(DTIOCharStruct &&other)
+      : DTIOCharStruct(other.value) {} /* move constructor*/
+
+  DTIOCharStruct(const char *data_) {
+    snprintf(this->value, strlen(data_) + 1, "%s", data_);
+  }
+  DTIOCharStruct(std::string data_) : DTIOCharStruct(data_.c_str()) {}
+
+  DTIOCharStruct(char *data_, size_t size) {
+    snprintf(this->value, size, "%s", data_);
+  }
+
+  MSGPACK_DEFINE(value);
+  
+  void Set(char *data_, size_t size) {
+    snprintf(this->value, size + 1, "%s", data_);
+  }
+  void Set(std::string data_) {
+    snprintf(this->value, data_.length() + 1, "%s", data_.c_str());
+  }
+
+  const char *c_str() const { return value; }
+  std::string string() const { return std::string(value); }
+
+  char *data() { return value; }
+  const size_t size() const { return strlen(value); }
+  /**
+   * Operators
+   */
+  DTIOCharStruct &operator=(const DTIOCharStruct &other) {
+    strcpy(value, other.c_str());
+    return *this;
+  }
+  /* equal operator for comparing two Chars. */
+  bool operator==(const DTIOCharStruct &o) const {
+    return strcmp(value, o.value) == 0;
+  }
+  DTIOCharStruct operator+(const DTIOCharStruct &o) {
+    std::string added = std::string(this->c_str()) + std::string(o.c_str());
+    return DTIOCharStruct(added);
+  }
+  DTIOCharStruct operator+(std::string &o) {
+    std::string added = std::string(this->c_str()) + o;
+    return DTIOCharStruct(added);
+  }
+  DTIOCharStruct &operator+=(const DTIOCharStruct &rhs) {
+    std::string added = std::string(this->c_str()) + std::string(rhs.c_str());
+    Set(added);
+    return *this;
+  }
+  bool operator>(const DTIOCharStruct &o) const {
+    return strcmp(this->value, o.c_str()) > 0;
+  }
+  bool operator>=(const DTIOCharStruct &o) const {
+    return strcmp(this->value, o.c_str()) >= 0;
+  }
+  bool operator<(const DTIOCharStruct &o) const {
+    return strcmp(this->value, o.c_str()) < 0;
+  }
+  bool operator<=(const DTIOCharStruct &o) const {
+    return strcmp(this->value, o.c_str()) <= 0;
+  }
+
+} DTIOCharStruct;
+
+static DTIOCharStruct operator+(const std::string &a1, const DTIOCharStruct &a2) {
+  std::string added = a1 + std::string(a2.c_str());
+  return DTIOCharStruct(added);
+}
+
+namespace std {
+template <>
+struct hash<DTIOCharStruct> {
+  size_t operator()(const DTIOCharStruct &k) const {
+    std::string val(k.c_str());
+    return std::hash<std::string>()(val);
+  }
+};
+}  // namespace std
 
 struct HCLKeyType
 {
@@ -86,6 +177,7 @@ template <> struct hash<HCLKeyType>
   }
 };
 }
+
 typedef boost::interprocess::allocator<
     char, boost::interprocess::managed_mapped_file::segment_manager>
     CharAllocator;
@@ -116,26 +208,44 @@ struct message
 struct file
 {
   location_type location;
-  std::string filename;
+  char filename[DTIO_FILENAME_MAX];
   int64_t offset;
   std::size_t size;
-  int worker = -1;
-  int server = -1;
+  int worker;
+  int server;
 
-  file (std::string filename, int64_t offset, std::size_t file_size)
-      : filename (std::move (filename)), offset (offset), size (file_size),
-        location (CACHE)
+  file (std::string filename_, int64_t offset, std::size_t file_size)
+    : filename (), offset (offset), size (file_size),
+      location (CACHE), worker(-1), server(-1)
   {
+    strncpy(filename, filename_.c_str(), DTIO_FILENAME_MAX);
   }
+
   file (const file &file_t)
-      : filename (file_t.filename), offset (file_t.offset), size (file_t.size),
+    : filename (), offset (file_t.offset), size (file_t.size),
         location (file_t.location), worker (file_t.worker),
         server (file_t.server)
   {
+    strncpy(filename, file_t.filename, DTIO_FILENAME_MAX);
   }
-  file () : location (CACHE), filename (""), offset (0), size (0) {}
+  file () : location (CACHE), filename (""), offset (0), size (0), worker(-1), server(-1) {}
 
-  virtual ~file () {}
+  MSGPACK_DEFINE(location, filename, offset, size, worker, server);
+
+  ~file () {}
+
+  file &
+  operator= (const file &other)
+  {
+    location = other.location;
+    strncpy(filename, other.filename, DTIO_FILENAME_MAX);
+    offset = other.offset;
+    size = other.size;
+    worker = other.worker;
+    server = other.server;
+    return *this;
+  }
+
   // serialization
   template <class Archive>
   void
@@ -145,6 +255,8 @@ struct file
              this->worker, this->server);
   }
 };
+
+MSGPACK_ADD_ENUM(location_type);
 
 struct chunk_meta
 {
@@ -218,24 +330,89 @@ struct task
   bool addDataspace;
   bool async;
 
+  /* Task-specific info
+   * ******************
+   * read_task needs all of them
+   * write_task needs source, dest, meta_updated
+   * flush_task needs source, dest
+   * delete_task needs source
+   */
+  file source;
+  file destination;
+  bool meta_updated = false;
+  bool local_copy = false;
+  bool check_fs = false;
+
   task ()
-      : t_type (task_type::READ_TASK), task_id (0), publish (false),
-        addDataspace (true), async (true)
+    : t_type (task_type::READ_TASK), task_id (0), publish (false),
+      iface(io_client_type::POSIX), addDataspace (true), async (true), source (),
+      destination (), meta_updated(false), local_copy(false), check_fs(false)
   {
   }
-  explicit task (task_type t_type)
-    : t_type (t_type), iface (io_client_type::STDIO), task_id (0), publish (false), addDataspace (true),
-        async (true)
+
+  MSGPACK_DEFINE(t_type, iface, task_id, publish, addDataspace, async, source, destination, meta_updated, local_copy, check_fs);
+
+  task (task_type t_type)
+    : t_type (t_type), iface (io_client_type::POSIX), task_id (0), publish (false), addDataspace (true),
+      async (true), source (), destination (), meta_updated(false), local_copy(false), check_fs(false)
   {
   }
   task (const task &t_other)
     : t_type (t_other.t_type), iface (t_other.iface), task_id (t_other.task_id),
         publish (t_other.publish), addDataspace (t_other.addDataspace),
-        async (t_other.async)
+      async (t_other.async), source (t_other.source), destination(t_other.destination),
+      meta_updated(t_other.meta_updated), local_copy(t_other.local_copy), check_fs(t_other.check_fs)
   {
   }
 
-  virtual ~task () {}
+  task(task_type t_type_, const file &source_, const file &destination_) : t_type(t_type_), source(source_), destination(destination_), task_id (0), iface(io_client_type::POSIX), publish (false),
+      addDataspace (true), async (true), meta_updated(false), local_copy(false), check_fs(false)
+  {
+  }
+  task (task_type t_type_, file &source)
+    : t_type (t_type_), source (source), task_id (0), publish (false),
+      iface(io_client_type::POSIX), addDataspace (true), async (true),
+      destination (), meta_updated(false), local_copy(false), check_fs(false)
+  {
+  }
+
+  ~task () {}
+
+  bool
+  operator== (const task &o) const
+  {
+    return task_id == o.task_id;
+  }
+
+  task &
+  operator= (const task &other)
+  {
+    t_type = other.t_type;
+    iface = other.iface;
+    task_id = other.task_id;
+    publish = other.publish;
+    addDataspace = other.addDataspace;
+    async = other.async;
+    source = other.source;
+    destination = other.destination;
+    return *this;
+  }
+
+  bool
+  operator< (const task &o) const
+  {
+    return task_id < o.task_id;
+  }
+  bool
+  operator> (const task &o) const
+  {
+    return task_id > o.task_id;
+  }
+  bool
+  Contains (const task &o) const
+  {
+    return task_id == o.task_id;
+  }
 
   // Serialization
   template <class Archive>
@@ -246,6 +423,9 @@ struct task
   }
 };
 
+MSGPACK_ADD_ENUM(task_type);
+MSGPACK_ADD_ENUM(io_client_type);
+
 namespace std
 {
 template <> struct hash<task>
@@ -253,173 +433,20 @@ template <> struct hash<task>
   size_t
   operator() (const task *k) const
   {
-    return k->task_id % HCL_CONF->NUM_SERVERS;
+    return k->task_id;
   }
   size_t
   operator() (const task &k) const
   {
-    return k.task_id % HCL_CONF->NUM_SERVERS;
+    return k.task_id;
   }
   size_t
   operator() (const int64_t &task_id) const
   {
-    return task_id % HCL_CONF->NUM_SERVERS;
+    return task_id;
   }
 };
 }
-
-struct HCLTaskKey
-{
-  size_t a;
-  HCLTaskKey () : a (0) {}
-  HCLTaskKey (size_t a_) : a (a_) {}
-  HCLTaskKey (task a_) : a (std::hash<task>{}(a_)) {}
-  MSGPACK_DEFINE (a);
-  bool
-  operator== (const HCLTaskKey &o) const
-  {
-    return a == o.a;
-  }
-  HCLTaskKey &
-  operator= (const HCLTaskKey &other)
-  {
-    a = other.a;
-    return *this;
-  }
-  bool
-  operator< (const HCLTaskKey &o) const
-  {
-    return a < o.a;
-  }
-  bool
-  operator> (const HCLTaskKey &o) const
-  {
-    return a > o.a;
-  }
-  bool
-  Contains (const HCLTaskKey &o) const
-  {
-    return a == o.a;
-  }
-};
-
-// write_task structure
-struct write_task : public task
-{
-  file source;
-  file destination;
-  bool meta_updated = false;
-
-  write_task () : task (task_type::WRITE_TASK) {}
-  write_task (const file &source, const file &destination)
-      : task (task_type::WRITE_TASK), source (source),
-        destination (destination)
-  {
-  }
-  write_task (const write_task &write_task_t)
-      : task (task_type::WRITE_TASK), source (write_task_t.source),
-        destination (write_task_t.destination)
-  {
-  }
-
-  virtual ~write_task () {}
-
-  // Serialization
-  template <class Archive>
-  void
-  serialize (Archive &archive)
-  {
-    archive (this->t_type, this->task_id, this->source, this->destination,
-             this->meta_updated);
-  }
-};
-
-// read_task structure
-struct read_task : public task
-{
-  file source;
-  file destination;
-  bool meta_updated = false;
-  bool local_copy = false;
-
-  read_task (const file &source, const file &destination)
-      : task (task_type::READ_TASK), source (source), destination (destination)
-  {
-  }
-  read_task () : task (task_type::READ_TASK) {}
-  read_task (const read_task &read_task_t)
-      : task (task_type::READ_TASK), source (read_task_t.source),
-        destination (read_task_t.destination)
-  {
-  }
-
-  virtual ~read_task () {}
-
-  // Serialization
-  template <class Archive>
-  void
-  serialize (Archive &archive)
-  {
-    archive (this->t_type, this->task_id, this->source, this->destination,
-             this->meta_updated, this->local_copy);
-  }
-};
-
-// flush_task structure
-struct flush_task : public task
-{
-  file source;
-  file destination;
-
-  flush_task () : task (task_type::FLUSH_TASK) {}
-  flush_task (const flush_task &flush_task_t)
-      : task (task_type::FLUSH_TASK), source (flush_task_t.source),
-        destination (flush_task_t.destination)
-  {
-  }
-  flush_task (file source, file destination, location_type dest_t,
-              std::string datasource_id)
-      : task (task_type::FLUSH_TASK), source (source),
-        destination (destination)
-  {
-  }
-
-  virtual ~flush_task () {}
-
-  // Serialization
-  template <class Archive>
-  void
-  serialize (Archive &archive)
-  {
-    archive (this->t_type, this->task_id, this->source, this->destination);
-  }
-};
-
-// delete_task structure
-struct delete_task : public task
-{
-  file source;
-
-  delete_task () : task (task_type::DELETE_TASK) {}
-  delete_task (const delete_task &delete_task_i)
-      : task (task_type::DELETE_TASK), source (delete_task_i.source)
-  {
-  }
-  explicit delete_task (file &source)
-      : task (task_type::DELETE_TASK), source (source)
-  {
-  }
-
-  virtual ~delete_task () {}
-
-  // Serialization
-  template <class Archive>
-  void
-  serialize (Archive &archive)
-  {
-    archive (this->t_type, this->task_id, this->source);
-  }
-};
 
 // solver_input structure
 struct solver_input

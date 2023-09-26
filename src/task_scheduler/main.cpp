@@ -31,6 +31,10 @@
 #include <dtio/common/utilities.h>
 #include <mpi.h>
 #include <dtio/common/logger.h>
+
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
 /******************************************************************************
  *Main
  ******************************************************************************/
@@ -56,6 +60,7 @@ main (int argc, char **argv)
     MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, process_rank + 1,
 		    &ConfigManager::get_instance ()->QUEUE_WORKER_COMM[i]);
   }
+
   auto scheduler_service = task_scheduler::getInstance (TASK_SCHEDULER);
   DTIO_LOG_DEBUG("[Task Scheduler] Created");
   scheduler_service->run ();
