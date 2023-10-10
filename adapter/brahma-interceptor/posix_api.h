@@ -23,11 +23,32 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <dtio/common/singleton.h>
+#include "interceptor.h"
+#include <dtio/drivers/posix.h>
+
+// TODO: add MPI_Init interception, so appropriate brahma mpi interface.
+// possibly init mpi the trad way, and then init dtio and brahma
+std::shared_ptr<std::set<std::string> > interception_whitelist = nullptr;
+void add_to_whitelist(std::string execname) {
+  interception_whitelist->insert(execname);
+}
+
+int MPI_Init(int *argc, char ***argv) {
+  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
+  // auto real_api = HERMES_POSIX_API;
+  // You shouldn't ever be calling the real version
+
+  std::string execname = std::string(*argv[0]);
+  DTIO_LOG_DEBUG_RANKLESS("Now intercepting executable: " << execname);
+  brahma_gotcha_wrap("dtio_interceptor", 1);
+  add_to_whitelist(execname);
+  return dtio::MPI_Init(argc, argv);
+}
 
 const std::string ignore_filenames[4]
     = { ".pfw", "/pipe", "/socket", "/proc/self" };
 
-std::shared_ptr<std::set<std::string> > interception_whitelist = nullptr;
 // auto interception_whitelist = std::make_shared<std::set<std::string>>();
 
 inline bool
