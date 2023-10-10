@@ -29,8 +29,8 @@
  *include files
  ******************************************************************************/
 #include <dtio/common/enumerations.h>
-#include <dtio/common/path_parser.h>
 #include <dtio/common/logger.h>
+#include <dtio/common/path_parser.h>
 #include <iostream>
 #include <memory>
 #include <mpi.h>
@@ -82,7 +82,8 @@ public:
   int TS_NUM_WORKER_THREADS;
   std::size_t NUM_WORKERS;    // FIXME: make private
   std::size_t NUM_SCHEDULERS; // FIXME: make private
-  bool CHECKFS; // Check filesystem for file existence, slower but allows convenient data import
+  bool CHECKFS; // Check filesystem for file existence, slower but allows
+                // convenient data import
 
   static std::shared_ptr<ConfigManager>
   get_instance ()
@@ -96,9 +97,9 @@ public:
   LoadConfig ()
   {
     // This version loads the config with an environment variable path
-    DTIO_LOG_TRACE("[ConfigManager] Init wordexp");
+    DTIO_LOG_TRACE ("[ConfigManager] Init wordexp");
     wordexp_t path_traverse;
-    DTIO_LOG_TRACE("[ConfigManager] Parsing $DTIO_CONF_PATH");
+    DTIO_LOG_TRACE ("[ConfigManager] Parsing $DTIO_CONF_PATH");
     wordexp ("${DTIO_CONF_PATH}", &path_traverse, 0);
     if (path_traverse.we_wordc != 1)
       {
@@ -106,7 +107,7 @@ public:
             << "Passed HCL server list path is more than one word on expansion"
             << std::endl;
       }
-    DTIO_LOG_TRACE("[ConfigManager] Parsed $DTIO_CONF_PATH");
+    DTIO_LOG_TRACE ("[ConfigManager] Parsed $DTIO_CONF_PATH");
     char **words = path_traverse.we_wordv;
     LoadConfig (words[0]);
   }
@@ -117,7 +118,7 @@ public:
 
     HCL_SERVER_LIST_PATH = "";
     wordexp_t path_traverse;
-    DTIO_LOG_TRACE("[ConfigManager] Parsing HCL_SERVER_LIST_PATH");
+    DTIO_LOG_TRACE ("[ConfigManager] Parsing HCL_SERVER_LIST_PATH");
     wordexp (config_["HCL_SERVER_LIST_PATH"].as<std::string> ().c_str (),
              &path_traverse, 0);
     if (path_traverse.we_wordc != 1)
@@ -126,7 +127,7 @@ public:
             << "Passed HCL server list path is more than one word on expansion"
             << std::endl;
       }
-    DTIO_LOG_TRACE("[ConfigManager] Parsed HCL_SERVER_LIST_PATH");
+    DTIO_LOG_TRACE ("[ConfigManager] Parsed HCL_SERVER_LIST_PATH");
     char **words = path_traverse.we_wordv;
     HCL_SERVER_LIST_PATH += words[0];
     wordfree (&path_traverse);
@@ -142,6 +143,8 @@ public:
     NUM_SCHEDULERS = config_["NUM_SCHEDULERS"].as<int> ();
     CHECKFS = config_["CHECK_FS"].as<bool> ();
     QUEUE_WORKER_COMM = (MPI_Comm *)calloc (NUM_WORKERS, sizeof (MPI_Comm));
+    DTIO_LOG_TRACE ("[ConfigManager] Parsed Config: " << CHECKFS << " "
+                                                     << QUEUE_WORKER_COMM);
   }
   /******************************************************************************
    *Destructor

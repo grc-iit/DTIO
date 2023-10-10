@@ -21,6 +21,7 @@
  */
 
 #include "dtio/common/enumerations.h"
+#include "dtio/common/logger.h"
 #include <dtio/common/return_codes.h>
 #include <dtio/common/task_builder/task_builder.h>
 #include <dtio/drivers/posix.h>
@@ -34,7 +35,8 @@
 // #include <filesystem>
 
 // namespace stdfs = std::filesystem;
-// std::shared_ptr<dtio::posix::PosixApi> dtio::posix::PosixApi::instance = nullptr;
+// std::shared_ptr<dtio::posix::PosixApi> dtio::posix::PosixApi::instance =
+// nullptr;
 
 int
 dtio::posix::open (const char *filename, int flags)
@@ -46,20 +48,26 @@ dtio::posix::open (const char *filename, int flags)
     {
       if (!(flags & O_CREAT))
         {
-	  if (ConfigManager::get_instance()->CHECKFS) {
-	    struct stat st;
-	    if (stat(filename, &st) == 0) {
-	      file_exists_in_fs = true;
-	    }
-	  }
-	  if (!file_exists_in_fs) {
-	    return -1;
-	  }
-	  else {
-	    if (mdm->update_on_open(filename, flags, 0, &fd) != SUCCESS) {
-	      throw std::runtime_error ("dtio::posix::open() update failed!");
-	    }
-	  }
+          if (ConfigManager::get_instance ()->CHECKFS)
+            {
+              struct stat st;
+              if (stat (filename, &st) == 0)
+                {
+                  file_exists_in_fs = true;
+                }
+            }
+          if (!file_exists_in_fs)
+            {
+              return -1;
+            }
+          else
+            {
+              if (mdm->update_on_open (filename, flags, 0, &fd) != SUCCESS)
+                {
+                  throw std::runtime_error (
+                      "dtio::posix::open() update failed!");
+                }
+            }
         }
       else
         {
@@ -94,20 +102,26 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
     {
       if (!(flags & O_CREAT))
         {
-	  if (ConfigManager::get_instance()->CHECKFS) {
-	    struct stat st;
-	    if (stat(filename, &st) == 0) {
-	      file_exists_in_fs = true;
-	    }
-	  }
-	  if (!file_exists_in_fs) {
-	    return -1;
-	  }
-	  else {
-	    if (mdm->update_on_open(filename, flags, mode, &fd) != SUCCESS) {
-	      throw std::runtime_error ("dtio::posix::open() update failed!");
-	    }
-	  }
+          if (ConfigManager::get_instance ()->CHECKFS)
+            {
+              struct stat st;
+              if (stat (filename, &st) == 0)
+                {
+                  file_exists_in_fs = true;
+                }
+            }
+          if (!file_exists_in_fs)
+            {
+              return -1;
+            }
+          else
+            {
+              if (mdm->update_on_open (filename, flags, mode, &fd) != SUCCESS)
+                {
+                  throw std::runtime_error (
+                      "dtio::posix::open() update failed!");
+                }
+            }
         }
       else
         {
@@ -135,7 +149,7 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
 int
 dtio::posix::open64 (const char *filename, int flags)
 {
-  DTIO_LOG_INFO("[POSIX] Open64 filename " << filename);
+  DTIO_LOG_DEBUG ("[POSIX] Open64 filename " << filename);
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
   bool file_exists_in_fs = false;
@@ -143,21 +157,27 @@ dtio::posix::open64 (const char *filename, int flags)
     {
       if (!(flags & O_CREAT))
         {
-	  DTIO_LOG_INFO("[POSIX] Open64 file not marked created");
-	  if (ConfigManager::get_instance()->CHECKFS) {
-	    struct stat st;
-	    if (stat(filename, &st) == 0) {
-	      file_exists_in_fs = true;
-	    }
-	  }
-	  if (!file_exists_in_fs) {
-	    return -1;
-	  }
-	  else {
-	    if (mdm->update_on_open(filename, flags, 0, &fd) != SUCCESS) {
-	      throw std::runtime_error ("dtio::posix::open() update failed!");
-	    }
-	  }
+          DTIO_LOG_TRACE ("[POSIX] Open64 file not marked created");
+          if (ConfigManager::get_instance ()->CHECKFS)
+            {
+              struct stat st;
+              if (stat (filename, &st) == 0)
+                {
+                  file_exists_in_fs = true;
+                }
+            }
+          if (!file_exists_in_fs)
+            {
+              return -1;
+            }
+          else
+            {
+              if (mdm->update_on_open (filename, flags, 0, &fd) != SUCCESS)
+                {
+                  throw std::runtime_error (
+                      "dtio::posix::open() update failed!");
+                }
+            }
         }
       else
         {
@@ -176,10 +196,11 @@ dtio::posix::open64 (const char *filename, int flags)
               throw std::runtime_error ("dtio::posix::open() update failed!");
             }
         }
-      else {
-	DTIO_LOG_INFO("[POSIX] Open64 file already opened");
-        return -1;
-      }
+      else
+        {
+          DTIO_LOG_DEBUG ("[POSIX] Open64 file already opened");
+          return -1;
+        }
     }
   return fd;
 }
@@ -187,7 +208,7 @@ dtio::posix::open64 (const char *filename, int flags)
 int
 dtio::posix::open64 (const char *filename, int flags, mode_t mode)
 {
-  DTIO_LOG_DEBUG("[POSIX] Open64 filename " << filename);
+  DTIO_LOG_DEBUG ("[POSIX] Open64 filename " << filename);
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
   bool file_exists_in_fs = false;
@@ -195,21 +216,27 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
     {
       if (!(flags & O_CREAT))
         {
-	  DTIO_LOG_DEBUG("[POSIX] Open64 file not marked created");
-	  if (ConfigManager::get_instance()->CHECKFS) {
-	    struct stat st;
-	    if (stat(filename, &st) == 0) {
-	      file_exists_in_fs = true;
-	    }
-	  }
-	  if (!file_exists_in_fs) {
-	    return -1;
-	  }
-	  else {
-	    if (mdm->update_on_open(filename, flags, mode, &fd) != SUCCESS) {
-	      throw std::runtime_error ("dtio::posix::open() update failed!");
-	    }
-	  }
+          DTIO_LOG_TRACE ("[POSIX] Open64 file not marked created");
+          if (ConfigManager::get_instance ()->CHECKFS)
+            {
+              struct stat st;
+              if (stat (filename, &st) == 0)
+                {
+                  file_exists_in_fs = true;
+                }
+            }
+          if (!file_exists_in_fs)
+            {
+              return -1;
+            }
+          else
+            {
+              if (mdm->update_on_open (filename, flags, mode, &fd) != SUCCESS)
+                {
+                  throw std::runtime_error (
+                      "dtio::posix::open() update failed!");
+                }
+            }
         }
       else
         {
@@ -228,10 +255,11 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
               throw std::runtime_error ("dtio::posix::open() update failed!");
             }
         }
-      else {
-	DTIO_LOG_DEBUG("[POSIX] Open64 file already opened");
-        return -1;
-      }
+      else
+        {
+          DTIO_LOG_DEBUG ("[POSIX] Open64 file already opened");
+          return -1;
+        }
     }
   return fd;
 }
@@ -239,19 +267,19 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
 int
 dtio::posix::unlink (const char *pathname)
 {
-  DTIO_LOG_DEBUG("[POSIX] unlinking " << pathname);
+  DTIO_LOG_DEBUG ("[POSIX] unlinking " << pathname);
   auto mdm = metadata_manager::getInstance (LIB);
   auto client_queue
-      = dtio_system::getInstance (LIB)->get_client_queue
-      (CLIENT_TASK_SUBJECT);
+      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
   auto map_client = dtio_system::getInstance (LIB)->map_client ();
   auto map_server = dtio_system::getInstance (LIB)->map_server ();
   auto task_m = task_builder::getInstance (LIB);
   auto data_m = data_manager::getInstance (LIB);
   auto offset = mdm->get_fp (pathname);
-  if (!mdm->is_created (pathname)) {
-    throw std::runtime_error ("dtio::posix::unlink() file doesn't exist!");
-  }
+  if (!mdm->is_created (pathname))
+    {
+      throw std::runtime_error ("dtio::posix::unlink() file doesn't exist!");
+    }
   auto f = file (std::string (pathname), offset, 0);
   auto d_task = task (task_type::DELETE_TASK, f);
   d_task.iface = io_client_type::POSIX;
@@ -278,7 +306,7 @@ dtio::posix::unlink (const char *pathname)
 }
 
 int
-dtio::posix::fsync(int fd)
+dtio::posix::fsync (int fd)
 {
   // We don't want to do anything for flush
   return 0;
@@ -294,13 +322,18 @@ dtio::posix::rename (const char *oldpath, const char *newpath)
 int
 dtio::posix::mystat (const char *pathname, struct stat *statbuf)
 {
-  // Note: I actually had to rename stat in order to use it for file existence checks
+  // Note: I actually had to rename stat in order to use it for file existence
+  // checks
   // FIXME right now we just grab file size, which is ok for IOR but also bad
   auto mdm = metadata_manager::getInstance (LIB);
-  if (!mdm->is_created (pathname)) {
-    return -1;
-  }
-  statbuf->st_size = mdm->get_filesize(pathname);;
+  if (!mdm->is_created (pathname))
+    {
+      return -1;
+    }
+  statbuf->st_size = mdm->get_filesize (pathname);
+  ;
+  DTIO_LOG_TRACE ("[DTIO][POSIX][STAT] " << pathname << " "
+                                        << statbuf->st_size);
   return 0;
 }
 
@@ -309,10 +342,13 @@ dtio::posix::mystat64 (const char *pathname, struct stat64 *statbuf)
 {
   // FIXME right now we just grab file size, which is ok for IOR but also bad
   auto mdm = metadata_manager::getInstance (LIB);
-  if (!mdm->is_created (pathname)) {
-    return -1;
-  }
-  statbuf->st_size = mdm->get_filesize(pathname);;
+  if (!mdm->is_created (pathname))
+    {
+      return -1;
+    }
+  statbuf->st_size = mdm->get_filesize (pathname);
+  DTIO_LOG_TRACE ("[DTIO][POSIX][STAT] " << pathname << " "
+                                        << statbuf->st_size);
   return 0;
 }
 
@@ -327,12 +363,14 @@ int
 dtio::posix::close (int fd)
 {
   auto mdm = metadata_manager::getInstance (LIB);
-  if (!mdm->is_opened (fd)) {
-    return LIB__FCLOSE_FAILED;
-  }
-  if (mdm->update_on_close (fd) != SUCCESS) {
-    return LIB__FCLOSE_FAILED;
-  }
+  if (!mdm->is_opened (fd))
+    {
+      return LIB__FCLOSE_FAILED;
+    }
+  if (mdm->update_on_close (fd) != SUCCESS)
+    {
+      return LIB__FCLOSE_FAILED;
+    }
   return SUCCESS;
 }
 
@@ -352,7 +390,7 @@ dtio::posix::lseek (int fd, off_t offset, int whence)
       //   return -1;
       break;
     case SEEK_CUR:
-      // fp + offset > size || 
+      // fp + offset > size ||
       if (fp + offset < 0)
         return -1;
       break;
@@ -391,11 +429,12 @@ dtio::posix::lseek64 (int fd, off_t offset, int whence)
       // }
       break;
     case SEEK_CUR:
-      // fp + offset > size || 
-      if (fp + offset < 0) {
-	fprintf (stderr, "Seek offset out of range!\n");
-        return -1;
-      }
+      // fp + offset > size ||
+      if (fp + offset < 0)
+        {
+          fprintf (stderr, "Seek offset out of range!\n");
+          return -1;
+        }
       break;
     case SEEK_END:
       // if (offset > 0) {
@@ -424,7 +463,8 @@ dtio::posix::read_async (int fd, size_t count)
   auto offset = mdm->get_fp (filename);
   if (!mdm->is_opened (filename))
     return std::vector<task> ();
-  auto r_task = task (task_type::READ_TASK, file (filename, offset, count), file ());
+  auto r_task
+      = task (task_type::READ_TASK, file (filename, offset, count), file ());
   r_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
   Timer t = Timer ();
@@ -464,8 +504,7 @@ dtio::posix::read_async (int fd, size_t count)
 }
 
 std::size_t
-read_wait (void *ptr, std::vector<task> &tasks,
-                        std::string filename)
+read_wait (void *ptr, std::vector<task> &tasks, std::string filename)
 {
   auto mdm = metadata_manager::getInstance (LIB);
   auto data_m = data_manager::getInstance (LIB);
@@ -542,15 +581,19 @@ dtio::posix::read (int fd, void *buf, size_t count)
   task *task_i;
   task_i = nullptr;
 
-  if ( !mdm->is_opened (filename)) {
-    if (!ConfigManager::get_instance()->CHECKFS) {
-      return 0;
+  if (!mdm->is_opened (filename))
+    {
+      if (!ConfigManager::get_instance ()->CHECKFS)
+        {
+          return 0;
+        }
+      if (!mdm->is_created (filename))
+        {
+          check_fs = true;
+        }
     }
-    if (!mdm->is_created (filename)) {
-      check_fs = true;
-    }
-  }
-  auto r_task = task (task_type::READ_TASK, file (filename, offset, count), file ());
+  auto r_task
+      = task (task_type::READ_TASK, file (filename, offset, count), file ());
   r_task.check_fs = check_fs;
   r_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
@@ -574,32 +617,35 @@ dtio::posix::read (int fd, void *buf, size_t count)
         {
         case PFS:
           {
-	    DTIO_LOG_DEBUG("in pfs");
-	    if (ConfigManager::get_instance()->CHECKFS) {
-	      Timer timer = Timer ();
-	      client_queue->publish_task (&t);
+            DTIO_LOG_DEBUG ("in pfs");
+            if (ConfigManager::get_instance ()->CHECKFS)
+              {
+                Timer timer = Timer ();
+                client_queue->publish_task (&t);
 
-	      while (!data_m->exists (DATASPACE_DB, t.source.filename,
-				      std::to_string (t.destination.server))) {
-	      }
+                while (!data_m->exists (DATASPACE_DB, t.source.filename,
+                                        std::to_string (t.destination.server)))
+                  {
+                  }
 
-	      data = data_m->get (DATASPACE_DB, t.source.filename,
-				  std::to_string (t.destination.server));
+                data = data_m->get (DATASPACE_DB, t.source.filename,
+                                    std::to_string (t.destination.server));
 
-	      strncpy ((char *)buf + ptr_pos, data.c_str () + t.source.offset,
-		      t.destination.size);
-	      auto print_test = std::string((char *)buf);
+                strncpy ((char *)buf + ptr_pos,
+                         data.c_str () + t.source.offset, t.destination.size);
+                auto print_test = std::string ((char *)buf);
 
-	      data_m->remove (DATASPACE_DB, t.source.filename,
-			      std::to_string (t.destination.server));
+                data_m->remove (DATASPACE_DB, t.source.filename,
+                                std::to_string (t.destination.server));
 
-	      size_read += t.source.size;
-	    }
-	    else {
-	      DTIO_LOG_DEBUG("in pfs no checkfs");
-	    }
+                size_read += t.source.size;
+              }
+            else
+              {
+                DTIO_LOG_DEBUG ("in pfs no checkfs");
+              }
           }
-	  break;
+          break;
         case BUFFERS:
           {
             Timer timer = Timer ();
@@ -612,8 +658,8 @@ dtio::posix::read (int fd, void *buf, size_t count)
             data = data_m->get (DATASPACE_DB, t.source.filename,
                                 std::to_string (t.destination.server));
 
-	    strncpy ((char *)buf + ptr_pos, data.c_str () + t.source.offset,
-                    t.destination.size);
+            strncpy ((char *)buf + ptr_pos, data.c_str () + t.source.offset,
+                     t.destination.size);
 
             data_m->remove (DATASPACE_DB, t.source.filename,
                             std::to_string (t.destination.server));
@@ -650,7 +696,8 @@ dtio::posix::write_async (int fd, const void *buf, size_t count)
   auto offset = mdm->get_fp (filename);
   if (!mdm->is_opened (filename))
     throw std::runtime_error ("dtio::posix::write() file not opened!");
-  auto w_task = task (task_type::WRITE_TASK, file (filename, offset, count), file ());
+  auto w_task
+      = task (task_type::WRITE_TASK, file (filename, offset, count), file ());
   w_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
   Timer t = Timer ();
@@ -754,7 +801,8 @@ dtio::posix::write (int fd, const void *buf, size_t count)
   auto offset = mdm->get_fp (filename);
   if (!mdm->is_opened (filename))
     throw std::runtime_error ("dtio::write() file not opened!");
-  auto w_task = task (task_type::WRITE_TASK, file (filename, offset, count), file ());
+  auto w_task
+      = task (task_type::WRITE_TASK, file (filename, offset, count), file ());
 
   w_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
@@ -787,8 +835,7 @@ dtio::posix::write (int fd, const void *buf, size_t count)
             }
           else
             {
-              data_m->put (DATASPACE_DB, tsk->source.filename,
-                           write_data,
+              data_m->put (DATASPACE_DB, tsk->source.filename, write_data,
                            std::to_string (tsk->destination.server));
             }
         }
@@ -799,9 +846,8 @@ dtio::posix::write (int fd, const void *buf, size_t count)
           else
             mdm->update_write_task_info (*tsk, filename, tsk->source.size);
           client_queue->publish_task (tsk);
-          task_ids.emplace_back (
-              std::make_pair (tsk->source.filename,
-                              std::to_string (tsk->destination.server)));
+          task_ids.emplace_back (std::make_pair (
+              tsk->source.filename, std::to_string (tsk->destination.server)));
         }
       else
         {
@@ -844,38 +890,42 @@ dtio::posix::__fxstat (int __ver, int fd, struct stat *buf)
 
 int
 dtio::posix::__fxstatat (int __ver, int __fildes, const char *__filename,
-            struct stat *__stat_buf, int __flag)
+                         struct stat *__stat_buf, int __flag)
 { // TODO: implement
   return 0;
 }
 
 int
-dtio::posix::__xstat (int __ver, const char *__filename, struct stat *__stat_buf)
+dtio::posix::__xstat (int __ver, const char *__filename,
+                      struct stat *__stat_buf)
 { // TODO: implement
   return 0;
 }
 
 int
-dtio::posix::__xstat64 (int __ver, const char *__filename, struct stat64 *__stat_buf)
+dtio::posix::__xstat64 (int __ver, const char *__filename,
+                        struct stat64 *__stat_buf)
 { // TODO: implement
   return 0;
 }
 
 int
-dtio::posix::__lxstat (int __ver, const char *__filename, struct stat *__stat_buf)
+dtio::posix::__lxstat (int __ver, const char *__filename,
+                       struct stat *__stat_buf)
 { // TODO: implement
   return 0;
 }
 
 int
 dtio::posix::__fxstatat64 (int __ver, int __fildes, const char *__filename,
-              struct stat64 *__stat_buf, int __flag)
+                           struct stat64 *__stat_buf, int __flag)
 { // TODO: implement
   return 0;
 }
 
 int
-dtio::posix::__lxstat64 (int __ver, const char *__filename, struct stat64 *__stat_buf)
+dtio::posix::__lxstat64 (int __ver, const char *__filename,
+                         struct stat64 *__stat_buf)
 { // TODO: implement
   return 0;
 }
