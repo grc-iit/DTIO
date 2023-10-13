@@ -378,6 +378,9 @@ off_t
 dtio::posix::lseek (int fd, off_t offset, int whence)
 {
   auto mdm = metadata_manager::getInstance (LIB);
+  if (!mdm->is_opened(fd)) {
+    return EBADF;
+  }
   auto filename = mdm->get_filename (fd);
   if (mdm->get_flags (filename) & O_APPEND)
     return 0;
@@ -412,6 +415,9 @@ off_t
 dtio::posix::lseek64 (int fd, off_t offset, int whence)
 {
   auto mdm = metadata_manager::getInstance (LIB);
+  if (!mdm->is_opened(fd)) {
+    return EBADF;
+  }
   auto filename = mdm->get_filename (fd);
   if (mdm->get_flags (filename) & O_APPEND)
     return 0;
@@ -878,8 +884,8 @@ dtio::posix::__fxstat64 (int __ver, int fd, struct stat64 *buf)
 
 int
 dtio::posix::__open_2 (const char *path, int oflag)
-{ // TODO: implement
-  return 0;
+{
+  return open(path, oflag);
 }
 
 int
