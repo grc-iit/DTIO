@@ -6,10 +6,16 @@ and is intended to grow in the intersection of HPC and BigData.
 
 # Configuration
 
-You should be able to intercept using LD_PRELOAD, make sure to set the
+You should be able to intercept using LD\_PRELOAD, make sure to set the
 environment variable DTIO\_CONF\_PATH to the path of your DTIO
 configuration file (e.g., /home/user/DTIO/conf/default.yaml),
 otherwise we won't be able to find it.
+
+# Debugging
+
+Debugging DTIO is a complicated task, please read
+DTIO/docs/debugging.md if you're interested in contributing to this
+project.
 
 # TODO LIST
 
@@ -33,3 +39,4 @@ otherwise we won't be able to find it.
     `std::stringstream stream; // #include <sstream> for this
     stream << 1 << 2 << 3;
     std::cout << stream.str();`
+
