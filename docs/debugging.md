@@ -33,30 +33,30 @@ shouldn't be any interception outside of the application.
 
 Using GDB on a program with interception works like this:
 `./a.out arg1 arg2 ...` becomes
-`LD\_PRELOAD=/path/to/libdtio\_posix\_interception.so gdb --args
+`LD_PRELOAD=/path/to/libdtio_posix_interception.so gdb --args
 ./a.out arg1 arg2 ...`
 
 Valgrind works similarly:
 `./a.out arg1 arg2 ...` becomes
-`LD\_PRELOAD=/path/to/libdtio\_posix\_interception.so valgrind ./a.out
+`LD_PRELOAD=/path/to/libdtio_posix_interception.so valgrind ./a.out
 arg1 arg2 ...`
 
 Sometimes, this isn't enough. For example, you may want to know which
 symbols a library provides. The command for this is:
-`nm -gDC libdtio\_posix\_interception.so` 
+`nm -gDC libdtio_posix_interception.so` 
 The -C helps with C++ which we do use in DTIO.
 
 I also recommend the `ldd` command, which lists which libraries a
 library is linked to. This can be useful when debugging a library.
 
-The other thing you might want to know is that `LD\_PRELOAD` itself
+The other thing you might want to know is that `LD_PRELOAD` itself
 provides useful debugging features. Try this:
 `./a.out arg1 arg2 ...` becomes
-`LD\_DEBUG=all LD\_DEBUG\_OUTPUT=debug.txt
-LD\_PRELOAD=/path/to/libdtio\_posix\_interception.so ./a.out arg1 arg2
+`LD_DEBUG=all LD_DEBUG_OUTPUT=debug.txt
+LD_PRELOAD=/path/to/libdtio_posix_interception.so ./a.out arg1 arg2
 ...`
 You'll get detailed information about which symbol lookups are begin
 made by your process and in which libraries. There's also an
-`LD\_DEBUG=help` feature which lists the available options there,
+`LD_DEBUG=help` feature which lists the available options there,
 though `all` is the most comprehensive one. You almost always want to
 use an output file here, because the information is detailed.
