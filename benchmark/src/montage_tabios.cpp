@@ -86,8 +86,8 @@ int main(int argc, char **argv) {
 #endif
   }
   global_timer.pauseTime();
-  std::vector<std::pair<size_t, std::vector<write_task *>>> operations =
-      std::vector<std::pair<size_t, std::vector<write_task *>>>();
+  std::vector<std::pair<size_t, std::vector<task *>>> operations =
+    std::vector<std::pair<size_t, std::vector<task *>>>();
 
   for (int i = 0; i < iteration; ++i) {
     for (auto item : workload) {

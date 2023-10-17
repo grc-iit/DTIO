@@ -22,11 +22,13 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
+#include "dtio/common/logger.h"
 #include <iomanip>
 #include <dtio/common/return_codes.h>
 #include <dtio/common/task_builder/task_builder.h>
 #include <hcl/common/debug.h>
 #include <dtio/drivers/stdio.h>
+#include <rpc/detail/log.h>
 #include <zconf.h>
 
 /******************************************************************************
@@ -49,8 +51,9 @@ FILE *dtio::fopen(const char *filename, const char *mode) {
       if (mdm->update_on_open(filename, mode, fh) != SUCCESS) {
         throw std::runtime_error("dtio::fopen() update failed!");
       }
-    } else
+    } else {
       return nullptr;
+    }
   }
   return fh;
 }
@@ -94,7 +97,7 @@ int dtio::fseek(FILE *stream, long int offset, int origin) {
                              static_cast<size_t>(origin));
 }
 
-std::vector<read_task> dtio::fread_async(size_t size, size_t count,
+std::vector<task> dtio::fread_async(size_t size, size_t count,
                                            FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
@@ -103,8 +106,8 @@ std::vector<read_task> dtio::fread_async(size_t size, size_t count,
   auto filename = mdm->get_filename(stream);
   auto offset = mdm->get_fp(filename);
   if (!mdm->is_opened(filename))
-    return std::vector<read_task>();
-  auto r_task = read_task(file(filename, offset, size * count), file());
+    return std::vector<task>();
+  auto r_task = task(task_type::READ_TASK, file(filename, offset, size * count), file());
 #ifdef TIMERTB
   Timer t = Timer();
   t.resumeTime();
@@ -137,7 +140,7 @@ std::vector<read_task> dtio::fread_async(size_t size, size_t count,
   return tasks;
 }
 
-std::size_t dtio::fread_wait(void *ptr, std::vector<read_task> &tasks,
+std::size_t dtio::fread_wait(void *ptr, std::vector<task> &tasks,
                                std::string filename) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto data_m = data_manager::getInstance(LIB);
@@ -202,7 +205,7 @@ size_t dtio::fread(void *ptr, size_t size, size_t count, FILE *stream) {
   auto offset = mdm->get_fp(filename);
   if (!mdm->is_opened(filename))
     return 0;
-  auto r_task = read_task(file(filename, offset, size * count), file());
+  auto r_task = task(task_type::READ_TASK, file(filename, offset, size * count), file());
 #ifdef TIMERTB
   Timer t = Timer();
   t.resumeTime();
@@ -225,18 +228,21 @@ size_t dtio::fread(void *ptr, size_t size, size_t count, FILE *stream) {
     case BUFFERS: {
       Timer timer = Timer();
       client_queue->publish_task(&task);
-      while (!data_m->exists(DATASPACE_DB, task.destination.filename,
+
+      while (!data_m->exists(DATASPACE_DB, task.source.filename,
                              std::to_string(task.destination.server))) {
         // std::cerr<<"looping\n";
       }
-      data = data_m->get(DATASPACE_DB, task.destination.filename,
+      data = data_m->get(DATASPACE_DB, task.source.filename,
                          std::to_string(task.destination.server));
 
-      data_m->remove(DATASPACE_DB, task.destination.filename,
-                     std::to_string(task.destination.server));
       memcpy(ptr + ptr_pos, data.c_str() + task.destination.offset,
-             task.destination.size);
-      size_read += task.destination.size;
+             task.source.size);
+
+      data_m->remove(DATASPACE_DB, task.source.filename,
+                     std::to_string(task.destination.server));
+
+      size_read += task.source.size;
       break;
     }
     case CACHE: {
@@ -255,8 +261,8 @@ size_t dtio::fread(void *ptr, size_t size, size_t count, FILE *stream) {
   return size_read;
 }
 
-std::vector<write_task *> dtio::fwrite_async(void *ptr, size_t size,
-                                               size_t count, FILE *stream) {
+std::vector<task *> dtio::fwrite_async(void *ptr, size_t size,
+				       size_t count, FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
@@ -266,7 +272,7 @@ std::vector<write_task *> dtio::fwrite_async(void *ptr, size_t size,
   auto offset = mdm->get_fp(filename);
   if (!mdm->is_opened(filename))
     throw std::runtime_error("dtio::fwrite() file not opened!");
-  auto w_task = write_task(file(filename, offset, size * count), file());
+  auto w_task = task(task_type::WRITE_TASK, file(filename, offset, size * count), file());
 #ifdef TIMERTB
   Timer t = Timer();
   t.resumeTime();
@@ -281,32 +287,32 @@ std::vector<write_task *> dtio::fwrite_async(void *ptr, size_t size,
 
   int index = 0;
   std::string write_data(static_cast<char *>(ptr));
-  for (auto task : write_tasks) {
-    if (task->addDataspace) {
-      if (write_data.length() >= task->source.offset + task->source.size) {
-        auto data = write_data.substr(task->source.offset, task->source.size);
-        data_m->put(DATASPACE_DB, task->destination.filename, data,
-                    std::to_string(task->destination.server));
+  for (auto tsk : write_tasks) {
+    if (tsk->addDataspace) {
+      if (write_data.length() >= tsk->source.offset + tsk->source.size) {
+        auto data = write_data.substr(tsk->source.offset, tsk->source.size);
+        data_m->put(DATASPACE_DB, tsk->destination.filename, data,
+                    std::to_string(tsk->destination.server));
       } else {
-        data_m->put(DATASPACE_DB, task->destination.filename, write_data,
-                    std::to_string(task->destination.server));
+        data_m->put(DATASPACE_DB, tsk->destination.filename, write_data,
+                    std::to_string(tsk->destination.server));
       }
     }
-    if (task->publish) {
-      if (size * count < task->source.size)
-        mdm->update_write_task_info(*task, filename, size * count);
+    if (tsk->publish) {
+      if (size * count < tsk->source.size)
+        mdm->update_write_task_info(*tsk, filename, size * count);
       else
-        mdm->update_write_task_info(*task, filename, task->source.size);
-      client_queue->publish_task(task);
+        mdm->update_write_task_info(*tsk, filename, tsk->source.size);
+      client_queue->publish_task(tsk);
     } else {
-      mdm->update_write_task_info(*task, filename, task->source.size);
+      mdm->update_write_task_info(*tsk, filename, tsk->source.size);
     }
     index++;
   }
   return write_tasks;
 }
 
-size_t dtio::fwrite_wait(std::vector<write_task *> tasks) {
+size_t dtio::fwrite_wait(std::vector<task *> tasks) {
   size_t total_size_written = 0;
   auto map_client = dtio_system::getInstance(LIB)->map_client();
   auto map_server = dtio_system::getInstance(LIB)->map_server();
@@ -350,7 +356,7 @@ size_t dtio::fwrite(void *ptr, size_t size, size_t count, FILE *stream) {
   auto offset = mdm->get_fp(filename);
   if (!mdm->is_opened(filename))
     throw std::runtime_error("dtio::fwrite() file not opened!");
-  auto w_task = write_task(file(filename, offset, size * count), file());
+  auto w_task = task(task_type::WRITE_TASK, file(filename, offset, size * count), file());
 #ifdef TIMERTB
   Timer t = Timer();
   t.resumeTime();
@@ -367,32 +373,32 @@ size_t dtio::fwrite(void *ptr, size_t size, size_t count, FILE *stream) {
   std::string write_data(static_cast<char *>(ptr));
   std::vector<std::pair<std::string, std::string>> task_ids =
       std::vector<std::pair<std::string, std::string>>();
-  for (auto task : write_tasks) {
-    if (task->addDataspace) {
-      if (write_data.length() >= task->source.offset + task->source.size) {
-        auto data = write_data.substr(task->source.offset, task->source.size);
-        data_m->put(DATASPACE_DB, task->destination.filename, data,
-                    std::to_string(task->destination.server));
+  for (auto tsk : write_tasks) {
+    if (tsk->addDataspace) {
+      if (write_data.length() >= tsk->source.offset + tsk->source.size) {
+        auto data = write_data.substr(tsk->source.offset, tsk->source.size);
+        data_m->put(DATASPACE_DB, tsk->source.filename, data,
+                    std::to_string(tsk->destination.server));
       } else {
-        data_m->put(DATASPACE_DB, task->destination.filename, write_data,
-                    std::to_string(task->destination.server));
+        data_m->put(DATASPACE_DB, tsk->source.filename, write_data,
+                    std::to_string(tsk->destination.server));
       }
     }
-    if (task->publish) {
-      if (size * count < task->source.size)
-        mdm->update_write_task_info(*task, filename, size * count);
+    if (tsk->publish) {
+      if (size * count < tsk->source.size)
+        mdm->update_write_task_info(*tsk, filename, size * count);
       else
-        mdm->update_write_task_info(*task, filename, task->source.size);
-      client_queue->publish_task(task);
+        mdm->update_write_task_info(*tsk, filename, tsk->source.size);
+      client_queue->publish_task(tsk);
       task_ids.emplace_back(
-          std::make_pair(task->destination.filename,
-                         std::to_string(task->destination.server)));
+          std::make_pair(tsk->source.filename,
+                         std::to_string(tsk->destination.server)));
     } else {
-      mdm->update_write_task_info(*task, filename, task->source.size);
+      mdm->update_write_task_info(*tsk, filename, tsk->source.size);
     }
 
     index++;
-    delete task;
+    delete tsk;
   }
   for (auto task_id : task_ids) {
     while (!map_server->exists(table::WRITE_FINISHED_DB, task_id.first,

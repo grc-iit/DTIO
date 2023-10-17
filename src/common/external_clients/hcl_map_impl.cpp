@@ -19,6 +19,7 @@
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
+#include "dtio/common/constants.h"
 #include <dtio/common/external_clients/hcl_map_impl.h>
 #include <mpi.h>
 
@@ -34,7 +35,9 @@ HCLMapImpl::put (const table &name, std::string key, const std::string &value,
 {
   key = std::to_string (name) + KEY_SEPARATOR + key;
   auto true_key = HCLKeyType (key);
-  if (hcl_client->Put (true_key, value))
+  DTIO_LOG_DEBUG("Put in " << hclmapname << " at " << key << " " << value);
+  auto true_val = DTIOCharStruct(value);
+  if (hcl_client->Put (true_key, true_val))
     {
       return 0;
     }
@@ -49,11 +52,12 @@ std::string
 HCLMapImpl::get (const table &name, std::string key, std::string group_key)
 {
   key = std::to_string (name) + KEY_SEPARATOR + key;
+  DTIO_LOG_DEBUG("Get in " << hclmapname << " at " << key);
   auto true_key = HCLKeyType (key);
   auto retval = hcl_client->Get (true_key);
   if (retval.first)
     {
-      return retval.second;
+      return retval.second.string();
     }
   else
     {
@@ -67,6 +71,7 @@ HCLMapImpl::remove (const table &name, std::string key, std::string group_key)
   key = std::to_string (name) + KEY_SEPARATOR + key;
   auto true_key = HCLKeyType (key);
   hcl_client->Erase (true_key);
+  return key;
 }
 
 bool

@@ -28,7 +28,7 @@
  *error code enum
  ******************************************************************************/
 typedef enum return_codes {
-  SUCCESS = 7777,
+  SUCCESS = 0,
 
   /* Error codes*/
   WORKER__SETTING_DIR_FAILED = 7800,

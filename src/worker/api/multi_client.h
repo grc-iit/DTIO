@@ -49,10 +49,10 @@ public:
     clients[io_client_type::POSIX] = std::make_shared<posix_client>(worker_index);
     clients[io_client_type::STDIO] = std::make_shared<stdio_client>(worker_index);
   }
-  int dtio_write(write_task task) override;
-  int dtio_read(read_task task) override;
-  int dtio_delete_file(delete_task task) override;
-  int dtio_flush_file(flush_task task) override;
+  int dtio_write(task tsk) override;
+  int dtio_read(task tsk) override;
+  int dtio_delete_file(task tsk) override;
+  int dtio_flush_file(task tsk) override;
 
   virtual ~multi_client() { free(clients); }
 };

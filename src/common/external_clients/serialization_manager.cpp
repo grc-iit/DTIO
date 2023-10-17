@@ -56,10 +56,10 @@ std::string serialization_manager::serialize_chunk(chunk_meta meta) {
   return serialized_str;
 }
 
-std::string serialization_manager::serialize_task(task *task) {
-  switch (task->t_type) {
+std::string serialization_manager::serialize_task(task *tsk) {
+  switch (tsk->t_type) {
   case task_type::WRITE_TASK: {
-    auto *wt = reinterpret_cast<write_task *>(task);
+    auto *wt = tsk; //reinterpret_cast<write_task *>(task);
     std::stringstream ss; // any stream can be used
 
     {
@@ -69,7 +69,7 @@ std::string serialization_manager::serialize_task(task *task) {
     return ss.str();
   }
   case task_type::READ_TASK: {
-    auto *rt = reinterpret_cast<read_task *>(task);
+    auto *rt = tsk; //reinterpret_cast<read_task *>()
     std::stringstream ss; // any stream can be used
 
     {
@@ -90,14 +90,14 @@ task *serialization_manager::deserialize_task(std::string string) {
     iarchive(cm);
     switch (cm.t_type) {
     case task_type::WRITE_TASK: {
-      auto *wt = new write_task();
+      auto *wt = new task(task_type::WRITE_TASK);
       std::stringstream ss(string);
       cereal::JSONInputArchive iarchive(ss);
       iarchive(*wt);
       return wt;
     }
     case task_type::READ_TASK: {
-      auto *wt = new read_task();
+      auto *wt = new task();
       std::stringstream ss(string);
       cereal::JSONInputArchive iarchive(ss);
       iarchive(*wt);

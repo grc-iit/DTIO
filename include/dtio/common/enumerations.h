@@ -96,7 +96,7 @@ enum class task_type : int64_t
   WRITE_TASK = 1,
   FLUSH_TASK = 2,
   DELETE_TASK = 3,
-  DUMMY = 4,
+  DUMMY = 4
 };
 
 enum table

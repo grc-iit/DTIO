@@ -29,18 +29,20 @@
 #include <hcl/common/debug.h>
 #include <dtio/dtio_system.h>
 
-int multi_client::dtio_read(read_task task) {
-  return clients[task.iface]->dtio_read(task);
+// FIXME multi client segfaults on iface, iface not transferred correctly
+
+int multi_client::dtio_read(task tsk) {
+  return clients[tsk.iface]->dtio_read(tsk);
 }
 
-int multi_client::dtio_write(write_task task) {
-  return clients[task.iface]->dtio_write(task);
+int multi_client::dtio_write(task tsk) {
+  return clients[tsk.iface]->dtio_write(tsk);
 }
 
-int multi_client::dtio_delete_file(delete_task task) {
-  return clients[task.iface]->dtio_delete_file(task);
+int multi_client::dtio_delete_file(task tsk) {
+  return clients[tsk.iface]->dtio_delete_file(tsk);
 }
 
-int multi_client::dtio_flush_file(flush_task task) {
-  return clients[task.iface]->dtio_flush_file(task);
+int multi_client::dtio_flush_file(task tsk) {
+  return clients[tsk.iface]->dtio_flush_file(tsk);
 }

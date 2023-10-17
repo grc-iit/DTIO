@@ -45,12 +45,12 @@ FILE *fopen(const char *filename, const char *mode);
 int fclose(FILE *stream);
 int fseek(FILE *stream, long int offset, int origin);
 size_t fread(void *ptr, size_t size, size_t count, FILE *stream);
-std::vector<read_task> fread_async(size_t size, size_t count, FILE *stream);
-std::size_t fread_wait(void *ptr, std::vector<read_task> &tasks,
+std::vector<task> fread_async(size_t size, size_t count, FILE *stream);
+std::size_t fread_wait(void *ptr, std::vector<task> &tasks,
                        std::string filename);
-std::vector<write_task *> fwrite_async(void *ptr, size_t size, size_t count,
-                                       FILE *stream);
-size_t fwrite_wait(std::vector<write_task *> tasks);
+std::vector<task *> fwrite_async(void *ptr, size_t size, size_t count,
+				 FILE *stream);
+size_t fwrite_wait(std::vector<task *> tasks);
 size_t fwrite(void *ptr, size_t size, size_t count, FILE *stream);
 } // namespace dtio
 

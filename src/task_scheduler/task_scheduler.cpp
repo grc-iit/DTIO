@@ -22,6 +22,7 @@
 
 // include files
 #include "task_scheduler.h"
+#include "dtio/common/logger.h"
 #include <algorithm>
 #include <dtio/common/data_structures.h>
 #include <dtio/common/external_clients/memcached_impl.h>
@@ -40,16 +41,26 @@ task_scheduler::run ()
   auto task_list = std::vector<task *> ();
   Timer t = Timer ();
   int status;
+  task *task_i = nullptr;
+
+  DTIO_LOG_TRACE ("[DTIO-TS] Looping");
+
+  // queue->clear(); // Clean out the queue before the task scheduler starts
 
   while (!kill)
     {
+    // NOTE: Change to TRACE cause spawn
+    DTIO_LOG_TRACE ("[DTIO-TS] RUN :: START");
       status = -1;
-      auto task_i = queue->subscribe_task_with_timeout (status);
+      DTIO_LOG_TRACE ("[DTIO-TS] RUN :: SUBSCRIBING");
+      task_i = queue->subscribe_task_with_timeout (status);
       if (status != -1 && task_i != nullptr)
         {
           task_list.push_back (task_i);
         }
+
       auto time_elapsed = t.pauseTime ();
+      DTIO_LOG_TRACE ("[DTIO-TS] RUN :: SUBSCRIBED");
       if (!task_list.empty ()
           && (task_list.size () >= MAX_NUM_TASKS_IN_QUEUE
               || time_elapsed >= MAX_SCHEDULE_TIMER))
@@ -59,7 +70,9 @@ task_scheduler::run ()
           t.resumeTime ();
           task_list.clear ();
         }
+    DTIO_LOG_TRACE ("[DTIO-TS] RUN :: EoL");
     }
+  DTIO_LOG_ERROR ("[DTIO-TS] DEAD");
   return 0;
 }
 
@@ -78,22 +91,22 @@ task_scheduler::schedule_tasks (std::vector<task *> &tasks)
     {
       auto queue = dtio_system::getInstance (service_i)->get_worker_queue (
           element.first);
-      for (auto task : element.second)
+      for (auto tsk : element.second)
         {
 
-          switch (task->t_type)
+          switch (tsk->t_type)
             {
             case task_type::WRITE_TASK:
               {
-                auto *wt = reinterpret_cast<write_task *> (task);
+                auto *wt = tsk; //reinterpret_cast<write_task *> (task);
 #ifdef DEBUG
                 std::cout
                     << "threadID:" << std::this_thread::get_id ()
                     << "\tOperation"
                     << static_cast<std::underlying_type<task_type>::type> (
-                           task->t_type)
+                           tsk->t_type)
                     << "\tDataspaceID#" << wt->destination.filename
-                    << "\tTask#" << task->task_id << "\tWorker#"
+                    << "\tTask#" << tsk->task_id << "\tWorker#"
                     << element.first << "\n";
 #endif
                 queue->publish_task (wt);
@@ -101,14 +114,14 @@ task_scheduler::schedule_tasks (std::vector<task *> &tasks)
               }
             case task_type::READ_TASK:
               {
-                auto *rt = reinterpret_cast<read_task *> (task);
+                auto *rt = tsk;
 #ifdef DEBUG
                 std::cout
                     << "threadID:" << std::this_thread::get_id ()
                     << "\tOperation"
                     << static_cast<std::underlying_type<task_type>::type> (
-                           task->t_type)
-                    << "\tTask#" << task->task_id << "\tWorker#"
+                           tsk->t_type)
+                    << "\tTask#" << tsk->task_id << "\tWorker#"
                     << element.first << "\n";
 #endif
                 queue->publish_task (rt);
@@ -117,9 +130,9 @@ task_scheduler::schedule_tasks (std::vector<task *> &tasks)
             }
         }
     }
-  for (auto task : tasks)
+  for (auto tsk : tasks)
     {
-      delete task;
+      delete tsk;
     }
   delete input.task_size;
   delete output.solution;

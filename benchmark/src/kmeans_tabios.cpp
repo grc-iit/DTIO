@@ -46,8 +46,8 @@ int main(int argc, char **argv) {
   dtio::fwrite(write_buf, sizeof(char), io_per_teration, fh);
   delete (write_buf);
   size_t count = 0;
-  std::vector<std::pair<size_t, std::vector<read_task>>> operations =
-      std::vector<std::pair<size_t, std::vector<read_task>>>();
+  std::vector<std::pair<size_t, std::vector<task>>> operations =
+      std::vector<std::pair<size_t, std::vector<task>>>();
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0)
     std::cerr << "Data created Done\n";

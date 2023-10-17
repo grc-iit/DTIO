@@ -1,12 +1,16 @@
 cmake_minimum_required(VERSION 3.10)
 project(
   dtio
-  VERSION 0.0.0
+  VERSION 0.0.1
   DESCRIPTION "DTIO: A Data Task I/O system")
 
 set(CMAKE_CXX_STANDARD 17)
 include(GNUInstallDirs)
 include_directories(include)
+include_directories("hermes_shm/include")
+include_directories("adapter") # <-- here 
+
+# include_directories("")
 include_directories(${INCLUDE_PATH})
 link_libraries(${LIBRARY_PATH})
 # define ones we have installed
@@ -15,7 +19,8 @@ set(MEMCACHED false)
 set(NATS false)
 set(MPI true)
 set(HCL true)
-#set(ROCKS true) # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+#set(ROCKS true)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERMDM")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERTS")
@@ -23,9 +28,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERTB")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERNATS")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERDM")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERW")
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMER") set(CMAKE_CXX_FLAGS
-# "${CMAKE_CXX_FLAGS} -DFTIMER") set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}
-# -DCOLLECT")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMER")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DFTIMER")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCOLLECT")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOVERHEADS")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERBASE")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTABIOS")
@@ -52,6 +57,8 @@ set(COMMON_SRC
     src/common/external_clients/hcl_map_impl.cpp
     src/common/task_builder/task_builder.cpp)
 set(DTIO_LIB_SRC src/lib/stdio.cpp src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
+set(DTIO_INTERCEPTION adapter/posix/posix_api.cc)
+set(DTIO_BRAHMA_INTERCEPTION adapter/brahma-interceptor/posix_api.cc)
 # set(DTIO_CLIENT_SRC src/client/main.cpp src/client/client.cpp
 #                       src/common/threadPool.cpp)
 # set(DTIO_SERVER_SRC src/system_manager/main.cpp
@@ -85,6 +92,18 @@ if(DEFINED ROCKS)
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 
+find_package(brahma REQUIRED)
+if (${BRAHMA_FOUND})
+    message(STATUS "[DTIO_INTERCEPTOR] found brahma headers at ${BRAHMA_INCLUDE_DIRS}")
+    include_directories(${BRAHMA_INCLUDE_DIRS})
+    set(DEPENDENCY_LIB ${DEPENDENCY_LIB} ${BRAHMA_LIBRARIES})
+    link_directories("${HOME}/root/lib/")
+    message(STATUS "[DTIO_INTERCEPTOR] found brahma lib at ${BRAHMA_LIBRARY}")
+    message("Brahma library path: ${BRAHMA_LIBRARY}")
+else ()
+    message(FATAL_ERROR "-- [DTIO_INTERCEPTOR] brahma is needed for ${PROJECT_NAME} build")
+endif ()
+
 # Variable for setting the log level (1=ERROR, 2=WARN, 3=INFO, 4=DEBUG, 5=TRACE)
 set(LOG_LEVEL 3 CACHE STRING "Set the log level")
 # Define LOG_LEVEL
@@ -92,6 +111,8 @@ add_compile_definitions(LOG_LEVEL=${LOG_LEVEL})
 
 add_library(dtio_common SHARED ${COMMON_SRC})
 add_library(${PROJECT_NAME} SHARED ${DTIO_LIB_SRC})
+add_library(dtio_posix_interception SHARED ${DTIO_INTERCEPTION})
+add_library(dtio_brahma_interception SHARED ${DTIO_BRAHMA_INTERCEPTION})
 # add_executable(dtio_client ${DTIO_CLIENT_SRC})
 # add_executable(dtio_server ${DTIO_SERVER_SRC})
 add_executable(dtio_task_scheduler ${DTIO_TS_SRC})
@@ -136,6 +157,12 @@ dtio_set_libs(dtio_worker_manager)
 dtio_set_libs(dtio_worker)
 dtio_set_libs(dtio_hclmap)
 dtio_set_libs(${PROJECT_NAME})
+dtio_set_libs(dtio_posix_interception)
+dtio_set_libs(dtio_brahma_interception)
+add_dependencies(dtio_posix_interception dtio)
+add_dependencies(dtio_brahma_interception dtio)
+target_link_libraries(dtio_posix_interception dtio)
+target_link_libraries(dtio_brahma_interception dtio)
 
 set_target_properties(
   ${PROJECT_NAME}
@@ -144,10 +171,15 @@ set_target_properties(
              PUBLIC_HEADER include/dtio.h)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(dtio_posix_interception PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(dtio_brahma_interception PROPERTIES LINKER_LANGUAGE CXX)
 
 target_include_directories(${PROJECT_NAME} PRIVATE .)
 
 target_link_libraries(dtio ${CMAKE_CXX_LINK_FLAGS})
+target_link_libraries(dtio_posix_interception ${CMAKE_CXX_LINK_FLAGS})
+target_link_libraries(dtio_brahma_interception ${CMAKE_CXX_LINK_FLAGS})
+# target_link_libraries(dtio_posix_interception PRIVATE -Wall -fPIC)
 
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -164,3 +196,5 @@ install(
   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 add_subdirectory(benchmark)
+#add_subdirectory(adapter)
+# add_subdirectory(hermes_shm)

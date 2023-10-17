@@ -22,8 +22,8 @@ int main(int argc, char **argv) {
   global_timer.resumeTime();
   FILE *fh = dtio::fopen("file.test", "w+");
   global_timer.pauseTime();
-  std::vector<std::pair<size_t, std::vector<write_task *>>> operations =
-      std::vector<std::pair<size_t, std::vector<write_task *>>>();
+  std::vector<std::pair<size_t, std::vector<task *>>> operations =
+    std::vector<std::pair<size_t, std::vector<task *>>>();
   char write_buf[io_size];
   gen_random(write_buf, io_size);
   for (int i = 0; i < num_iterations; ++i) {

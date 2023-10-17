@@ -20,10 +20,10 @@
  * <http://www.gnu.org/licenses/>.
  */
 #include "worker_manager_service.h"
+#include <dtio/common/logger.h>
 #include <dtio/common/utilities.h>
 #include <iostream>
 #include <mpi.h>
-#include <dtio/common/logger.h>
 
 int
 main (int argc, char **argv)
@@ -39,13 +39,15 @@ main (int argc, char **argv)
   MPI_Comm_split (MPI_COMM_WORLD, METADATA_NULL_COLOR, 0,
                   &ConfigManager::get_instance ()->METADATA_COMM);
 
-  for (int i = 0; i < ConfigManager::get_instance ()->NUM_WORKERS; i++) {
-    MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_NULL_COLOR, 0,
-		    &ConfigManager::get_instance ()->QUEUE_WORKER_COMM[i]);
-  }
+  for (int i = 0; i < ConfigManager::get_instance ()->NUM_WORKERS; i++)
+    {
+      MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_NULL_COLOR, 0,
+                      &ConfigManager::get_instance ()->QUEUE_WORKER_COMM[i]);
+    }
+  DTIO_LOG_INFO ("[Worker Manager] Creating");
   std::shared_ptr<worker_manager_service> worker_manager_service_i
       = worker_manager_service::getInstance (service::WORKER_MANAGER);
-  DTIO_LOG_DEBUG("[Worker Manager] Created");
+  DTIO_LOG_INFO ("[Worker Manager] Created");
   worker_manager_service_i->run ();
   MPI_Finalize ();
   return 0;

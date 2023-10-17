@@ -43,8 +43,8 @@ int main(int argc, char **argv) {
     write_buf[i] = static_cast<char *>(malloc(1 * 1024 * 1024));
     gen_random(write_buf[i], 1 * 1024 * 1024);
   }
-  std::vector<std::pair<size_t, std::vector<write_task *>>> operations =
-      std::vector<std::pair<size_t, std::vector<write_task *>>>();
+  std::vector<std::pair<size_t, std::vector<task *>>> operations =
+      std::vector<std::pair<size_t, std::vector<task *>>>();
   printf("HERE1\n");
   for (int i = 0; i < iteration; ++i) {
     for (auto item : workload) {

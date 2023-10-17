@@ -65,7 +65,7 @@ static float get_average_worker() {
   return std::stof(result);
 }
 
-static void wait_for_read(size_t size, std::vector<read_task> tasks,
+static void wait_for_read(size_t size, std::vector<task> tasks,
                           std::string filename) {
   char read_buf[size];
   auto bytes = dtio::fread_wait(read_buf, tasks, filename);

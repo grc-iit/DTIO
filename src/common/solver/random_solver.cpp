@@ -38,7 +38,7 @@ solver_output random_solver::solve(solver_input input) {
   for (auto i = 0; i < input.tasks.size(); i++) {
     switch (input.tasks[i]->t_type) {
     case task_type::WRITE_TASK: {
-      auto *wt = reinterpret_cast<write_task *>(input.tasks[i]);
+      auto *wt = input.tasks[i]; //reinterpret_cast<write_task *>(input.tasks[i]);
       if (wt->destination.worker == -1)
         solution.solution[i] =
             static_cast<int>(dist(generator) % ConfigManager::get_instance()->NUM_WORKERS + 1);
@@ -47,7 +47,7 @@ solver_output random_solver::solve(solver_input input) {
       break;
     }
     case task_type::READ_TASK: {
-      auto *rt = reinterpret_cast<read_task *>(input.tasks[i]);
+      auto *rt = input.tasks[i]; //reinterpret_cast<read_task *>()
       if (rt->source.worker == -1)
         solution.solution[i] =
             static_cast<int>(dist(generator) % ConfigManager::get_instance()->NUM_WORKERS + 1);
@@ -56,7 +56,7 @@ solver_output random_solver::solve(solver_input input) {
       break;
     }
     case task_type::DELETE_TASK: {
-      auto *dt = reinterpret_cast<delete_task *>(input.tasks[i]);
+      auto *dt = input.tasks[i]; //reinterpret_cast<delete_task *>(input.tasks[i]);
       if (dt->source.worker == -1)
         std::cerr << "random_solver::solve():\t "
                      "delete task failed\n";
@@ -65,7 +65,7 @@ solver_output random_solver::solve(solver_input input) {
       break;
     }
     case task_type::FLUSH_TASK: {
-      auto *ft = reinterpret_cast<flush_task *>(input.tasks[i]);
+      auto *ft = input.tasks[i]; //reinterpret_cast<flush_task *>(input.tasks[i]);
       if (ft->source.worker == -1)
         std::cerr << "random_solver::solve():\t "
                      "flush task failed\n";

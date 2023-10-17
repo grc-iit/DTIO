@@ -21,11 +21,27 @@
  */
 #include "dtio/common/constants.h"
 #include "dtio/common/data_structures.h"
+#include "dtio/common/logger.h"
+#include <chrono>
 #include <cstdint>
 #include <dtio/common/external_clients/hcl_queue_impl.h>
 #include <future>
 #include <mpi.h>
 #include <sys/types.h>
+#include <type_traits>
+
+
+void
+HCLQueueImpl::clear()
+{
+  while (true) {
+    auto queue_pop = hcl_queue->Pop (head_subscription);
+    auto queue_bool = queue_pop.first;
+    if (!queue_bool) {
+      return;
+    }
+  }
+}
 
 int
 HCLQueueImpl::publish_task (task *task_t)
@@ -34,27 +50,57 @@ HCLQueueImpl::publish_task (task *task_t)
   // auto msg = serialization_manager ().serialize_task (task_t);
   // natsConnection_PublishString (nc, subject.c_str (), msg.c_str ());
   // head_subscription is t.task_id if equal to -1
-  head_subscription
-      = head_subscription == -1 ? task_t->task_id : head_subscription;
+  // NOTE:
+  // head_subscription and tail_subscription are uint16_t as hcl indexs are
+  // unsigned.
+  // if something wonky happens, maybe zoidberg?
+
+  // head_subscription
+  //     = head_subscription == (uint16_t)-1 ? task_t->task_id : head_subscription;
+  head_subscription = (uint16_t)0;
   tail_subscription = task_t->task_id;
   // return !hcl_queue->Push (task_t, task_hash (*task_t));
   // return !hcl_queue->Push(*task_t, task_hash.operator()(task_t));
   uint16_t hashValue = static_cast<uint16_t> (task_hash.operator() (task_t));
-  return !hcl_queue->Push (*task_t, hashValue);
+  return hcl_queue->Push (*task_t, head_subscription); // hashValue
 }
 
 task *
+HCLQueueImpl::subscribe_task_getter ()
+{
+  DTIO_LOG_DEBUG ("[QUEUE] SUB GETTER :: INIT");
+  // if (head_subscription < tail_subscription)
+  //   {
+  DTIO_LOG_DEBUG ("[QUEUE] SUB GETTER :: SUBBING");
+  auto queue_pop = hcl_queue->Pop (head_subscription);
+  DTIO_LOG_DEBUG ("[QUEUE] SUB GETTER :: POP and ++");
+
+  // head_subscription++;
+  auto queue_bool = queue_pop.first;
+  if (queue_bool) {
+    task *hcl_task = new task(queue_pop.second);
+    DTIO_LOG_DEBUG ("[QUEUE] SUB GETTER :: RET TASK");
+    return hcl_task;
+  }
+  else {
+    return nullptr;
+  }
+  //   }
+  // DTIO_LOG_DEBUG ("[QUEUE] SUB GETTER :: FAIL");
+}
+
+bool
 HCLQueueImpl::subscribe_task_helper ()
 {
-  if (head_subscription < tail_subscription)
-    {
-      // can be all 0
-      auto queue_pop = hcl_queue->Pop (head_subscription);
-      head_subscription++;
-      auto queue_bool = queue_pop.first;
-      task hcl_task = queue_pop.second;
-      return &hcl_task;
-    }
+  DTIO_LOG_DEBUG ("[QUEUE] SUB HELPER :: INIT\t"<< head_subscription << "\t" << tail_subscription);
+  return hcl_queue->WaitForElement(head_subscription);
+  // if (head_subscription < tail_subscription)
+  //   {
+  //     DTIO_LOG_DEBUG ("[QUEUE] SUB HELPER :: PULL!");
+  //     return true;
+  //   }
+  // DTIO_LOG_DEBUG ("[QUEUE] SUB HELPER :: NO PULL");
+  // return false;
 }
 
 task *
@@ -62,16 +108,28 @@ HCLQueueImpl::subscribe_task_with_timeout (int &status)
 {
   // DONE: make a while timer < timeout loop and pop the task and wait a bit
   // use defaults from NATS impl
-  std::future<task *> result
-      = std::async (std::launch::deferred | std::launch::async,
+  DTIO_LOG_DEBUG ("[QUEUE] SUB --> with Timeout :: INIT");
+  // std::launch::deferred | 
+  std::future<bool> result
+      = std::async (std::launch::async,
                     &HCLQueueImpl::subscribe_task_helper, this);
+  DTIO_LOG_DEBUG ("[QUEUE] SUB --> with Timeout :: FUTURE");
   if (result.wait_for (std::chrono::milliseconds (MAX_TASK_TIMER_MS))
       == std::future_status::ready)
     {
-      return result.get ();
+      DTIO_LOG_DEBUG ("[QUEUE] SUB --> with Timeout :: GET");
+      auto response = result.get();
+      if (response) {
+	status = 1;
+	return subscribe_task_getter();
+      }
+      else {
+	return nullptr;
+      }
     }
   else
     {
+      DTIO_LOG_DEBUG ("[QUEUE] SUB --> with Timeout :: NULL");
       return nullptr;
     }
 }
@@ -81,18 +139,20 @@ HCLQueueImpl::subscribe_task (int &status)
 {
   // DONE: make a while timer < timeout loop and pop the task and wait a bit
   // use defaults from NATS impl
-  std::future<task *> result
-      = std::async (std::launch::deferred | std::launch::async,
-                    &HCLQueueImpl::subscribe_task_helper, this);
-  if (result.wait_for (std::chrono::milliseconds (MAX_TASK_TIMER_MS_MAX))
-      == std::future_status::ready)
-    {
-      return result.get ();
-    }
-  else
-    {
-      return nullptr;
-    }
+  return subscribe_task_with_timeout(status);
+  // std::future<bool> result
+  //     = std::async (std::launch::deferred | std::launch::async,
+  //                   &HCLQueueImpl::subscribe_task_helper, this);
+  // if (result.wait_for (std::chrono::milliseconds (MAX_TASK_TIMER_MS_MAX))
+  //     == std::future_status::ready)
+  //   {
+  //     DTIO_LOG_DEBUG ("[QUEUE] SUB :: GET");
+  //     return subscribe_task_getter();
+  //   }
+  // else
+  //   {
+  //     return nullptr;
+  //   }
 }
 
 int
