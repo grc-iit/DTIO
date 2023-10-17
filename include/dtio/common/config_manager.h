@@ -84,6 +84,8 @@ public:
   std::size_t NUM_SCHEDULERS; // FIXME: make private
   bool CHECKFS; // Check filesystem for file existence, slower but allows
                 // convenient data import
+  bool NEVER_TRACE; // Never perform stacktracing, if the path is not
+		    // a dtio:// path then send directly to real api
 
   static std::shared_ptr<ConfigManager>
   get_instance ()
@@ -142,6 +144,7 @@ public:
     NUM_WORKERS = config_["NUM_WORKERS"].as<int> ();
     NUM_SCHEDULERS = config_["NUM_SCHEDULERS"].as<int> ();
     CHECKFS = config_["CHECK_FS"].as<bool> ();
+    NEVER_TRACE = config_["NEVER_TRACE"].as<bool> ();
     QUEUE_WORKER_COMM = (MPI_Comm *)calloc (NUM_WORKERS, sizeof (MPI_Comm));
     DTIO_LOG_TRACE ("[ConfigManager] Parsed Config: " << CHECKFS << " "
                                                      << QUEUE_WORKER_COMM);

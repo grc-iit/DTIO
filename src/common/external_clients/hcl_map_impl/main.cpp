@@ -50,17 +50,17 @@ main (int argc, char **argv)
   MPI_Comm_rank (ConfigManager::get_instance ()->PROCESS_COMM, &process_rank);
   if (process_rank == 0)
     {
-      MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_COLOR, rank - 1,
-                      &ConfigManager::get_instance ()->DATASPACE_COMM);
-      MPI_Comm_split (MPI_COMM_WORLD, METADATA_NULL_COLOR, 1,
+      MPI_Comm_split (MPI_COMM_WORLD, METADATA_COLOR, rank - 1,
                       &ConfigManager::get_instance ()->METADATA_COMM);
+      MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_NULL_COLOR, 1,
+                      &ConfigManager::get_instance ()->DATASPACE_COMM);
     }
   else
     {
-      MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_NULL_COLOR, 1,
-                      &ConfigManager::get_instance ()->DATASPACE_COMM);
-      MPI_Comm_split (MPI_COMM_WORLD, METADATA_COLOR, rank - 2,
+      MPI_Comm_split (MPI_COMM_WORLD, METADATA_NULL_COLOR, 1,
                       &ConfigManager::get_instance ()->METADATA_COMM);
+      MPI_Comm_split (MPI_COMM_WORLD, DATASPACE_COLOR, rank - 2,
+                      &ConfigManager::get_instance ()->DATASPACE_COMM);
     }
   for (int i = 0; i < ConfigManager::get_instance ()->NUM_WORKERS; i++)
     {
@@ -73,11 +73,11 @@ main (int argc, char **argv)
   std::shared_ptr<HCLMapImpl> map;
   if (process_rank == 0)
     {
-      map = std::make_shared<HCLMapImpl> (HCLCLIENT, "dataspace", 0, 1);
+      map = std::make_shared<HCLMapImpl> (HCLCLIENT, "metadata", 0, 1);
     }
   else
     {
-      map = std::make_shared<HCLMapImpl> (HCLCLIENT, "metadata", 0, 1);
+      map = std::make_shared<HCLMapImpl> (HCLCLIENT, "dataspace", 0, 1);
     }
   DTIO_LOG_INFO ("[HCL Map] Created");
   map->run ();
