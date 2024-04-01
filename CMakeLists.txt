@@ -7,7 +7,7 @@ project(
 set(CMAKE_CXX_STANDARD 17)
 include(GNUInstallDirs)
 include_directories(include)
-include_directories("hermes_shm/include")
+# include_directories("hermes_shm/include")
 include_directories("adapter") # <-- here 
 
 # include_directories("")

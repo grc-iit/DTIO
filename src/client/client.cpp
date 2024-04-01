@@ -1,7 +1,9 @@
 /*
- * Copyright (C) 2023  SCS Lab <scs-help@cs.iit.edu>, Hariharan
- * Devarajan <hdevarajan@hawk.iit.edu>, Anthony Kougkas
- * <akougkas@iit.edu>, Xian-He Sun <sun@iit.edu>
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
+ * <nrajesh@hawk.iit.edu> Hariharan Devarajan
+ * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
+ * Xian-He Sun <sun@iit.edu>
  *
  * This file is part of DTIO
  *
@@ -18,10 +20,6 @@
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/>.
- */
-/*
- * Created by hariharan on 2/16/18.
- * Updated by kbateman and nrajesh (nrj5k) since
  */
 
 #include "client.h"
