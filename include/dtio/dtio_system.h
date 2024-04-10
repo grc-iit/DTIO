@@ -37,7 +37,7 @@
 #include <dtio/common/external_clients/hcl_map_impl.h>
 #include <dtio/common/external_clients/hcl_queue_impl.h>
 #include <dtio/common/external_clients/memcached_impl.h>
-#include <dtio/common/external_clients/nats_impl.h>
+// #include <dtio/common/external_clients/nats_impl.h>
 #include <dtio/common/external_clients/rocksdb_impl.h>
 #include <dtio/common/solver/solver.h>
 #include <memory>

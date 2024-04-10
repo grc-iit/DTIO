@@ -49,27 +49,26 @@ set(COMMON_SRC
     src/dtio_system.cpp
     src/common/client_interface/distributed_hashmap.cpp
     src/common/client_interface/distributed_queue.cpp
-    src/common/external_clients/serialization_manager.cpp
     src/common/external_clients/rocksdb_impl.cpp
     src/common/external_clients/memcached_impl.cpp
-    src/common/external_clients/nats_impl.cpp
+    # src/common/external_clients/nats_impl.cpp
     src/common/external_clients/hcl_queue_impl.cpp
     src/common/external_clients/hcl_map_impl.cpp
     src/common/task_builder/task_builder.cpp)
-set(DTIO_LIB_SRC src/lib/stdio.cpp src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
+set(DTIO_LIB_SRC src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
 set(DTIO_INTERCEPTION adapter/posix/posix_api.cc)
 set(DTIO_BRAHMA_INTERCEPTION adapter/brahma-interceptor/posix_api.cc)
-# set(DTIO_CLIENT_SRC src/client/main.cpp src/client/client.cpp
-#                       src/common/threadPool.cpp)
-# set(DTIO_SERVER_SRC src/system_manager/main.cpp
-#                       src/system_manager/system_manager_service.cpp)
+set(DTIO_CLIENT_SRC src/client/main.cpp src/client/client.cpp
+                      src/common/threadPool.cpp)
+set(DTIO_SERVER_SRC src/system_manager/main.cpp
+                      src/system_manager/system_manager_service.cpp)
 set(DTIO_TS_SRC
     src/task_scheduler/main.cpp src/task_scheduler/task_scheduler.cpp
     src/task_scheduler/task_scheduler.h)
 set(DTIO_WM_SRC src/worker_manager/main.cpp
                   src/worker_manager/worker_manager_service.cpp)
 set(DTIO_WS_SRC
-    src/worker/api/posix_client.cpp src/worker/api/stdio_client.cpp src/worker/api/multi_client.cpp src/worker/program_repo/statistics.cpp
+    src/worker/api/posix_client.cpp src/worker/api/multi_client.cpp src/worker/program_repo/statistics.cpp
     src/worker/main.cpp src/worker/worker.cpp)
 set(DTIO_HM_SRC src/common/external_clients/hcl_map_impl/main.cpp
     src/common/external_clients/hcl_map_impl.cpp)
@@ -179,6 +178,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE .)
 target_link_libraries(dtio ${CMAKE_CXX_LINK_FLAGS})
 target_link_libraries(dtio_posix_interception ${CMAKE_CXX_LINK_FLAGS})
 target_link_libraries(dtio_brahma_interception ${CMAKE_CXX_LINK_FLAGS})
+target_link_libraries(dtio_brahma_interception -lbrahma)
 # target_link_libraries(dtio_posix_interception PRIVATE -Wall -fPIC)
 
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

@@ -481,7 +481,7 @@ dtio::posix::read_async (int fd, size_t count)
   std::stringstream stream1;
   stream1 << "build_read_task()," << std::fixed << std::setprecision (10)
           << t.pauseTime () << "\n";
-  std::cout << stream1.str ();
+  DTIO_LOG_TRACE(stream1.str ());
 #endif
 
   for (auto task : tasks)
@@ -607,11 +607,12 @@ dtio::posix::read (int fd, void *buf, size_t count)
   t.resumeTime ();
 #endif
   auto tasks = task_m->build_read_task (r_task);
+  DTIO_LOG_TRACE("Task len " << tasks.size() << std::endl);
 #ifdef TIMERTB
   std::stringstream stream1;
   stream1 << "build_read_task()," << std::fixed << std::setprecision (10)
           << t.pauseTime () << "\n";
-  std::cout << stream1.str ();
+  DTIO_LOG_TRACE(stream1.str ());
 #endif
   int ptr_pos = 0;
   size_t size_read = 0;
@@ -619,6 +620,7 @@ dtio::posix::read (int fd, void *buf, size_t count)
   for (auto t : tasks)
     {
       std::string data;
+      char char_data[MAX_IO_UNIT];
       switch (t.source.location)
         {
         case PFS:
@@ -634,11 +636,11 @@ dtio::posix::read (int fd, void *buf, size_t count)
                   {
                   }
 
-                data = data_m->get (DATASPACE_DB, t.source.filename,
-                                    std::to_string (t.destination.server));
+                data_m->get (DATASPACE_DB, t.source.filename,
+			     std::to_string (t.destination.server), char_data);
 
                 strncpy ((char *)buf + ptr_pos,
-                         data.c_str () + t.source.offset, t.destination.size);
+                         char_data + t.source.offset, t.destination.size);
                 auto print_test = std::string ((char *)buf);
 
                 data_m->remove (DATASPACE_DB, t.source.filename,
@@ -661,25 +663,30 @@ dtio::posix::read (int fd, void *buf, size_t count)
               {
                 // std::cerr<<"looping\n";
               }
-            data = data_m->get (DATASPACE_DB, t.source.filename,
-                                std::to_string (t.destination.server));
+	      data_m->get (DATASPACE_DB, t.source.filename,
+			   std::to_string (t.destination.server), char_data);
 
-            strncpy ((char *)buf + ptr_pos, data.c_str () + t.source.offset,
+            strncpy ((char *)buf + ptr_pos, char_data + t.source.offset,
                      t.destination.size);
 
             data_m->remove (DATASPACE_DB, t.source.filename,
                             std::to_string (t.destination.server));
 
-            size_read += t.source.size;
+            size_read += t.destination.size;
             break;
           }
         case CACHE:
           {
-            data = data_m->get (DATASPACE_DB, t.source.filename,
-                                std::to_string (t.destination.server));
-            memcpy (buf + ptr_pos, data.c_str () + t.source.offset,
-                    t.source.size);
-            size_read += t.source.size;
+	    DTIO_LOG_TRACE("Cache" << std::endl);
+            // data = data_m->get (DATASPACE_DB, t.source.filename,
+            //                     std::to_string (t.destination.server));
+	    data_m->get(DATASPACE_DB, t.source.filename,
+			std::to_string (t.destination.server), char_data);
+	    DTIO_LOG_TRACE("Doing memcpy " << ptr_pos << " " << t.source.offset << " " << t.destination.size << " " << t.source.size << std::endl);
+            memcpy ((char *)buf + ptr_pos, char_data + (t.source.offset % t.source.size),
+                    t.destination.size); // Might not actually be necessary
+	    DTIO_LOG_TRACE("Memcpy finished" << std::endl);
+            size_read += t.destination.size;
             break;
           }
         }
@@ -715,11 +722,11 @@ dtio::posix::write_async (int fd, const void *buf, size_t count)
   std::stringstream stream1;
   stream1 << "build_write_task()," << std::fixed << std::setprecision (10)
           << t.pauseTime () << "\n";
-  std::cout << stream1.str ();
+  DTIO_LOG_TRACE(stream1.str ());
 #endif
 
   int index = 0;
-  std::string write_data (static_cast<const char *> (buf));
+  std::string write_data (static_cast<const char *> (buf), count);
   for (auto task : write_tasks)
     {
       if (task->addDataspace)
@@ -805,6 +812,7 @@ dtio::posix::write (int fd, const void *buf, size_t count)
   auto data_m = data_manager::getInstance (LIB);
   auto filename = mdm->get_filename (fd);
   auto offset = mdm->get_fp (filename);
+
   if (!mdm->is_opened (filename))
     throw std::runtime_error ("dtio::write() file not opened!");
   auto w_task
@@ -816,16 +824,20 @@ dtio::posix::write (int fd, const void *buf, size_t count)
   t.resumeTime ();
 #endif
   auto write_tasks
-      = task_m->build_write_task (w_task, static_cast<const char *> (buf));
+    = task_m->build_write_task (w_task, static_cast<const char *> (buf));
 #ifdef TIMERTB
   std::stringstream stream1;
   stream1 << "build_write_task()," << std::fixed << std::setprecision (10)
           << t.pauseTime () << "\n";
-  std::cout << stream1.str ();
+  DTIO_LOG_TRACE(stream1.str ());
 #endif
 
   int index = 0;
-  std::string write_data (static_cast<const char *> (buf));
+  const char *write_data_char = static_cast<const char *>(buf);
+  std::string write_data (static_cast<const char *> (buf), count);
+  /* Note: We cannot assume buf is null-terminated. It would likely be
+   * better to get rid of the string entirely, but for now if we copy
+   * with count then it will not assume a null-terminated C string */ 
   std::vector<std::pair<std::string, std::string> > task_ids
       = std::vector<std::pair<std::string, std::string> > ();
   for (auto tsk : write_tasks)
@@ -836,21 +848,32 @@ dtio::posix::write (int fd, const void *buf, size_t count)
             {
               auto data
                   = write_data.substr (tsk->source.offset, tsk->source.size);
-              data_m->put (DATASPACE_DB, tsk->source.filename, data,
+	      DTIO_LOG_TRACE("Write v1 " << write_data.length() << " " << data.length() << " " << tsk->source.offset << " " << tsk->source.size << std::endl);
+	      DTIO_LOG_TRACE("WRITE Count " << count << std::endl);
+	      data_m->put (DATASPACE_DB, tsk->source.filename, write_data_char, count,
                            std::to_string (tsk->destination.server));
+
+              // data_m->put (DATASPACE_DB, tsk->source.filename, write_data,
+              //              std::to_string (tsk->destination.server));
             }
           else
             {
-              data_m->put (DATASPACE_DB, tsk->source.filename, write_data,
+	      DTIO_LOG_TRACE("Write v2 " << write_data.length() << " " << tsk->source.size << " " << write_tasks.size() << std::endl);
+              // data_m->put (DATASPACE_DB, tsk->source.filename, write_data,
+              //              std::to_string (tsk->destination.server));
+	      DTIO_LOG_TRACE("WRITE Count " << count << std::endl);
+              data_m->put (DATASPACE_DB, tsk->source.filename, write_data_char, count,
                            std::to_string (tsk->destination.server));
             }
         }
       if (tsk->publish)
         {
-          if (count < tsk->source.size)
+          if (count < tsk->source.size) {
             mdm->update_write_task_info (*tsk, filename, count);
-          else
+	  }
+          else {
             mdm->update_write_task_info (*tsk, filename, tsk->source.size);
+	  }
           client_queue->publish_task (tsk);
           task_ids.emplace_back (std::make_pair (
               tsk->source.filename, std::to_string (tsk->destination.server)));

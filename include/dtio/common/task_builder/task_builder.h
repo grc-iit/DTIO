@@ -58,7 +58,7 @@ public:
                      std::make_shared<task_builder>(task_builder(service))
                : instance;
   }
-  std::vector<task *> build_write_task(task tsk, std::string data);
+  std::vector<task *> build_write_task(task tsk, const char *data);
   std::vector<task> build_read_task(task t);
   std::vector<task> build_delete_task(task tsk);
 

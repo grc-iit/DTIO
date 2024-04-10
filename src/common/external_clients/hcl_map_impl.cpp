@@ -22,6 +22,7 @@
 #include "dtio/common/constants.h"
 #include <dtio/common/external_clients/hcl_map_impl.h>
 #include <mpi.h>
+// #include <boost/stacktrace.hpp>
 
 int
 HCLMapImpl::run()
@@ -30,12 +31,54 @@ HCLMapImpl::run()
 }
 
 int
+HCLMapImpl::put (const table &name, std::string key, chunk_meta *data,
+		 std::string group_key)
+{
+  if (name != table::CHUNK_DB) {
+    DTIO_LOG_ERROR("Attempt to put chunk meta into unrelated database " << name);
+  }
+  std::string new_key = std::to_string (name) + KEY_SEPARATOR + key;
+  auto true_key = HCLKeyType (new_key);
+  if (chunkmeta_map->Put (true_key, *data))
+    {
+      return 0;
+    }
+  else
+    {
+      DTIO_LOG_ERROR("put failed for key:" << new_key << "\n");
+      return 1;
+    }
+}
+
+int
+HCLMapImpl::put (const table &name, std::string key, file_stat *fs,
+		 std::string group_key)
+{
+  if (name != table::FILE_DB) {
+    DTIO_LOG_ERROR("Attempt to put file stat into unrelated database " << name);
+  }
+  std::string new_key = std::to_string (name) + KEY_SEPARATOR + key;
+  auto true_key = HCLKeyType (new_key);
+  if (filestat_map->Put (true_key, *fs))
+    {
+      return 0;
+    }
+  else
+    {
+      DTIO_LOG_ERROR("put failed for key:" << new_key << "\n");
+      return 1;
+    }
+}
+
+int
 HCLMapImpl::put (const table &name, std::string key, const std::string &value,
                  std::string group_key)
 {
-  key = std::to_string (name) + KEY_SEPARATOR + key;
-  auto true_key = HCLKeyType (key);
-  DTIO_LOG_DEBUG("Put in " << hclmapname << " at " << key << " " << value);
+  // std::cout << boost::stacktrace::stacktrace();
+  std::string new_key = std::to_string (name) + KEY_SEPARATOR + key;
+  auto true_key = HCLKeyType (new_key);
+  DTIO_LOG_DEBUG("Put in " << hclmapname << " at " << new_key << " " << value << " size " << value.size());
+  DTIO_LOG_INFO("Put in " << hclmapname << " at " << new_key << " size " << value.size());
   auto true_val = DTIOCharStruct(value);
   if (hcl_client->Put (true_key, true_val))
     {
@@ -43,21 +86,44 @@ HCLMapImpl::put (const table &name, std::string key, const std::string &value,
     }
   else
     {
-      std::cerr << "put failed for key:" << key << "\n";
+      std::cerr << "put failed for key:" << new_key << "\n";
       return 1;
     }
 }
+
+int
+HCLMapImpl::put (const table &name, std::string key, const char *value, size_t size,
+                 std::string group_key)
+{
+  std::string new_key = std::to_string (name) + KEY_SEPARATOR + key;
+  auto true_key = HCLKeyType (new_key);
+  DTIO_LOG_DEBUG("Put in " << hclmapname << " at " << new_key << " " << value << " size " << size);
+  DTIO_LOG_INFO("Put in " << hclmapname << " at " << new_key << " size " << size);
+  auto true_val = DTIOCharStruct(value, size);
+  if (hcl_client->Put (true_key, true_val))
+    {
+      return 0;
+    }
+  else
+    {
+      std::cerr << "put failed for key:" << new_key << "\n";
+      return 1;
+    }
+}
+
 
 std::string
 HCLMapImpl::get (const table &name, std::string key, std::string group_key)
 {
   key = std::to_string (name) + KEY_SEPARATOR + key;
   DTIO_LOG_DEBUG("Get in " << hclmapname << " at " << key);
+  DTIO_LOG_INFO("Get in " << hclmapname << " at " << key);
   auto true_key = HCLKeyType (key);
   auto retval = hcl_client->Get (true_key);
   if (retval.first)
     {
-      return retval.second.string();
+      DTIO_LOG_INFO("Get result size " << retval.second.length);
+      return std::string(retval.second.value, retval.second.length);
     }
   else
     {
@@ -65,12 +131,75 @@ HCLMapImpl::get (const table &name, std::string key, std::string group_key)
     }
 }
 
+void
+HCLMapImpl::get (const table &name, std::string key, std::string group_key, char *result)
+{
+  key = std::to_string (name) + KEY_SEPARATOR + key;
+  DTIO_LOG_DEBUG("Get in " << hclmapname << " at " << key);
+  DTIO_LOG_INFO("Get in " << hclmapname << " at " << key);
+  auto true_key = HCLKeyType (key);
+  auto retval = hcl_client->Get (true_key);
+  if (retval.first)
+    {
+      DTIO_LOG_INFO("Get result size " << retval.second.length);
+      strncpy(result, retval.second.value, retval.second.length);
+    }
+}
+
+bool
+HCLMapImpl::get (const table &name, std::string key, std::string group_key, chunk_meta *result)
+{
+  if (name != table::CHUNK_DB) {
+    DTIO_LOG_ERROR("Attempt to get chunk meta from unrelated database " << name);
+  }
+
+  key = std::to_string (name) + KEY_SEPARATOR + key;
+  DTIO_LOG_DEBUG("Get in " << hclmapname << "+chunkmeta at " << key);
+  auto true_key = HCLKeyType (key);
+  auto retval = chunkmeta_map->Get (true_key);
+  if (retval.first)
+    {
+      // DTIO_LOG_INFO("Get result size " << retval.second.length);
+      *result = retval.second;
+      // strncpy(result, retval.second.value, retval.second.length);
+    }
+  return retval.first;
+}
+
+bool
+HCLMapImpl::get (const table &name, std::string key, std::string group_key, file_stat *result)
+{
+  if (name != table::FILE_DB) {
+    DTIO_LOG_ERROR("Attempt to get file stat from unrelated database " << name);
+  }
+
+  key = std::to_string (name) + KEY_SEPARATOR + key;
+  DTIO_LOG_DEBUG("Get in " << hclmapname << "+fs at " << key);
+  auto true_key = HCLKeyType (key);
+  auto retval = filestat_map->Get (true_key);
+  if (retval.first)
+    {
+      // DTIO_LOG_INFO("Get result size " << retval.second.length);
+      *result = retval.second;
+      // strncpy(result, retval.second.value, retval.second.length);
+    }
+  return retval.first;
+}
+
 std::string
 HCLMapImpl::remove (const table &name, std::string key, std::string group_key)
 {
   key = std::to_string (name) + KEY_SEPARATOR + key;
   auto true_key = HCLKeyType (key);
-  hcl_client->Erase (true_key);
+  if (name == table::FILE_DB) {
+    filestat_map->Erase (true_key);
+  }
+  else if (name == table::CHUNK_DB) {
+    chunkmeta_map->Erase (true_key);
+  }
+  else {
+    hcl_client->Erase (true_key);
+  }
   return key;
 }
 
@@ -79,8 +208,18 @@ HCLMapImpl::exists (const table &name, std::string key, std::string group_key)
 {
   key = std::to_string (name) + KEY_SEPARATOR + key;
   auto true_key = HCLKeyType (key);
-  auto retval = hcl_client->Get (true_key);
-  return retval.first;
+  if (name == table::CHUNK_DB) {
+    auto retval = chunkmeta_map->Get (true_key);
+    return retval.first;
+  }
+  else if (name == table::FILE_DB) {
+    auto retval = filestat_map->Get (true_key);
+    return retval.first;
+  }
+  else {
+    auto retval = hcl_client->Get (true_key);
+    return retval.first;
+  }
 }
 
 bool

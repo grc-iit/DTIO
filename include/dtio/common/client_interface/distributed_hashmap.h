@@ -29,6 +29,7 @@
  *include files
  ******************************************************************************/
 #include <dtio/common/enumerations.h>
+#include <dtio/common/data_structures.h>
 #include <dtio/common/constants.h>
 #include <cereal/types/memory.hpp>
 #include <dtio/common/exceptions.h>
@@ -54,10 +55,38 @@ public:
                   std::string group_key) {
     throw NotImplementedException("put");
   }
+  virtual int put (const table &name, std::string key, const char *value, size_t size,
+		   std::string group_key) {
+    throw NotImplementedException("put 2");
+  }
+  virtual int put (const table &name, std::string key, chunk_meta *value,
+		   std::string group_key) {
+    throw NotImplementedException("put chunkmeta");
+  }
+  virtual int put (const table &name, std::string key, file_stat *value,
+		   std::string group_key) {
+    throw NotImplementedException("put filestat");
+  }
+
   virtual std::string get(const table &name, std::string key,
                           std::string group_key) {
     throw NotImplementedException("get");
   }
+  virtual void get(const table &name, std::string key,
+		   std::string group_key, char *result) {
+    throw NotImplementedException("get 2");
+  }
+
+  virtual bool get (const table &name, std::string key,
+		    std::string group_key, chunk_meta *result) {
+    throw NotImplementedException("get chunkmeta");
+  }
+
+  virtual bool get (const table &name, std::string key,
+		    std::string group_key, file_stat *result) {
+    throw NotImplementedException("get filestat");
+  }
+
   virtual std::string remove(const table &name, std::string key,
                              std::string group_key) {
     throw NotImplementedException("remove");

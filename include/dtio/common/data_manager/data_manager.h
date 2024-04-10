@@ -58,6 +58,9 @@ public:
                : instance;
   }
   std::string get(const table &name, std::string key, std::string server);
+  void get(const table &name, std::string key, std::string server, char *result);
+  int put(const table &name, std::string key, const char *data,
+	  int size, std::string server);
   int put(const table &name, std::string key, std::string data,
           std::string server);
   bool exists(const table &name, std::string key, std::string server);

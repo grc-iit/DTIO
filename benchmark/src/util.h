@@ -9,7 +9,7 @@
 #include "dtio/common/threadPool.h"
 #include <hcl/common/debug.h>
 #include "dtio/common/utilities.h"
-#include "dtio/drivers/stdio.h"
+/* #include "dtio/drivers/stdio.h" */
 #include "dtio/drivers/posix.h"
 #include <fcntl.h>
 #include <fstream>
@@ -65,12 +65,12 @@ static float get_average_worker() {
   return std::stof(result);
 }
 
-static void wait_for_read(size_t size, std::vector<task> tasks,
-                          std::string filename) {
-  char read_buf[size];
-  auto bytes = dtio::fread_wait(read_buf, tasks, filename);
-  if (bytes != size)
-    std::cerr << "Read failed:" << bytes << "\n";
-}
+/* static void wait_for_read(size_t size, std::vector<task> tasks, */
+/*                           std::string filename) { */
+/*   char read_buf[size]; */
+/*   auto bytes = dtio::fread_wait(read_buf, tasks, filename); */
+/*   if (bytes != size) */
+/*     std::cerr << "Read failed:" << bytes << "\n"; */
+/* } */
 
 #endif // DTIO_BENCH_UTIL_H

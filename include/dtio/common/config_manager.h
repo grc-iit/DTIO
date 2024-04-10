@@ -86,6 +86,7 @@ public:
                 // convenient data import
   bool NEVER_TRACE; // Never perform stacktracing, if the path is not
 		    // a dtio:// path then send directly to real api
+  bool ASYNC; // Replace synchronous calls with asynchronous equivalents
 
   static std::shared_ptr<ConfigManager>
   get_instance ()
@@ -145,6 +146,7 @@ public:
     NUM_SCHEDULERS = config_["NUM_SCHEDULERS"].as<int> ();
     CHECKFS = config_["CHECK_FS"].as<bool> ();
     NEVER_TRACE = config_["NEVER_TRACE"].as<bool> ();
+    ASYNC = config_["ASYNC_MODE"].as<bool> ();
     QUEUE_WORKER_COMM = (MPI_Comm *)calloc (NUM_WORKERS, sizeof (MPI_Comm));
     DTIO_LOG_TRACE ("[ConfigManager] Parsed Config: " << CHECKFS << " "
                                                      << QUEUE_WORKER_COMM);
