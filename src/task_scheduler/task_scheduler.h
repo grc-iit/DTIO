@@ -28,7 +28,9 @@
  ******************************************************************************/
 #include <dtio/common/config_manager.h>
 #include <dtio/common/enumerations.h>
-#include <dtio/common/external_clients/nats_impl.h>
+#include <dtio/common/data_structures.h>
+// #include <dtio/common/external_clients/nats_impl.h>
+
 #include <dtio/common/threadPool.h>
 #include <hcl/common/debug.h>
 #include <memory>

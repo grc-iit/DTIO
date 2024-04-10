@@ -38,6 +38,8 @@ class HCLMapImpl : public distributed_hashmap
 private:
   service map_service;
   hcl::unordered_map<struct HCLKeyType, DTIOCharStruct> *hcl_client;
+  hcl::unordered_map<struct HCLKeyType, file_stat> *filestat_map;
+  hcl::unordered_map<struct HCLKeyType, chunk_meta> *chunkmeta_map;
   // hcl::unordered_map<struct HCLKeyType, std::string, std::hash<HCLKeyType>,
   //                    CharAllocator, MappedUnitString> *hcl_client;
   size_t num_servers;
@@ -69,34 +71,41 @@ public:
     HCL_CONF->SERVER_LIST_PATH
       = ConfigManager::get_instance ()->HCL_SERVER_LIST_PATH;
 
-    if ((service == WORKER || service == TASK_SCHEDULER) && mapname == "metadata")
-      {
-	MPI_Barrier (
-		     ConfigManager::get_instance ()
-		     ->METADATA_COMM); // Wait for clients to initialize maps
-      }
-    else if ((service == WORKER || service == TASK_SCHEDULER) && mapname == "dataspace")
+    if ((service == WORKER || service == TASK_SCHEDULER) && mapname == "dataspace")
       {
 	MPI_Barrier (
 		     ConfigManager::get_instance ()
 		     ->DATASPACE_COMM); // Wait for clients to initialize maps
       }
+    else if ((service == WORKER || service == TASK_SCHEDULER) && mapname == "metadata")
+      {
+	MPI_Barrier (
+		     ConfigManager::get_instance ()
+		     ->METADATA_COMM); // Wait for clients to initialize maps
+      }
 
-    hcl_client = new hcl::unordered_map<HCLKeyType, DTIOCharStruct> (mapname);
+    if (mapname == "dataspace") {
+      hcl_client = new hcl::unordered_map<HCLKeyType, DTIOCharStruct> (mapname);
+    }
+    else {
+      hcl_client = new hcl::unordered_map<HCLKeyType, DTIOCharStruct> (mapname);
+      filestat_map = new hcl::unordered_map<HCLKeyType, file_stat> (mapname + "+fs");
+      chunkmeta_map = new hcl::unordered_map<HCLKeyType, chunk_meta> (mapname + "+chunkmeta");
+    }
 
     // hcl_client = new hcl::unordered_map<HCLKeyType, std::string,
     // 					std::hash<HCLKeyType>, CharAllocator,
     // 					MappedUnitString> (mapname);
-    if (service == HCLCLIENT && mapname == "metadata")
+    if (service == HCLCLIENT && mapname == "dataspace")
       {
 	MPI_Barrier (
 		     ConfigManager::get_instance ()
-		     ->METADATA_COMM); // Tell the workers we've initialized maps
+		     ->DATASPACE_COMM); // Tell the workers we've initialized maps
       }
-    else if (service == HCLCLIENT && mapname == "dataspace") {
+    else if (service == HCLCLIENT && mapname == "metadata") {
 	MPI_Barrier (
 		     ConfigManager::get_instance ()
-		     ->DATASPACE_COMM); // Tell the workers we've initialized maps
+		     ->METADATA_COMM); // Tell the workers we've initialized maps
 
     }
   }
@@ -111,8 +120,21 @@ public:
 
   int put (const table &name, std::string key, const std::string &value,
            std::string group_key) override;
+  int put (const table &name, std::string key, const char *value, size_t size,
+           std::string group_key) override;
+  int put (const table &name, std::string key, chunk_meta *data,
+	   std::string group_key) override;
+  int put (const table &name, std::string key, file_stat *fs,
+	   std::string group_key) override;
+
   std::string get (const table &name, std::string key,
                    std::string group_key);
+  void get (const table &name, std::string key,
+	    std::string group_key, char *result) override;
+  bool get (const table &name, std::string key,
+	    std::string group_key, chunk_meta *result) override;
+  bool get (const table &name, std::string key,
+	    std::string group_key, file_stat *result) override;
   std::string remove (const table &name, std::string key,
                       std::string group_key) override;
   bool exists (const table &name, std::string key,

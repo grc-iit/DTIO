@@ -212,7 +212,12 @@ ssize_t HERMES_DECL(read)(int fd, void *buf, size_t count) {
   std::string caller_name = "";
 
   if (real_api->fd_whitelistedp(fd)) {
+    // if (ConfigManager::get_instance()->ASYNC) {
+    //   return dtio::posix::read_async(fd, buf, count);
+    // }
+    // else {
     return dtio::posix::read(fd, buf, count);
+    // }
   }
   else {
     return real_api->read(fd, buf, count);
@@ -223,7 +228,12 @@ ssize_t HERMES_DECL(read)(int fd, void *buf, size_t count) {
   }
   auto test = real_api->interceptp(caller_name);
   if (real_api->interceptp(caller_name)) {
+    // if (ConfigManager::get_instance()->ASYNC) {
+    //   return dtio::posix::read_async(fd, buf, count);
+    // }
+    // else {
     return dtio::posix::read(fd, buf, count);
+    // }
   }
   else {
     return real_api->read(fd, buf, count);
@@ -236,7 +246,12 @@ ssize_t HERMES_DECL(write)(int fd, const void *buf, size_t count) {
   std::string caller_name = "";
 
   if (real_api->fd_whitelistedp(fd)) {
-    return dtio::posix::write(fd, buf, count);
+    if (ConfigManager::get_instance()->ASYNC) {
+      return dtio::posix::write(fd, buf, count); // TODO eventually, write_async
+    }
+    else {
+      return dtio::posix::write(fd, buf, count);
+    }
   }
   else {
     return real_api->write(fd, buf, count);
@@ -246,7 +261,12 @@ ssize_t HERMES_DECL(write)(int fd, const void *buf, size_t count) {
     caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
   }
   if (real_api->interceptp(caller_name)) {
-    return dtio::posix::write(fd, buf, count);
+    if (ConfigManager::get_instance()->ASYNC) {
+      return dtio::posix::write(fd, buf, count); // TODO eventually, write_async
+    }
+    else {
+      return dtio::posix::write(fd, buf, count);
+    }
   }
   else {
     return real_api->write(fd, buf, count);

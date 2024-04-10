@@ -49,8 +49,6 @@ int
 HCLQueueImpl::publish_task (task *task_t)
 {
   // DONE: seems unnecessary? replace with HCL
-  // auto msg = serialization_manager ().serialize_task (task_t);
-  // natsConnection_PublishString (nc, subject.c_str (), msg.c_str ());
   // head_subscription is t.task_id if equal to -1
   // NOTE:
   // head_subscription and tail_subscription are uint16_t as hcl indexs are

@@ -24,7 +24,7 @@
 #ifndef DTIO_MAIN_STRUCTURE_H
 #define DTIO_MAIN_STRUCTURE_H
 
-#include "hcl/common/macros.h"
+#include <hcl/common/macros.h>
 #include <cereal/types/common.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/string.hpp>
@@ -44,54 +44,65 @@
 
 // This exists so that we can make the buffer larger
 typedef struct DTIOCharStruct {
+  size_t length;
   char value[MAX_IO_UNIT];
 
   DTIOCharStruct() {}
   DTIOCharStruct(const DTIOCharStruct &other)
-      : DTIOCharStruct(other.value) {} /* copy constructor*/
+    : DTIOCharStruct(other.value, other.length) {} /* copy constructor*/
   DTIOCharStruct(DTIOCharStruct &&other)
-      : DTIOCharStruct(other.value) {} /* move constructor*/
+    : DTIOCharStruct(other.value, other.length) {} /* move constructor*/
 
   DTIOCharStruct(const char *data_) {
-    snprintf(this->value, strlen(data_) + 1, "%s", data_);
+    snprintf(this->value, MAX_IO_UNIT, "%s", data_);
   }
-  DTIOCharStruct(std::string data_) : DTIOCharStruct(data_.c_str()) {}
+  DTIOCharStruct(std::string data_) : DTIOCharStruct(data_.c_str(), data_.size()) {}
 
   DTIOCharStruct(char *data_, size_t size) {
-    snprintf(this->value, size, "%s", data_);
+    snprintf(this->value, size + 1, "%s", data_);
+    this->length = size;
   }
 
-  MSGPACK_DEFINE(value);
+  DTIOCharStruct(const char *data_, size_t size) {
+    snprintf(this->value, size + 1, "%s", data_);
+    this->length = size;
+  }
+
+  MSGPACK_DEFINE(length, value);
   
   void Set(char *data_, size_t size) {
-    snprintf(this->value, size + 1, "%s", data_);
+    snprintf(this->value, size, "%s", data_);
+
+    this->length = size;
   }
   void Set(std::string data_) {
-    snprintf(this->value, data_.length() + 1, "%s", data_.c_str());
+    snprintf(this->value, data_.size(), "%s", data_.c_str());
+    this->length = data_.size();
   }
 
-  const char *c_str() const { return value; }
-  std::string string() const { return std::string(value); }
+  const char *c_str() const { return this->value; }
+  std::string string() const { return std::string(this->value, this->length); }
 
   char *data() { return value; }
-  const size_t size() const { return strlen(value); }
+  const size_t size() const { return this->length; }
   /**
    * Operators
    */
   DTIOCharStruct &operator=(const DTIOCharStruct &other) {
-    strcpy(value, other.c_str());
+    strncpy(this->value, other.value, other.length);
+    this->length = other.length;
     return *this;
   }
   /* equal operator for comparing two Chars. */
   bool operator==(const DTIOCharStruct &o) const {
-    return strcmp(value, o.value) == 0;
+    return (this->length == o.length) && (strncmp(value, o.value, this->length) == 0);
   }
   DTIOCharStruct operator+(const DTIOCharStruct &o) {
-    std::string added = std::string(this->c_str()) + std::string(o.c_str());
+    std::string added = std::string(this->value, this->length) + std::string(o.value, o.length);
     return DTIOCharStruct(added);
   }
   DTIOCharStruct operator+(std::string &o) {
-    std::string added = std::string(this->c_str()) + o;
+    std::string added = std::string(this->value, this->length) + o;
     return DTIOCharStruct(added);
   }
   DTIOCharStruct &operator+=(const DTIOCharStruct &rhs) {
@@ -100,22 +111,22 @@ typedef struct DTIOCharStruct {
     return *this;
   }
   bool operator>(const DTIOCharStruct &o) const {
-    return strcmp(this->value, o.c_str()) > 0;
+    return this->length == o.length && strncmp(this->value, o.value, this->length) > 0;
   }
   bool operator>=(const DTIOCharStruct &o) const {
-    return strcmp(this->value, o.c_str()) >= 0;
+    return this->length == o.length && strncmp(this->value, o.value, this->length) >= 0;
   }
   bool operator<(const DTIOCharStruct &o) const {
-    return strcmp(this->value, o.c_str()) < 0;
+    return this->length == o.length && strcmp(this->value, o.value) < 0;
   }
   bool operator<=(const DTIOCharStruct &o) const {
-    return strcmp(this->value, o.c_str()) <= 0;
+    return this->length == o.length && strcmp(this->value, o.value) <= 0;
   }
 
 } DTIOCharStruct;
 
 static DTIOCharStruct operator+(const std::string &a1, const DTIOCharStruct &a2) {
-  std::string added = a1 + std::string(a2.c_str());
+  std::string added = a1 + std::string(a2.value, a2.length + 1);
   return DTIOCharStruct(added);
 }
 
@@ -123,7 +134,7 @@ namespace std {
 template <>
 struct hash<DTIOCharStruct> {
   size_t operator()(const DTIOCharStruct &k) const {
-    std::string val(k.c_str());
+    std::string val(k.value, k.length + 1);
     return std::hash<std::string>()(val);
   }
 };
@@ -255,10 +266,41 @@ struct file
 
 MSGPACK_ADD_ENUM(location_type);
 
+namespace std
+{
+template <> struct hash<file>
+{
+  size_t
+  operator() (const file *k) const
+  {
+    std::string val(k->filename);
+    return std::hash<std::string>()(val);
+  }
+  size_t
+  operator() (const file &k) const
+  {
+    std::string val(k.filename);
+    return std::hash<std::string>()(val);
+  }
+};
+}
+
+
 struct chunk_meta
 {
   file actual_user_chunk;
   file destination;
+
+  MSGPACK_DEFINE(actual_user_chunk, destination);
+
+  chunk_meta &
+  operator= (const chunk_meta &other)
+  {
+    actual_user_chunk = other.actual_user_chunk;
+    destination = other.destination;
+    return *this;
+  }
+ 
   // serialization
   template <class Archive>
   void
@@ -267,6 +309,24 @@ struct chunk_meta
     archive (this->actual_user_chunk, this->destination);
   }
 };
+
+
+namespace std
+{
+template <> struct hash<chunk_meta>
+{
+  size_t
+  operator() (const chunk_meta *k) const
+  {
+    return std::hash<file>()(k->actual_user_chunk) ^ std::hash<file>()(k->destination);
+  }
+  size_t
+  operator() (const chunk_meta &k) const
+  {
+    return std::hash<file>()(k.actual_user_chunk) ^ std::hash<file>()(k.destination);
+  }
+};
+}
 
 // chunk_msg structure
 struct chunk_msg
@@ -308,6 +368,22 @@ struct file_stat
   std::string mode;
   bool is_open;
 
+  file_stat &
+  operator= (const file_stat &other)
+  {
+    fh = other.fh;
+    fd = other.fd;
+    file_pointer = other.file_pointer;
+    file_size = other.file_size;
+    flags = other.flags;
+    posix_mode = other.posix_mode;
+    mode = other.mode;
+    is_open = other.is_open;
+    return *this;
+  }
+  
+  MSGPACK_DEFINE(fd, file_pointer, file_size, flags, posix_mode, mode, is_open);
+
   // Serialization
   template <class Archive>
   void
@@ -316,6 +392,34 @@ struct file_stat
     archive (this->file_pointer, this->file_size, this->mode, this->is_open);
   }
 };
+
+namespace std
+{
+template <> struct hash<file_stat>
+{
+  size_t
+  operator() (const file_stat *k) const
+  {
+    if (k->fh == NULL) {
+      return k->fd;
+    }
+    else {
+      return (size_t)k->fh;
+    }
+  }
+  size_t
+  operator() (const file_stat &k) const
+  {
+    if (k.fh == NULL) {
+      return k.fd;
+    }
+    else {
+      return (size_t)k.fh;
+    }
+  }
+};
+}
+
 
 // task structure
 struct task

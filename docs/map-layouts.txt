@@ -1,0 +1,15 @@
+map_client has tables:
+FILE_DB
+CHUNK_DB
+DATASPACE_DB
+FILE_CHUNK_DB (deleted from in map client, but never set. Purpose unclear)
+
+map_server has tables:
+SYSTEM_REG
+WRITE_FINISHED_DB
+COUNTER_DB
+WORKER_SCORE (via worker maps)
+WORKER_CAPACITY (via worker maps)
+
+Tables unaccounted for:
+TASK_DB (unknown purpose)

@@ -29,7 +29,6 @@
 #include <dtio/common/data_structures.h>
 #include <dtio/common/enumerations.h>
 #include <dtio/common/exceptions.h>
-#include <dtio/common/external_clients/serialization_manager.h>
 #include <memory>
 
 /******************************************************************************

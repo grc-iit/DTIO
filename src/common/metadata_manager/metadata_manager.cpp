@@ -58,8 +58,7 @@ metadata_manager::create (std::string filename, std::string mode, FILE *&fh)
     file_map.erase (iter);
   fh_map.emplace (fh, filename);
   file_map.emplace (filename, stat);
-  std::string fs_str = serialization_manager ().serialize_file_stat (stat);
-  map->put (table::FILE_DB, filename, fs_str, std::to_string (-1));
+  map->put (table::FILE_DB, filename, &stat, std::to_string (-1));
   /**
    * TODO: put in map for outstanding operations-> on fclose create a file
    * in the destination and flush buffer contents
@@ -82,8 +81,7 @@ metadata_manager::create (std::string filename, int flags, mode_t mode,
     file_map.erase (iter);
   fd_map.emplace (*fd, filename);
   file_map.emplace (filename, stat);
-  std::string fs_str = serialization_manager ().serialize_file_stat (stat);
-  map->put (table::FILE_DB, filename, fs_str, std::to_string (-1));
+  map->put (table::FILE_DB, filename, &stat, std::to_string (-1));
   /**
    * TODO: put in map for outstanding operations-> on fclose create a file
    * in the destination and flush buffer contents
@@ -136,10 +134,9 @@ metadata_manager::update_on_open (std::string filename, std::string mode,
     file_map.erase (iter);
   fh_map.emplace (fh, filename);
   file_map.emplace (filename, stat);
-  std::string fs_str = serialization_manager ().serialize_file_stat (stat);
-  map->put (table::FILE_DB, filename, fs_str, std::to_string (-1));
+  map->put (table::FILE_DB, filename, &stat, std::to_string (-1));
 #ifdef TIMERMDM
-  std::cout << "metadata_manager::update_on_open()," << t.pauseTime () << "\n";
+  DTIO_LOG_TRACE("metadata_manager::update_on_open()," << t.pauseTime () << "\n");
 #endif
   return SUCCESS;
 }
@@ -162,31 +159,38 @@ metadata_manager::update_on_open (std::string filename, int flags, mode_t mode,
   stat.file_size = iter->second.file_size;
   stat.fd = *fd;
   stat.is_open = true;
-  if (flags == O_RDONLY)
+  if (flags & O_RDONLY)
     {
       stat.file_pointer = 0;
     }
-  else if (flags == O_WRONLY)
+  else if (flags & O_WRONLY)
     {
       stat.file_pointer = 0;
-      stat.file_size = 0;
+      // stat.file_size = 0;
       remove_chunks (filename);
     }
-  else if (flags == O_RDWR)
+  else if (flags & O_RDWR)
+    {
+      stat.file_pointer = 0;
+    }
+  if (flags & O_TRUNC)
+    {
+      stat.file_size = 0;
+    }
+  if (flags & O_APPEND)
     {
       stat.file_pointer = stat.file_size;
     }
-
+  
   iter = file_map.find (filename);
   if (iter != file_map.end ())
     file_map.erase (iter);
   DTIO_LOG_TRACE ("[DTIO][MDMAN][UPDATE_ON_OPEN] " << iter->second.file_size << " " << stat.file_size);
   fd_map.emplace (*fd, filename);
   file_map.emplace (filename, stat);
-  std::string fs_str = serialization_manager ().serialize_file_stat (stat);
-  map->put (table::FILE_DB, filename, fs_str, std::to_string (-1));
+  map->put (table::FILE_DB, filename, &stat, std::to_string (-1));
 #ifdef TIMERMDM
-  std::cout << "metadata_manager::update_on_open()," << t.pauseTime () << "\n";
+  DTIO_LOG_TRACE("metadata_manager::update_on_open()," << t.pauseTime () << "\n");
 #endif
   return SUCCESS;
 }
@@ -350,11 +354,10 @@ metadata_manager::update_read_task_info (std::vector<task> task_ks,
       assert (task_k.t_type == task_type::READ_TASK);
       update_on_read (filename, task_k.source.size);
     }
-  std::string fs_str = serialization_manager ().serialize_file_stat (fs);
-  map->put (table::FILE_DB, filename, fs_str, std::to_string (-1));
+  map->put (table::FILE_DB, filename, &fs, std::to_string (-1));
 #ifdef TIMERMDM
-  std::cout << "metadata_manager::update_read_task_info()," << t.pauseTime ()
-            << "\n";
+  DTIO_LOG_TRACE("metadata_manager::update_read_task_info()," << t.pauseTime ()
+		 << "\n");
 #endif
   return 0;
 }
@@ -380,14 +383,11 @@ metadata_manager::update_write_task_info (std::vector<task> task_ks,
           chunk_meta cm;
           cm.actual_user_chunk = task_k.source;
           cm.destination = task_k.source;
-          std::string chunk_str
-              = serialization_manager ().serialize_chunk (cm);
           map->put (table::CHUNK_DB, filename + std::to_string (base_offset),
-                    chunk_str, std::to_string (-1));
+                    &cm, std::to_string (-1));
         }
     }
-  std::string fs_str = serialization_manager ().serialize_file_stat (fs);
-  map->put (table::FILE_DB, filename, fs_str, std::to_string (-1));
+  map->put (table::FILE_DB, filename, &fs, std::to_string (-1));
   return 0;
 }
 
@@ -396,7 +396,6 @@ metadata_manager::update_on_seek (std::string filename, size_t offset,
                                   size_t origin)
 {
   auto map = dtio_system::getInstance (service_i)->map_client ();
-  serialization_manager sm = serialization_manager ();
   auto iter = file_map.find (filename);
   if (iter != file_map.end ())
     {
@@ -430,8 +429,7 @@ metadata_manager::update_on_seek (std::string filename, size_t offset,
           std::cerr << "fseek origin error\n";
           return MDM__UPDATE_ON_FSEEK_FAILED;
         }
-      std::string fs_str = sm.serialize_file_stat (iter->second);
-      map->put (table::FILE_DB, filename, fs_str, std::to_string (-1));
+      map->put (table::FILE_DB, filename, &iter->second, std::to_string (-1));
     }
   return SUCCESS;
 }
@@ -441,15 +439,13 @@ metadata_manager::update_on_read (std::string filename, size_t size)
 {
   std::shared_ptr<distributed_hashmap> map
       = dtio_system::getInstance (service_i)->map_client ();
-  serialization_manager sm = serialization_manager ();
   auto iter = file_map.find (filename);
   if (iter != file_map.end ())
     {
       file_stat fs = iter->second;
       fs.file_pointer += size;
       file_map[filename] = fs;
-      std::string fs_str = sm.serialize_file_stat (fs);
-      map->put (table::FILE_DB, filename, fs_str, std::to_string (-1));
+      map->put (table::FILE_DB, filename, &fs, std::to_string (-1));
     }
 }
 
@@ -457,8 +453,8 @@ void
 metadata_manager::update_on_write (std::string filename, size_t size,
                                    size_t offset)
 {
+  DTIO_LOG_TRACE("Update on write" << std::endl);
   auto map = dtio_system::getInstance (service_i)->map_client ();
-  serialization_manager sm = serialization_manager ();
   auto iter = file_map.find (filename);
   if (iter != file_map.end ())
     {
@@ -469,9 +465,11 @@ metadata_manager::update_on_write (std::string filename, size_t size,
         }
       fs.file_pointer = offset + size;
       file_map[filename] = fs;
-      std::string fs_str = sm.serialize_file_stat (fs);
-      map->put (table::FILE_DB, filename, fs_str, std::to_string (-1));
+      map->put (table::FILE_DB, filename, &fs, std::to_string (-1));
     }
+  else {
+    DTIO_LOG_ERROR("Update on write file not found");
+  }
   // TODO: change to trace
   DTIO_LOG_TRACE("[DTIO][UPDATE_ON_WRITE] " << filename << " " << offset << " " << size << " ");
 }
@@ -480,14 +478,12 @@ void
 metadata_manager::update_on_delete (std::string filename)
 {
   auto map = dtio_system::getInstance (service_i)->map_client ();
-  serialization_manager sm = serialization_manager ();
   auto iter = file_map.find (filename);
   if (iter != file_map.end ())
     {
       file_map.erase (filename);
       file_stat fs = iter->second;
-      std::string fs_str = sm.serialize_file_stat (fs);
-      map->remove (table::FILE_DB, filename, fs_str);
+      map->remove (table::FILE_DB, filename, std::to_string (-1));
     }
 }
 
@@ -509,13 +505,12 @@ metadata_manager::fetch_chunks (task task)
   while (remaining_data > 0)
     {
       auto base_offset = (source_offset / MAX_IO_UNIT) * MAX_IO_UNIT;
-      auto chunk_str = map->get (
+      bool chunk_avail = map->get (
           table::CHUNK_DB, task.source.filename + std::to_string (base_offset),
-          std::to_string (-1));
+          std::to_string (-1), &cm);
       size_t size_to_read;
-      if (!chunk_str.empty ())
+      if (chunk_avail)
         {
-          cm = serialization_manager ().deserialize_chunk (chunk_str);
           size_t bucket_offset = source_offset - base_offset;
           cm.destination.offset = bucket_offset;
 
@@ -552,7 +547,7 @@ metadata_manager::fetch_chunks (task task)
       source_offset += size_to_read;
     }
 #ifdef TIMERMDM
-  std::cout << "metadata_manager::fetch_chunks()," << t.pauseTime () << "\n";
+  DTIO_LOG_INFO("metadata_manager::fetch_chunks()," << t.pauseTime () << "\n");
 #endif
   return chunks;
 }
@@ -576,15 +571,12 @@ metadata_manager::update_delete_task_info (task task_k, std::string filename)
   //   chunk_meta cm;
   //   cm.actual_user_chunk = task_k.source;
   //   cm.destination = task_k.destination;
-  //   std::string chunk_str = serialization_manager().serialize_chunk(cm);
   //   map->remove(table::CHUNK_DB, filename + std::to_string(base_offset),
-  //   chunk_str);
+  //   &cm);
   // }
-  std::string fs_str = serialization_manager ().serialize_file_stat (fs);
-  map->remove (table::FILE_DB, filename, fs_str);
+  map->remove (table::FILE_DB, filename, std::to_string (-1));
 #ifdef TIMERMDM
-  std::cout << "metadata_manager::update_delete_task_info()," << t.pauseTime ()
-            << "\n";
+  DTIO_LOG_INFO("metadata_manager::update_delete_task_info()," << t.pauseTime () << "\n");
 #endif
   return 0;
 }
@@ -610,15 +602,12 @@ metadata_manager::update_write_task_info (task task_k, std::string filename,
       chunk_meta cm;
       cm.actual_user_chunk = task_k.source;
       cm.destination = task_k.source;
-      std::string chunk_str = serialization_manager ().serialize_chunk (cm);
       map->put (table::CHUNK_DB, filename + std::to_string (base_offset),
-                chunk_str, std::to_string (-1));
+                &cm, std::to_string (-1));
     }
-  std::string fs_str = serialization_manager ().serialize_file_stat (fs);
-  map->put (table::FILE_DB, filename, fs_str, std::to_string (-1));
+  map->put (table::FILE_DB, filename, &fs, std::to_string (-1));
 #ifdef TIMERMDM
-  std::cout << "metadata_manager::update_write_task_info()," << t.pauseTime ()
-            << "\n";
+  DTIO_LOG_INFO("metadata_manager::update_write_task_info()," << t.pauseTime () << "\n");
 #endif
   return 0;
 }
