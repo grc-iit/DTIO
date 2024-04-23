@@ -112,10 +112,11 @@ int posix_client::dtio_write(task tsk) {
   size_t chunk_index = (source.offset / MAX_IO_UNIT);
   size_t base_offset = chunk_index * MAX_IO_UNIT + source.offset % MAX_IO_UNIT;
   chunk_meta chunk_meta1;
-  bool chunk_avail = map_client->get(
-      table::CHUNK_DB,
-      tsk.source.filename + std::to_string(chunk_index * MAX_IO_UNIT),
-      std::to_string(-1), &chunk_meta1);
+  bool chunk_avail = !tsk.addDataspace;
+  // map_client->get(
+  //     table::CHUNK_DB,
+  //     tsk.source.filename + std::to_string(chunk_index * MAX_IO_UNIT),
+  //     std::to_string(-1), &chunk_meta1);
 
 #ifdef TIMERDM
   Timer t0 = Timer();
@@ -123,73 +124,96 @@ int posix_client::dtio_write(task tsk) {
 #endif
   // FIXME: modify the data to pull from local buffers if there is no dataspace (task is sync)
   char data[MAX_IO_UNIT];
-  map_client->get(DATASPACE_DB, tsk.destination.filename,
-		  std::to_string(tsk.destination.server), data);
+  if (!chunk_avail) {
+    std::cout << "dest name " << tsk.destination.filename << std::endl;
+    map_client->get(DATASPACE_DB, tsk.destination.filename,
+		    std::to_string(tsk.destination.server), data);
+  }
+  else {
+    // It's a chunk, this should be the filename with chunk id
+    std::cout << "chunk name " << tsk.source.filename << std::endl;
+    std::cout << "dest name " << tsk.destination.filename << std::endl;
+    map_client->get(DATASPACE_DB, tsk.source.filename,
+		    std::to_string(tsk.destination.server), data);
+  }
 #ifdef TIMERDM
   std::stringstream stream;
   stream << "posix_client::write()::get_data," << std::fixed
          << std::setprecision(10) << t0.pauseTime() << "\n";
   std::cout << stream.str();
 #endif
-  std::string file_path;
-  if (chunk_meta1.destination.location == location_type::CACHE) {
-    /*
-     * New I/O
-     */
-    auto file_id = static_cast<int64_t>(
-        std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count());
-    file_path = dir + std::to_string(file_id);
-#ifdef DEBUG
-    std::cout << strlen(data) << " chunk index:" << chunk_index
-              << " dataspaceId:" << tsk.destination.filename
-              << " created filename:" << file_path
-              << " clientId: " << tsk.destination.server << "\n";
-#endif
-    int fd = open64(file_path.c_str(), O_RDWR | O_CREAT); // "w+"
-    auto count = write(fd, data, tsk.destination.size);
-    if (count != tsk.destination.size)
-      std::cerr << "written less" << count << "\n";
-    close(fd);
-  } else {
-    /*cd
-     * existing I/O
-     */
-#ifdef DEBUG
-    std::cout << "update file  " << strlen(data)
-              << " chunk index:" << chunk_index
-              << " dataspaceId:" << tsk.destination.filename
-              << " clientId: " << tsk.destination.server << "\n";
-#endif
-
-    file_path = chunk_meta1.destination.filename;
-    int fd = open64(chunk_meta1.destination.filename, O_RDWR | O_CREAT); // "r+"
-    lseek64(fd, tsk.source.offset - base_offset, SEEK_SET);
-    write(fd, data, tsk.source.size);
-    close(fd);
+  // std::string file_path;
+  char *filepath = (strncmp(tsk.destination.filename, "dtio://", 7) == 0) ? (tsk.destination.filename + 7) : tsk.destination.filename ;
+  int fd = open64(filepath, O_RDWR | O_CREAT, 0664); // "w+"
+  if (fd < 0) {
+    std::cerr << "File " << filepath << " didn't open" << std::endl;
   }
-  chunk_meta1.actual_user_chunk = tsk.source;
-  chunk_meta1.destination.location = BUFFERS;
-  strncpy(chunk_meta1.destination.filename, file_path.c_str(), DTIO_FILENAME_MAX);
-  chunk_meta1.destination.offset = 0;
-  chunk_meta1.destination.size = tsk.destination.size;
-  chunk_meta1.destination.worker = worker_index;
-#ifdef TIMERMDM
-  Timer t1 = Timer();
-  t1.resumeTime();
-#endif
-  map_client->put(table::CHUNK_DB,
-                  tsk.source.filename +
-		  std::to_string(chunk_index * MAX_IO_UNIT),
-                  &chunk_meta1, std::to_string(-1));
+  lseek64(fd, tsk.destination.offset, SEEK_SET);
+  auto count = write(fd, data, tsk.destination.size);
+  if (count != tsk.destination.size)
+    std::cerr << "written less" << count << "\n";
+  close(fd);
+
+//   if (chunk_meta1.destination.location == location_type::CACHE) {
+//     /*
+//      * New I/O
+//      */
+//     auto file_id = static_cast<int64_t>(
+//         std::chrono::duration_cast<std::chrono::microseconds>(
+//             std::chrono::system_clock::now().time_since_epoch())
+//             .count());
+//     file_path = dir + std::to_string(file_id);
+// #ifdef DEBUG
+//     std::cout << strlen(data) << " chunk index:" << chunk_index
+//               << " dataspaceId:" << tsk.destination.filename
+//               << " created filename:" << file_path
+//               << " clientId: " << tsk.destination.server << "\n";
+// #endif
+//     int fd = open64(file_path.c_str(), O_RDWR | O_CREAT); // "w+"
+//     auto count = write(fd, data, tsk.destination.size);
+//     if (count != tsk.destination.size)
+//       std::cerr << "written less" << count << "\n";
+//     close(fd);
+//   } else {
+//     /*cd
+//      * existing I/O
+//      */
+// #ifdef DEBUG
+//     std::cout << "update file  " << strlen(data)
+//               << " chunk index:" << chunk_index
+//               << " dataspaceId:" << tsk.destination.filename
+//               << " clientId: " << tsk.destination.server << "\n";
+// #endif
+
+//     file_path = chunk_meta1.destination.filename;
+//     int fd = open64(chunk_meta1.destination.filename, O_RDWR | O_CREAT); // "r+"
+//     lseek64(fd, tsk.source.offset - base_offset, SEEK_SET);
+//     write(fd, data, tsk.source.size);
+//     close(fd);
+//   }
+// chunk_meta1.actual_user_chunk = tsk.source;
+// chunk_meta1.destination.location = BUFFERS;
+// strncpy(chunk_meta1.destination.filename, file_path.c_str(), DTIO_FILENAME_MAX);
+// chunk_meta1.destination.offset = 0;
+// chunk_meta1.destination.size = tsk.destination.size;
+// chunk_meta1.destination.worker = worker_index;
+// #ifdef TIMERMDM
+//   Timer t1 = Timer();
+//   t1.resumeTime();
+// #endif
+// map_client->put(table::CHUNK_DB,
+//                 tsk.source.filename +
+// 		  std::to_string(chunk_index * MAX_IO_UNIT),
+//                 &chunk_meta1, std::to_string(-1));
+
 //    map_client->remove(DATASPACE_DB,task.destination.filename,
 //    std::to_string(task.destination.server));
-#ifdef TIMERMDM
-  std::cout << "posix_client::write()::update_meta," << t1.pauseTime() << "\n";
-#endif
-  map_server->put(table::WRITE_FINISHED_DB, tsk.destination.filename,
-                  std::to_string(-1), std::to_string(-1));
+// #ifdef TIMERMDM
+//   std::cout << "posix_client::write()::update_meta," << t1.pauseTime() << "\n";
+// #endif
+  // NOTE Removing this makes I/O asynchronous by default
+  // map_server->put(table::WRITE_FINISHED_DB, tsk.source.filename,
+  //                 std::to_string(-1), std::to_string(-1));
 #ifdef TIMERW
   std::stringstream stream1;
   stream1 << "posix_client::write()," << std::fixed << std::setprecision(10)

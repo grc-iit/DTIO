@@ -44,7 +44,6 @@ set(COMMON_SRC
     src/common/solver/knapsack.cpp
     # src/common/timer.cpp
     src/common/data_manager/data_manager.cpp
-    src/common/client_interface/distributed_hashmap.cpp
     src/common/metadata_manager/metadata_manager.cpp
     src/dtio_system.cpp
     src/common/client_interface/distributed_hashmap.cpp
@@ -54,7 +53,9 @@ set(COMMON_SRC
     # src/common/external_clients/nats_impl.cpp
     src/common/external_clients/hcl_queue_impl.cpp
     src/common/external_clients/hcl_map_impl.cpp
-    src/common/task_builder/task_builder.cpp)
+    src/common/task_builder/task_builder.cpp
+    src/common/task_builder/default_builder.cpp
+    src/common/task_builder/aggregating_builder.cpp)
 set(DTIO_LIB_SRC src/lib/posix.cpp src/lib/mpi.cpp src/common/threadPool.cpp)
 set(DTIO_INTERCEPTION adapter/posix/posix_api.cc)
 set(DTIO_BRAHMA_INTERCEPTION adapter/brahma-interceptor/posix_api.cc)
@@ -104,7 +105,7 @@ else ()
 endif ()
 
 # Variable for setting the log level (1=ERROR, 2=WARN, 3=INFO, 4=DEBUG, 5=TRACE)
-set(LOG_LEVEL 3 CACHE STRING "Set the log level")
+set(LOG_LEVEL 1 CACHE STRING "Set the log level")
 # Define LOG_LEVEL
 add_compile_definitions(LOG_LEVEL=${LOG_LEVEL})
 

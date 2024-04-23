@@ -45,6 +45,15 @@ dtio_system::init (service service)
   if (service == LIB) {
     get_client_queue(CLIENT_TASK_SUBJECT);
   }
+
+  if (builder_impl_type_t == builder_impl_type::DEFAULT_B)
+    {
+      task_builder_ = std::make_shared<default_builder>(service);
+    }
+  else if (builder_impl_type_t == builder_impl_type::AGGREGATING_B)
+    {
+      task_builder_ = std::make_shared<aggregating_builder>(service);
+    }
   
   if (map_impl_type_t == map_impl_type::MEMCACHE_D)
     {

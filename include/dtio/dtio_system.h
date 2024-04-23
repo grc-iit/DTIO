@@ -36,6 +36,9 @@
 #include <dtio/common/external_clients/memcached_impl.h>
 // #include <dtio/common/external_clients/nats_impl.h>
 #include <dtio/common/external_clients/rocksdb_impl.h>
+// #include <dtio/common/task_builder/task_builder.h>
+#include <dtio/common/task_builder/default_builder.h>
+#include <dtio/common/task_builder/aggregating_builder.h>
 #include <dtio/common/solver/solver.h>
 #include <memory>
 #include <mpi.h>
@@ -67,9 +70,17 @@ private:
 
   void init (service service);
   std::shared_ptr<distributed_hashmap> map_client_, map_server_;
+  std::shared_ptr<task_builder> task_builder_;
 
 public:
   std::shared_ptr<solver> solver_i;
+
+  std::shared_ptr<task_builder>
+  task_composer ()
+  {
+    return task_builder_;
+  }
+
   std::shared_ptr<distributed_hashmap>
   map_client ()
   {

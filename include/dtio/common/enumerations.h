@@ -111,6 +111,11 @@ enum table
   WRITE_FINISHED_DB = 8,
   COUNTER_DB = 9
 };
+enum builder_impl_type
+{
+  DEFAULT_B = 0,
+  AGGREGATING_B = 1
+};
 enum map_impl_type
 {
   ROCKS_DB = 0,

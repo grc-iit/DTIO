@@ -275,7 +275,7 @@ dtio::posix::unlink (const char *pathname)
       = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
   auto map_client = dtio_system::getInstance (LIB)->map_client ();
   auto map_server = dtio_system::getInstance (LIB)->map_server ();
-  auto task_m = task_builder::getInstance (LIB);
+  auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance (LIB);
   auto offset = mdm->get_fp (pathname);
   if (!mdm->is_created (pathname))
@@ -466,7 +466,7 @@ dtio::posix::read_async (int fd, size_t count)
   auto mdm = metadata_manager::getInstance (LIB);
   auto client_queue
       = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
-  auto task_m = task_builder::getInstance (LIB);
+  auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto filename = mdm->get_filename (fd);
   auto offset = mdm->get_fp (filename);
   if (!mdm->is_opened (filename))
@@ -581,7 +581,7 @@ dtio::posix::read (int fd, void *buf, size_t count)
   auto mdm = metadata_manager::getInstance (LIB);
   auto client_queue
       = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
-  auto task_m = task_builder::getInstance (LIB);
+  auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance (LIB);
   auto filename = mdm->get_filename (fd);
   auto offset = mdm->get_fp (filename);
@@ -705,7 +705,7 @@ dtio::posix::write_async (int fd, const void *buf, size_t count)
   auto mdm = metadata_manager::getInstance (LIB);
   auto client_queue
       = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
-  auto task_m = task_builder::getInstance (LIB);
+  auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance (LIB);
   auto filename = mdm->get_filename (fd);
   auto offset = mdm->get_fp (filename);
@@ -810,15 +810,19 @@ dtio::posix::write (int fd, const void *buf, size_t count)
       = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
   auto map_client = dtio_system::getInstance (LIB)->map_client ();
   auto map_server = dtio_system::getInstance (LIB)->map_server ();
-  auto task_m = task_builder::getInstance (LIB);
+  auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance (LIB);
   auto filename = mdm->get_filename (fd);
   auto offset = mdm->get_fp (filename);
 
   if (!mdm->is_opened (filename))
     throw std::runtime_error ("dtio::write() file not opened!");
+  auto source = file();
+  source.offset = 0; // buffer offset, NOT file offset
+  source.size = count;
+  auto destination = file(filename, offset, count);
   auto w_task
-      = task (task_type::WRITE_TASK, file (filename, offset, count), file ());
+      = task (task_type::WRITE_TASK, source, destination);
 
   w_task.iface = io_client_type::POSIX;
 #ifdef TIMERTB
@@ -834,47 +838,50 @@ dtio::posix::write (int fd, const void *buf, size_t count)
   DTIO_LOG_TRACE(stream1.str ());
 #endif
 
-  int index = 0;
   const char *write_data_char = static_cast<const char *>(buf);
   std::string write_data (static_cast<const char *> (buf), count);
+
+  int index = 0;
   /* Note: We cannot assume buf is null-terminated. It would likely be
    * better to get rid of the string entirely, but for now if we copy
    * with count then it will not assume a null-terminated C string */ 
   std::vector<std::pair<std::string, std::string> > task_ids
       = std::vector<std::pair<std::string, std::string> > ();
+
   for (auto tsk : write_tasks)
     {
       if (tsk->addDataspace)
-        {
-          if (write_data.length () >= tsk->source.offset + tsk->source.size)
-            {
-              auto data
-                  = write_data.substr (tsk->source.offset, tsk->source.size);
+	{
+	  if (write_data.length () >= tsk->source.offset + tsk->source.size)
+	    {
+	      auto data
+		= write_data.substr (tsk->source.offset, tsk->source.size);
 	      DTIO_LOG_TRACE("Write v1 " << write_data.length() << " " << data.length() << " " << tsk->source.offset << " " << tsk->source.size << std::endl);
 	      DTIO_LOG_TRACE("WRITE Count " << count << std::endl);
 	      data_m->put (DATASPACE_DB, tsk->source.filename, write_data_char, count,
-                           std::to_string (tsk->destination.server));
-
-              // data_m->put (DATASPACE_DB, tsk->source.filename, write_data,
-              //              std::to_string (tsk->destination.server));
-            }
-          else
-            {
+			   std::to_string (tsk->destination.server));
+	  
+	      // data_m->put (DATASPACE_DB, tsk->source.filename, write_data,
+	      //              std::to_string (tsk->destination.server));
+	    }
+	  else
+	    {
 	      DTIO_LOG_TRACE("Write v2 " << write_data.length() << " " << tsk->source.size << " " << write_tasks.size() << std::endl);
-              // data_m->put (DATASPACE_DB, tsk->source.filename, write_data,
-              //              std::to_string (tsk->destination.server));
+	      // data_m->put (DATASPACE_DB, tsk->source.filename, write_data,
+	      //              std::to_string (tsk->destination.server));
 	      DTIO_LOG_TRACE("WRITE Count " << count << std::endl);
-              data_m->put (DATASPACE_DB, tsk->source.filename, write_data_char, count,
-                           std::to_string (tsk->destination.server));
-            }
-        }
+	      data_m->put (DATASPACE_DB, tsk->source.filename, write_data_char, count,
+			   std::to_string (tsk->destination.server));
+	    }
+	}
+
       if (tsk->publish)
         {
           if (count < tsk->source.size) {
-            mdm->update_write_task_info (*tsk, filename, count);
+            mdm->update_write_task_info (*tsk, tsk->destination.filename, count);
 	  }
           else {
-            mdm->update_write_task_info (*tsk, filename, tsk->source.size);
+            mdm->update_write_task_info (*tsk, tsk->destination.filename, tsk->source.size);
 	  }
           client_queue->publish_task (tsk);
           task_ids.emplace_back (std::make_pair (
@@ -882,22 +889,23 @@ dtio::posix::write (int fd, const void *buf, size_t count)
         }
       else
         {
-          mdm->update_write_task_info (*tsk, filename, tsk->source.size);
+          mdm->update_write_task_info (*tsk, tsk->destination.filename, tsk->source.size);
         }
 
       index++;
       delete tsk;
     }
-  for (auto task_id : task_ids)
-    {
-      while (!map_server->exists (table::WRITE_FINISHED_DB, task_id.first,
-                                  std::to_string (-1)))
-        {
-        }
-      map_server->remove (table::WRITE_FINISHED_DB, task_id.first,
-                          std::to_string (-1));
-      map_client->remove (table::DATASPACE_DB, task_id.first, task_id.second);
-    }
+  // NOTE Without this, it's not synchronous. I just don't think I care?
+  // for (auto task_id : task_ids)
+  //   {
+  //     while (!map_server->exists (table::WRITE_FINISHED_DB, task_id.first,
+  //                                 std::to_string (-1)))
+  //       {
+  //       }
+  //     map_server->remove (table::WRITE_FINISHED_DB, task_id.first,
+  //                         std::to_string (-1));
+  //     map_client->remove (table::DATASPACE_DB, task_id.first, task_id.second);
+  //   }
   return count;
 }
 

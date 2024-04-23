@@ -92,7 +92,7 @@ task_scheduler::schedule_tasks (std::vector<task *> &tasks)
   for (auto element : output.worker_task_map)
     {
       auto queue = dtio_system::getInstance (service_i)->get_worker_queue (
-          element.first);
+									   (element.first-1));
       for (auto tsk : element.second)
         {
 
@@ -109,7 +109,7 @@ task_scheduler::schedule_tasks (std::vector<task *> &tasks)
                            tsk->t_type)
                     << "\tDataspaceID#" << wt->destination.filename
                     << "\tTask#" << tsk->task_id << "\tWorker#"
-                    << element.first << "\n";
+                    << (element.first-1) << "\n";
 #endif
                 queue->publish_task (wt);
                 break;
@@ -124,7 +124,7 @@ task_scheduler::schedule_tasks (std::vector<task *> &tasks)
                     << static_cast<std::underlying_type<task_type>::type> (
                            tsk->t_type)
                     << "\tTask#" << tsk->task_id << "\tWorker#"
-                    << element.first << "\n";
+                    << (element.first-1) << "\n";
 #endif
                 queue->publish_task (rt);
                 break;

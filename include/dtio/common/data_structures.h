@@ -445,7 +445,7 @@ struct task
   bool check_fs = false;
 
   task ()
-    : t_type (task_type::READ_TASK), task_id (0), publish (false),
+    : t_type (task_type::READ_TASK), task_id (0), publish (true),
       iface(io_client_type::POSIX), addDataspace (true), async (true), source (),
       destination (), meta_updated(false), local_copy(false), check_fs(false)
   {
@@ -454,7 +454,7 @@ struct task
   MSGPACK_DEFINE(t_type, iface, task_id, publish, addDataspace, async, source, destination, meta_updated, local_copy, check_fs);
 
   task (task_type t_type)
-    : t_type (t_type), iface (io_client_type::POSIX), task_id (0), publish (false), addDataspace (true),
+    : t_type (t_type), iface (io_client_type::POSIX), task_id (0), publish (true), addDataspace (true),
       async (true), source (), destination (), meta_updated(false), local_copy(false), check_fs(false)
   {
   }
@@ -466,12 +466,12 @@ struct task
   {
   }
 
-  task(task_type t_type_, const file &source_, const file &destination_) : t_type(t_type_), source(source_), destination(destination_), task_id (0), iface(io_client_type::POSIX), publish (false),
+  task(task_type t_type_, const file &source_, const file &destination_) : t_type(t_type_), source(source_), destination(destination_), task_id (0), iface(io_client_type::POSIX), publish (true),
       addDataspace (true), async (true), meta_updated(false), local_copy(false), check_fs(false)
   {
   }
   task (task_type t_type_, file &source)
-    : t_type (t_type_), source (source), task_id (0), publish (false),
+    : t_type (t_type_), source (source), task_id (0), publish (true),
       iface(io_client_type::POSIX), addDataspace (true), async (true),
       destination (), meta_updated(false), local_copy(false), check_fs(false)
   {

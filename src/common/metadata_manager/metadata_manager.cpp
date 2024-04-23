@@ -468,9 +468,8 @@ metadata_manager::update_on_write (std::string filename, size_t size,
       map->put (table::FILE_DB, filename, &fs, std::to_string (-1));
     }
   else {
-    DTIO_LOG_ERROR("Update on write file not found");
+    DTIO_LOG_ERROR("Update on write file not found " << filename);
   }
-  // TODO: change to trace
   DTIO_LOG_TRACE("[DTIO][UPDATE_ON_WRITE] " << filename << " " << offset << " " << size << " ");
 }
 
@@ -594,18 +593,18 @@ metadata_manager::update_write_task_info (task task_k, std::string filename,
   auto iter = file_map.find (filename);
   if (iter != file_map.end ())
     fs = iter->second;
-  update_on_write (task_k.source.filename, io_size, task_k.source.offset);
-  if (!task_k.meta_updated)
-    {
-      auto chunk_index = (task_k.source.offset / MAX_IO_UNIT);
-      auto base_offset = (task_k.source.offset / MAX_IO_UNIT) * MAX_IO_UNIT;
-      chunk_meta cm;
-      cm.actual_user_chunk = task_k.source;
-      cm.destination = task_k.source;
-      map->put (table::CHUNK_DB, filename + std::to_string (base_offset),
-                &cm, std::to_string (-1));
-    }
-  map->put (table::FILE_DB, filename, &fs, std::to_string (-1));
+  update_on_write (filename, io_size, task_k.source.offset);
+  // if (!task_k.meta_updated)
+  //   {
+  //     auto chunk_index = (task_k.source.offset / MAX_IO_UNIT);
+  //     auto base_offset = (task_k.source.offset / MAX_IO_UNIT) * MAX_IO_UNIT;
+  //     chunk_meta cm;
+  //     cm.actual_user_chunk = task_k.source;
+  //     cm.destination = task_k.source;
+  //     map->put (table::CHUNK_DB, filename + std::to_string (base_offset),
+  //               &cm, std::to_string (-1));
+  //   }
+  // map->put (table::FILE_DB, filename, &fs, std::to_string (-1));
 #ifdef TIMERMDM
   DTIO_LOG_INFO("metadata_manager::update_write_task_info()," << t.pauseTime () << "\n");
 #endif

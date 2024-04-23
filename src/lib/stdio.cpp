@@ -104,7 +104,7 @@ std::vector<task> dtio::fread_async(size_t size, size_t count,
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
-  auto task_m = task_builder::getInstance(LIB);
+  auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto filename = mdm->get_filename(stream);
   auto offset = mdm->get_fp(filename);
   if (!mdm->is_opened(filename))
@@ -201,7 +201,7 @@ size_t dtio::fread(void *ptr, size_t size, size_t count, FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
-  auto task_m = task_builder::getInstance(LIB);
+  auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance(LIB);
   auto filename = mdm->get_filename(stream);
   auto offset = mdm->get_fp(filename);
@@ -268,7 +268,7 @@ std::vector<task *> dtio::fwrite_async(void *ptr, size_t size,
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
-  auto task_m = task_builder::getInstance(LIB);
+  auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance(LIB);
   auto filename = mdm->get_filename(stream);
   auto offset = mdm->get_fp(filename);
@@ -352,7 +352,7 @@ size_t dtio::fwrite(void *ptr, size_t size, size_t count, FILE *stream) {
       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
   auto map_client = dtio_system::getInstance(LIB)->map_client();
   auto map_server = dtio_system::getInstance(LIB)->map_server();
-  auto task_m = task_builder::getInstance(LIB);
+  auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance(LIB);
   auto filename = mdm->get_filename(stream);
   auto offset = mdm->get_fp(filename);

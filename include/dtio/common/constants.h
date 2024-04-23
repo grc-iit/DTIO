@@ -24,7 +24,7 @@
 #ifndef DTIO_MAIN_CONSTANTS_H
 #define DTIO_MAIN_CONSTANTS_H
 
-#include "dtio/common/enumerations.h"
+#include <dtio/common/enumerations.h>
 #include <climits>
 #include <cstddef>
 #include <string>
@@ -39,12 +39,14 @@ const long long MAX_MESSAGE_SIZE = LLONG_MAX;
 const std::string ALL_KEYS = "ALL";
 const std::string kDBPath_client = "/tmp/rocksdb";
 const std::string kDBPath_server = "/tmp/rocksdb";
+const std::size_t MIN_IO_UNIT = 8 * 1024;
 const std::size_t MAX_IO_UNIT = 1 * 1024 * 1024;
 const std::string CLIENT_TASK_SUBJECT = "TASK";
 #define DTIO_FILENAME_MAX FILENAME_MAX
 
 // Configs
 const map_impl_type map_impl_type_t = map_impl_type::HCLMAP;
+const builder_impl_type builder_impl_type_t = builder_impl_type::DEFAULT_B;
 const solver_impl_type solver_impl_type_t = solver_impl_type::ROUND_ROBIN;
 const queue_impl_type queue_impl_type_t = queue_impl_type::HCLQUEUE;
 const io_client_type io_client_type_t = io_client_type::POSIX;
