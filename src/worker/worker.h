@@ -30,6 +30,8 @@
 #include "api/io_client.h"
 #include "api/posix_client.h"
 #include "api/stdio_client.h"
+#include "api/uring_client.h"
+#include "api/hdf5_client.h"
 #include "api/multi_client.h"
 #include <dtio/common/external_clients/memcached_impl.h>
 #include <dtio/dtio_system.h>
@@ -57,6 +59,12 @@ private:
     }
     else if (io_client_type_t == io_client_type::STDIO) {
       client = std::make_shared<stdio_client>(stdio_client(worker_index));
+    }
+    else if (io_client_type_t == io_client_type::HDF5) {
+      client = std::make_shared<hdf5_client>(hdf5_client(worker_index));
+    }
+    else if (io_client_type_t == io_client_type::URING) {
+      client = std::make_shared<uring_client>(uring_client(worker_index));
     }
     else if (io_client_type_t == io_client_type::MULTI) {
       client = std::make_shared<multi_client>(multi_client(worker_index));

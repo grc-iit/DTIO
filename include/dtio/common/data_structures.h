@@ -24,7 +24,7 @@
 #ifndef DTIO_MAIN_STRUCTURE_H
 #define DTIO_MAIN_STRUCTURE_H
 
-#include <hcl/common/macros.h>
+// #include <hcl/common/macros.h>
 #include <cereal/types/common.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/string.hpp>
@@ -34,8 +34,12 @@
 #include <utility>
 #include <vector>
 
+#ifndef HCL_COMMUNICATION_ENABLE_THALLIUM
+#define HCL_COMMUNICATION_ENABLE_THALLIUM 1
+#endif
+
 #include <hcl.h>
-#include <hcl/common/data_structures.h>
+// #include <hcl/common/data_structures.h>
 #include <rpc/client.h>
 #include <rpc/rpc_error.h>
 #include <rpc/server.h>
@@ -68,7 +72,7 @@ typedef struct DTIOCharStruct {
     this->length = size;
   }
 
-  MSGPACK_DEFINE(length, value);
+  // MSGPACK_DEFINE(length, value);
   
   void Set(char *data_, size_t size) {
     snprintf(this->value, size, "%s", data_);
@@ -123,6 +127,14 @@ typedef struct DTIOCharStruct {
     return this->length == o.length && strcmp(this->value, o.value) <= 0;
   }
 
+
+  template <class Archive>
+  void
+  serialize (Archive &archive)
+  {
+    archive (this->length, this->value);
+  }
+
 } DTIOCharStruct;
 
 static DTIOCharStruct operator+(const std::string &a1, const DTIOCharStruct &a2) {
@@ -145,8 +157,8 @@ struct HCLKeyType
   size_t a;
   HCLKeyType () : a (0) {}
   HCLKeyType (size_t a_) : a (a_) {}
-  HCLKeyType (std::string a_) : a (std::hash<std::string>{}(a_)) {}
-  MSGPACK_DEFINE (a);
+  HCLKeyType (std::string a_) : a (std::hash<std::string>()(a_)) {}
+  // MSGPACK_DEFINE (a);
   bool
   operator== (const HCLKeyType &o) const
   {
@@ -181,17 +193,22 @@ template <> struct hash<HCLKeyType>
   size_t
   operator() (const HCLKeyType &k) const
   {
+    // return 0;
     return k.a;
   }
 };
 }
 
-typedef boost::interprocess::allocator<
-    char, boost::interprocess::managed_mapped_file::segment_manager>
-    CharAllocator;
-typedef boost::interprocess::basic_string<char, std::char_traits<char>,
-                                          CharAllocator>
-    MappedUnitString;
+template <typename A>
+void serialize(A &ar, HCLKeyType &a) {
+  ar &a.a;
+}
+
+typedef boost::interprocess::allocator<char, boost::interprocess::managed_mapped_file::segment_manager> CharAllocator;
+typedef bip::basic_string<char, std::char_traits<char>, CharAllocator> MappedUnitString;
+
+// typedef boost::interprocess::allocator<char, boost::interprocess::managed_mapped_file::segment_manager> CharAllocator;
+// typedef bip::basic_string<char, std::char_traits<char>, CharAllocator> MappedUnitString;
 
 /******************************************************************************
  *message_key structure
@@ -238,7 +255,7 @@ struct file
   }
   file () : location (CACHE), filename (""), offset (0), size (0), worker(-1), server(-1) {}
 
-  MSGPACK_DEFINE(location, filename, offset, size, worker, server);
+  // MSGPACK_DEFINE(location, filename, offset, size, worker, server);
 
   ~file () {}
 
@@ -264,7 +281,7 @@ struct file
   }
 };
 
-MSGPACK_ADD_ENUM(location_type);
+// MSGPACK_ADD_ENUM(location_type);
 
 namespace std
 {
@@ -285,13 +302,59 @@ template <> struct hash<file>
 };
 }
 
+// The idea behind this was to remove the filename from chunk metadata so that
+// we can store more of them, but it needs to be changed to store IDs, along
+// with files, so we're just decreasing max filename size for now.
+
+// struct chunk
+// {
+//   location_type location;
+//   int64_t offset;
+//   std::size_t size;
+//   int worker;
+//   int server;
+
+//   chunk (int64_t offset, std::size_t file_size)
+//     : offset (offset), size (file_size),
+//       location (CACHE), worker(-1), server(-1) {}
+
+//   chunk (const chunk &chunk_t)
+//     : offset (chunk_t.offset), size (chunk_t.size),
+//         location (chunk_t.location), worker (chunk_t.worker),
+//         server (chunk_t.server) {}
+//   chunk () : location (CACHE), offset (0), size (0), worker(-1), server(-1) {}
+
+//   // MSGPACK_DEFINE(location, filename, offset, size, worker, server);
+
+//   ~chunk () {}
+
+//   chunk &
+//   operator= (const chunk &other)
+//   {
+//     location = other.location;
+//     offset = other.offset;
+//     size = other.size;
+//     worker = other.worker;
+//     server = other.server;
+//     return *this;
+//   }
+
+//   // serialization
+//   template <class Archive>
+//   void
+//   serialize (Archive &archive)
+//   {
+//     archive (this->offset, this->size, this->location,
+//              this->worker, this->server);
+//   }
+// };
 
 struct chunk_meta
 {
   file actual_user_chunk;
   file destination;
 
-  MSGPACK_DEFINE(actual_user_chunk, destination);
+  // MSGPACK_DEFINE(actual_user_chunk, destination);
 
   chunk_meta &
   operator= (const chunk_meta &other)
@@ -342,9 +405,85 @@ struct chunk_msg
 struct file_meta
 {
   file file_struct;
-  std::vector<chunk_meta> chunks;
+  chunk_meta chunks[CHUNK_LIMIT];
+  int current_chunk_index;
+  int num_chunks;
 
-  file_meta () : chunks () {}
+  file_meta () : chunks (), current_chunk_index(0), num_chunks(0) {}
+  file_meta(const file_meta &other)
+    : file_meta(other.file_struct, other.chunks, other.current_chunk_index, other.num_chunks) {} /* copy constructor*/
+  file_meta(file_meta &&other)
+    : file_meta(other.file_struct, other.chunks, other.current_chunk_index, other.num_chunks) {} /* move constructor*/
+
+  file_meta(file file_struct_, const chunk_meta *chunks_, int current_chunk_index_, int num_chunks_) {
+    this->file_struct = file_struct_;
+    this->current_chunk_index = current_chunk_index_;
+    std::cout << "Copying chunks in constructor from current index " << current_chunk_index << std::endl;
+    for (int i = 0; i < num_chunks_; i++) {
+      if (current_chunk_index_ - i - 1 >= 0) {
+	this->chunks[current_chunk_index_ - i - 1] = chunks_[current_chunk_index_ - i - 1];
+      }
+      else {
+	this->chunks[CHUNK_LIMIT + current_chunk_index_ - i - 1] = chunks_[CHUNK_LIMIT + current_chunk_index_ - i - 1];
+      }
+    }
+    this->num_chunks = num_chunks_;
+  }
+
+  file_meta(file file_struct_, chunk_meta *chunks_, int current_chunk_index_, int num_chunks_) {
+    this->file_struct = file_struct_;
+    this->current_chunk_index = current_chunk_index_;
+    this->num_chunks = num_chunks_;
+    std::cout << "Copying chunks in constructor from current index " << current_chunk_index << std::endl;
+    for (int i = 0; i < num_chunks_; i++) {
+      if (current_chunk_index_ - i - 1 >= 0) {
+	this->chunks[current_chunk_index_ - i - 1] = chunks_[current_chunk_index_ - i - 1];
+      }
+      else {
+	this->chunks[CHUNK_LIMIT + current_chunk_index_ - i - 1] = chunks_[CHUNK_LIMIT + current_chunk_index_ - i - 1];
+      }
+    }
+  }
+
+  void append (chunk_meta *cm) {
+    chunks[current_chunk_index] = *cm;
+    ++current_chunk_index;
+    if (num_chunks < CHUNK_LIMIT) {
+      ++num_chunks;
+    }
+    if (current_chunk_index >= CHUNK_LIMIT) {
+      current_chunk_index = 0;
+    }
+  } 
+
+  file_meta &
+  operator= (const file_meta &other)
+  {
+    file_struct = other.file_struct;
+    current_chunk_index = other.current_chunk_index;
+    num_chunks = other.num_chunks;
+    std::cout << "Copying chunks from current index " << current_chunk_index << std::endl;
+    for (int i = 0; i < num_chunks; i++) {
+      if (current_chunk_index - i - 1 >= 0) {
+	std::cout << "From start" << std::endl;
+	chunks[current_chunk_index - i - 1] = other.chunks[current_chunk_index - i - 1];
+      }
+      else {
+	std::cout << "From end" << std::endl;
+	chunks[CHUNK_LIMIT + current_chunk_index - i - 1] = other.chunks[CHUNK_LIMIT + current_chunk_index - i - 1];
+      }
+    }
+    std::cout << "Finished copying chunks" << std::endl;
+    return *this;
+  }
+
+  // serialization
+  template <class Archive>
+  void
+  serialize (Archive &archive)
+  {
+    archive (this->file_struct, this->chunks, this->current_chunk_index, this->num_chunks);
+  }
 
   virtual ~file_meta () {}
 };
@@ -381,15 +520,15 @@ struct file_stat
     is_open = other.is_open;
     return *this;
   }
-  
-  MSGPACK_DEFINE(fd, file_pointer, file_size, flags, posix_mode, mode, is_open);
+
+  // MSGPACK_DEFINE(fd, file_pointer, file_size, flags, posix_mode, mode, is_open);
 
   // Serialization
   template <class Archive>
   void
   serialize (Archive &archive)
   {
-    archive (this->file_pointer, this->file_size, this->mode, this->is_open);
+    archive (this->fd, this->file_pointer, this->file_size, this->flags, this->posix_mode, this->mode, this->is_open);
   }
 };
 
@@ -451,7 +590,7 @@ struct task
   {
   }
 
-  MSGPACK_DEFINE(t_type, iface, task_id, publish, addDataspace, async, source, destination, meta_updated, local_copy, check_fs);
+  // MSGPACK_DEFINE(t_type, iface, task_id, publish, addDataspace, async, source, destination, meta_updated, local_copy, check_fs);
 
   task (task_type t_type)
     : t_type (t_type), iface (io_client_type::POSIX), task_id (0), publish (true), addDataspace (true),
@@ -520,12 +659,12 @@ struct task
   void
   serialize (Archive &archive)
   {
-    archive (this->t_type, this->task_id);
+    archive (this->t_type, this->iface, this->task_id, this->publish, this->addDataspace, this->async, this->source, this->destination, this->meta_updated, this->local_copy, this->check_fs);
   }
 };
 
-MSGPACK_ADD_ENUM(task_type);
-MSGPACK_ADD_ENUM(io_client_type);
+// MSGPACK_ADD_ENUM(task_type);
+// MSGPACK_ADD_ENUM(io_client_type);
 
 namespace std
 {

@@ -25,7 +25,9 @@
 #define DTIO_MAIN_HCLQUEUEIMPL_H
 
 #include "dtio/common/enumerations.h"
-#include "hcl/queue/queue.h"
+// #include "hcl/queue/queue.h"
+#include <hcl.h>
+#include <hcl/queue/queue.h>
 #include <city.h>
 #include <cstring>
 #include <dtio/common/client_interface/distributed_queue.h>
@@ -38,7 +40,6 @@
 class HCLQueueImpl : public distributed_queue
 {
 private:
-  hcl::queue<task> *hcl_queue;
   // std::string subject;
   uint16_t tail_subscription;
   uint16_t head_subscription;
@@ -47,6 +48,7 @@ private:
   size_t comm_size = 0;
 
 public:
+  hcl::queue<task> *hcl_queue;
   // DONE: make HCLKeyType based on Map
   std::hash<task> task_hash;
 
@@ -56,14 +58,16 @@ public:
   // look into barriers and comms at the same time
   // when initing hcl queues put barriers to ensure rpc init
   HCLQueueImpl (service service, const std::string &subject, int my_server,
-                int num_servers, bool subscribe)
+                int num_servers, bool subscribe, std::shared_ptr<hcl::HCL> &hcl_init)
       : distributed_queue (service)
   {
+    try {
+    head_subscription = my_server;
     std::string queuename = "";
     // task sched == server, lib != server
     if (service == TASK_SCHEDULER && subject == CLIENT_TASK_SUBJECT)
       {
-        HCL_CONF->IS_SERVER = true;
+        HCL_CONF->IS_SERVER = false;
         queuename = "taskscheduler+";
       }
     else if (service == TASK_SCHEDULER && subject != CLIENT_TASK_SUBJECT)
@@ -73,13 +77,23 @@ public:
       }
     else if (service == WORKER)
       {
-        HCL_CONF->IS_SERVER = true;
+        HCL_CONF->IS_SERVER = false;
         queuename = "worker+";
       }
     else if (service == LIB)
       {
         HCL_CONF->IS_SERVER = false;
         queuename = "taskscheduler+";
+      }
+    else if (service == HCLCLIENT && subject == CLIENT_TASK_SUBJECT)
+      {
+	HCL_CONF->IS_SERVER = true;
+	queuename = "taskscheduler+";
+      }
+    else if (service == HCLCLIENT && subject != CLIENT_TASK_SUBJECT)
+      {
+	HCL_CONF->IS_SERVER = true;
+	queuename = "worker+";
       }
     else
       {
@@ -88,12 +102,24 @@ public:
         // NOTE: shouldnt we just fail and exit here?
       }
     queuename += (subject + "+");
+    
+    int worker_index = -1;
+    if (subject != CLIENT_TASK_SUBJECT)
+      {
+        DTIO_LOG_INFO ("[Queue] CLIENT @ " << service << "\t" << subject);
+        worker_index = std::stoi (subject);
+      }
 
-    HCL_CONF->MY_SERVER = my_server;
-    HCL_CONF->NUM_SERVERS = num_servers;
-    HCL_CONF->SERVER_ON_NODE = true; // (service != LIB)
-    HCL_CONF->SERVER_LIST_PATH
-        = ConfigManager::get_instance ()->HCL_SERVER_LIST_PATH;
+    // if (subject == CLIENT_TASK_SUBJECT) {
+    //   my_server = 0; // 2
+    // }
+    // else {
+    //   my_server = 1 + worker_index; // 3 +
+    // }
+    HCL_CONF->MY_SERVER = 0; // my_server;
+    HCL_CONF->NUM_SERVERS = 1; // num_servers;
+    HCL_CONF->SERVER_ON_NODE = HCL_CONF->IS_SERVER || (service == TASK_SCHEDULER && subject == CLIENT_TASK_SUBJECT) || (service == WORKER); // true; // (service != LIB)
+    HCL_CONF->SERVER_LIST_PATH = ConfigManager::get_instance ()->HCL_SERVER_LIST_PATH; // "/home/kbateman/server_list";
 
     // if (service == WORKER || service == TASK_SCHEDULER)
     //   {
@@ -105,39 +131,60 @@ public:
     DTIO_LOG_INFO ("[Queue] Created & Barriering :: Subject "
                    << subject << "\tName: " << queuename);
 
-    head_subscription = tail_subscription = 0;
+    // head_subscription = tail_subscription = 0;
 
-    int worker_index = -1;
-    if (subject != CLIENT_TASK_SUBJECT)
-      {
-        DTIO_LOG_INFO ("[Queue] CLIENT @ " << service << "\t" << subject);
-        worker_index = std::stoi (subject);
-      }
-
-    if (service == TASK_SCHEDULER && subject != CLIENT_TASK_SUBJECT)
-      {
-        DTIO_LOG_INFO ("[Queue] TASK_SCHEDULER @ " << service << "\t"
-                                                   << subject << "\t in WI#"
-                                                   << worker_index);
-        MPI_Barrier (
-            ConfigManager::get_instance ()->QUEUE_WORKER_COMM[worker_index]);
-      }
-    hcl_queue = new hcl::queue<task> (queuename);
     if (service == WORKER && subject != CLIENT_TASK_SUBJECT)
       {
-        // NOTE: Trace deps on var `size`
-        // int size;
-        // MPI_Comm_size (
-        //     ConfigManager::get_instance ()->QUEUE_WORKER_COMM[worker_index],
-        //     &size);
-        // DTIO_LOG_TRACE ("[Queue] WORKER Comm size " << size);
-        DTIO_LOG_INFO ("[Queue] WORKER @ " << service << "\t" << subject
-                                           << "\t in WI#" << worker_index);
+        DTIO_LOG_INFO ("[Queue] @ " << service << "\t"
+		       << subject << "\t in WI#"
+		       << worker_index);
         MPI_Barrier (
             ConfigManager::get_instance ()->QUEUE_WORKER_COMM[worker_index]);
       }
+    if (service == TASK_SCHEDULER && subject == CLIENT_TASK_SUBJECT)
+      {
+        DTIO_LOG_INFO ("[Queue] @ " << service << "\t"
+		       << subject << "\t in WI#"
+		       << worker_index);
+	MPI_Barrier (
+		     ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM); // need a new comm for this
+      }
+
+
+    if (subject == CLIENT_TASK_SUBJECT) {
+      if (hcl_init == nullptr) {
+	hcl_init = hcl::HCL::GetInstance(true, 9400);
+      }
+      else {
+	hcl_init->ReConfigure(9400);
+      }
+    }
+    else {
+      if (hcl_init == nullptr) {
+	hcl_init = hcl::HCL::GetInstance(true, 9500 + worker_index * 10);
+      }
+      else {
+	hcl_init->ReConfigure(9500 + worker_index * 10);
+      }
+    }
+
+    hcl_queue = new hcl::queue<task> (queuename);
+
+    if (service == HCLCLIENT && subject != CLIENT_TASK_SUBJECT) {
+      DTIO_LOG_INFO ("[Queue] HCLCLIENT @ " << service << "\t" << subject
+		     << "\t in WI#" << worker_index);
+      MPI_Barrier (
+		   ConfigManager::get_instance ()->QUEUE_WORKER_COMM[worker_index]);
+    }
+    if (service == HCLCLIENT && subject == CLIENT_TASK_SUBJECT) {
+      DTIO_LOG_INFO ("[Queue] HCLCLIENT @ " << service << "\t" << subject);
+      MPI_Barrier (
+		   ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
+    }
     DTIO_LOG_INFO ("[Queue] ===>> FIN <<== @ " << service << "\t" << subject
                                                << "\t in WI#" << worker_index);
+    } catch (std::logic_error *e) { std::cerr << "Error creating queue on service " << service << ", " << e->what() << std::endl; exit(EXIT_FAILURE); }
+
   }
 
   void clear() override;
@@ -149,7 +196,12 @@ public:
   int get_queue_count () override;
   int get_queue_size () override;
   int get_queue_count_limit () override;
-  virtual ~HCLQueueImpl () { delete hcl_queue; }
+  virtual ~HCLQueueImpl ()
+  {
+    // delete hcl_queue;
+    // hcl->Finalize();
+    // hcl.reset();
+  }
 };
 
 #endif // DTIO_MAIN_HCLQUEUEimpl_H

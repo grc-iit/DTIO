@@ -50,59 +50,66 @@ worker::run ()
       throw std::runtime_error ("worker::update_capacity() failed!");
     }
   size_t task_count = 0;
-  Timer t = Timer ();
-
+  size_t task_index = 0;
+  hcl::Timer t = hcl::Timer ();
+  task *task_i[BATCH_SIZE];
+  t.resumeTime ();
+  double total_time = 0;
   do
     {
       int status = -1;
-      task *task_i = queue->subscribe_task (status);
+      task_i[task_index] = queue->subscribe_task (status);
 
-      if (status != -1 && task_i != nullptr)
+      if (status != -1 && task_i[task_index] != nullptr)
         {
           task_count++;
-          switch (task_i->t_type)
-            {
-            case task_type::WRITE_TASK:
-              {
-                auto *wt = task_i; //reinterpret_cast<write_task *> (task_i);
+	  task_index++;
+	  if (task_index >= BATCH_SIZE) {
+	    switch (task_i[0]->t_type)
+	      {
+	      case task_type::WRITE_TASK:
+		{
+		  // auto *wt = task_i; //reinterpret_cast<write_task *> (task_i);
 #ifdef DEBUG
-                std::cout << "Task#" << task_i->task_id << "\tOperation: WRITE"
-                          << "\tOffset:" << wt->source.offset
-                          << "\tSize:" << wt->destination.size << "\n";
+		  std::cout << "Task#" << task_i[task_index-1]->task_id << "\tOperation: WRITE"
+			    << "\tOffset:" << task_i[task_index-1]->source.offset
+			    << "\tSize:" << task_i[task_index-1]->destination.size << "\n";
 #endif
-                client->dtio_write (*wt);
-                break;
-              }
-            case task_type::READ_TASK:
-              {
-                auto *rt = task_i; //reinterpret_cast<read_task *> ();
+		  client->dtio_write (task_i);
+		  break;
+		}
+	      case task_type::READ_TASK:
+		{
+		  // auto *rt = task_i; //reinterpret_cast<read_task *> ();
 #ifdef DEBUG
-                std::cout << "Task#" << task_i->task_id << "\tOperation: READ"
-                          << "\tOffset:" << rt->source.offset
-                          << "\tSize:" << rt->source.size
-                          << "\tFilename:" << rt->source.filename << "\n";
+		  std::cout << "Task#" << task_i[task_index-1]->task_id << "\tOperation: READ"
+			    << "\tOffset:" << task_i[task_index-1]->source.offset
+			    << "\tSize:" << task_i[task_index-1]->source.size
+			    << "\tFilename:" << task_i[task_index-1]->source.filename << "\n";
 #endif
-                client->dtio_read (*rt);
-                break;
-              }
-            case task_type::FLUSH_TASK:
-              {
-                auto *ft = task_i; //reinterpret_cast<flush_task *> (task_i);
-                client->dtio_flush_file (*ft);
-                break;
-              }
-            case task_type::DELETE_TASK:
-              {
-                auto *dt = task_i; //reinterpret_cast<delete_task *> (task_i);
-                client->dtio_delete_file (*dt);
-                break;
-              }
-            default:
-              std::cerr << "Task #" << task_i->task_id << " type unknown\n";
-              throw std::runtime_error ("worker::run() failed!");
-            }
+		  client->dtio_read (task_i);
+		  break;
+		}
+	      case task_type::FLUSH_TASK:
+		{
+		  // auto *ft = task_i; //reinterpret_cast<flush_task *> (task_i);
+		  client->dtio_flush_file (task_i);
+		  break;
+		}
+	      case task_type::DELETE_TASK:
+		{
+		  // auto *dt = task_i; //reinterpret_cast<delete_task *> (task_i);
+		  client->dtio_delete_file (task_i);
+		  break;
+		}
+	      default:
+		std::cerr << "Task #" << task_i[task_index-1]->task_id << " type unknown\n";
+		throw std::runtime_error ("worker::run() failed!");
+	      }
+	    task_index = 0;
+	  }
         }
-      if (t.pauseTime () > WORKER_INTERVAL
+	if (t.pauseTime() > WORKER_INTERVAL
           || task_count >= MAX_WORKER_TASK_COUNT)
         {
           if (update_score (false) != SUCCESS)
@@ -115,9 +122,11 @@ worker::run ()
               std::cerr << "worker::update_capacity() failed!\n";
               // throw std::runtime_error("worker::update_capacity() failed!");
             }
+	  total_time += t.getElapsedTime();
           t.resumeTime ();
           task_count = 0;
         }
+	std::cout << "Elapsed time is " << total_time << std::endl;
     }
   while (!kill);
 

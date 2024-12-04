@@ -48,12 +48,12 @@ int main(int argc, char **argv) {
   for (i = 0; i < bigger_write; i++) {
     write_buf[i] = (char)(65 + random() % 57); // Just a random char
   }
-  Timer timer = Timer();
+  hcl::Timer timer = hcl::Timer();
   timer.resumeTime();
   std::cerr << "This is a simple WRITE test.\n";
 
   // open/create file
-  fd = open(argv[1], O_RDWR | O_CREAT | O_TRUNC);
+  fd = open(argv[1], O_RDWR | O_CREAT | O_TRUNC, 0664);
   if (fd < 0) {
     std::cerr << "Failed to open/create file. Aborting...\n";
     exit(-1);
@@ -74,28 +74,6 @@ int main(int argc, char **argv) {
   close(fd);
   timer.pauseTime();
   auto time = timer.getElapsedTime();
-  std::cerr << "Time elapsed: " << time << " seconds.\n";
-
-  char read_buf[50];
-
-  timer.resumeTime();
-  std::cerr << "This is a simple READ test.\n";
-
-  // open file for reading
-  fd = (argv[1], O_RDWR);
-  if (fd < 0) {
-    std::cerr << "Failed to find file. Aborting...\n";
-    exit(-1);
-  }
-
-  // read
-  rv = read(fd, read_buf, sizeof(read_buf));
-  std::cerr << "(Return value: " << rv << ")\n";
-  std::cerr << read_buf << "\n";
-
-  close(fd);
-  timer.pauseTime();
-  time = timer.getElapsedTime();
   std::cerr << "Time elapsed: " << time << " seconds.\n";
 
   MPI_Finalize();

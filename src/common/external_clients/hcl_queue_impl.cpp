@@ -57,8 +57,8 @@ HCLQueueImpl::publish_task (task *task_t)
 
   // head_subscription
   //     = head_subscription == (uint16_t)-1 ? task_t->task_id : head_subscription;
-  head_subscription = (uint16_t)0;
-  tail_subscription = task_t->task_id;
+  // head_subscription = (uint16_t)0;
+  // tail_subscription = task_t->task_id;
   // return !hcl_queue->Push (task_t, task_hash (*task_t));
   // return !hcl_queue->Push(*task_t, task_hash.operator()(task_t));
   uint16_t hashValue = static_cast<uint16_t> (task_hash.operator() (task_t));
@@ -93,7 +93,11 @@ bool
 HCLQueueImpl::subscribe_task_helper ()
 {
   DTIO_LOG_DEBUG ("[QUEUE] SUB HELPER :: INIT\t"<< head_subscription << "\t" << tail_subscription);
+  // auto result = hcl_queue->WaitForElement(head_subscription);
+
   return hcl_queue->WaitForElement(head_subscription);
+
+
   // if (head_subscription < tail_subscription)
   //   {
   //     DTIO_LOG_DEBUG ("[QUEUE] SUB HELPER :: PULL!");
@@ -109,13 +113,12 @@ HCLQueueImpl::subscribe_task_with_timeout (int &status)
   // DONE: make a while timer < timeout loop and pop the task and wait a bit
   // use defaults from NATS impl
   DTIO_LOG_DEBUG ("[QUEUE] SUB --> with Timeout :: INIT");
-  // std::launch::deferred | 
+  // std::launch::deferred |
   std::future<bool> result
       = std::async (std::launch::async,
                     &HCLQueueImpl::subscribe_task_helper, this);
   DTIO_LOG_DEBUG ("[QUEUE] SUB --> with Timeout :: FUTURE");
-  if (result.wait_for (std::chrono::milliseconds (MAX_TASK_TIMER_MS))
-      == std::future_status::ready)
+  if (result.wait_for (std::chrono::milliseconds (MAX_TASK_TIMER_MS)) == std::future_status::ready)
     {
       DTIO_LOG_DEBUG ("[QUEUE] SUB --> with Timeout :: GET");
       auto response = result.get();
@@ -158,8 +161,8 @@ HCLQueueImpl::subscribe_task (int &status)
 int
 HCLQueueImpl::get_queue_size ()
 {
-  uint16_t pos = 0;
-  return hcl_queue->Size (pos);
+  // uint16_t pos = 0;
+  return hcl_queue->Size (head_subscription);
   // return hcl_queue->Size (task_hash (head_subscription));
 }
 
@@ -169,8 +172,10 @@ HCLQueueImpl::get_queue_count ()
   // this is for direct nats compat
   // should ultimately be something like
   // `return hcl_queue->Size (task_hash (head_subscription));`
-  u_int16_t pos = 0;
-  return hcl_queue->Size (pos);
+  // u_int16_t pos = 0;
+  try {
+  return hcl_queue->Size (head_subscription);
+  } catch (...) { std::cerr << "Some exception, also head " << head_subscription << std::endl; exit(EXIT_FAILURE); }
 }
 
 int

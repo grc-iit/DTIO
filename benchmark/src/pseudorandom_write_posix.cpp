@@ -27,15 +27,24 @@
 int main(int argc, char **argv) {
   dtio::MPI_Init(&argc, &argv);
   if (argc != 3 && argc != 4) {
-    printf("USAGE: ./simple_write [filename] [num_messages] [(optional) seed]\n");
+    printf("USAGE: ./simple_write [filename] [num_messages] [max size] [(optional) seed]\n");
     exit(1);
   }
 
   int fd;
   int rv; // return val
-  char write_buf[50] = "Testing R/W with DTIO. This is msg body.";
+  int i;
+  int num_messages = atoi(argv[2]);
+  int seed = ((argc == 4) ? atoi(argv[4]) : rand());
+  int max_size = atoi(argv[3]);
+  char write_buf[max_size];
+  std::cerr << "Using random seed " << seed << std::endl;
 
-  Timer timer = Timer();
+  for (i = 0; i < max_size; i++) {
+    write_buf[i] = (char)(65 + random() % 57); // Just a random char
+  }
+
+  hcl::Timer timer = hcl::Timer();
   timer.resumeTime();
   std::cerr << "This is a simple WRITE test.\n";
 
@@ -47,13 +56,10 @@ int main(int argc, char **argv) {
   }
 
   // write message to file
-  int i;
-  int num_messages = atoi(argv[2]);
-  int seed = ((argc == 4) ? atoi(argv[3]) : rand());
-  std::cerr << "Using random seed " << seed << std::endl;
   srandom(seed);
   for (i = 0; i < num_messages; i++) {
-    rv = dtio::posix::write(fd, write_buf, rand());
+
+    rv = dtio::posix::write(fd, write_buf, random() % max_size);
   }
   std::cerr << "(Return value: " << rv << ")\n";
   std::cerr << "Written to: " << argv[1] << "\n";

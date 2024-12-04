@@ -64,7 +64,8 @@ std::vector<task *> default_builder::build_write_task(task tsk,
 
   int64_t data_offset = 0;
   std::size_t remaining_data = source.size;
-  std::size_t chunk_index = 0;
+
+  // std::size_t chunk_index = dataspace_id;
   while (remaining_data > 0) {
     auto sub_task = new task(tsk);
     sub_task->t_type = task_type::WRITE_TASK;
@@ -75,8 +76,8 @@ std::vector<task *> default_builder::build_write_task(task tsk,
     if (remaining_data >= MAX_IO_UNIT) {
       sub_task->source = file(tsk.source);
       // source filename is used to indicate chunk, because buffer needs to be MAX_IO_UNIT
-      sprintf(sub_task->source.filename, "%s%i", tsk.destination.filename, chunk_index);
-      chunk_index++;
+      sprintf(sub_task->source.filename, "%s%i", tsk.destination.filename, dataspace_id % CHUNK_LIMIT);
+      dataspace_id = map_server->counter_inc(COUNTER_DB, DATASPACE_ID, std::to_string(-1));
       sub_task->source.offset = data_offset + tsk.source.offset;
       sub_task->source.size = MAX_IO_UNIT;
       sub_task->destination = file(tsk.destination);
@@ -92,8 +93,8 @@ std::vector<task *> default_builder::build_write_task(task tsk,
     else {
       sub_task->source = file(tsk.source);
       // source filename is used to indicate chunk, because buffer needs to be MAX_IO_UNIT
-      sprintf(sub_task->source.filename, "%s%i", tsk.destination.filename, chunk_index);
-      chunk_index++;
+      sprintf(sub_task->source.filename, "%s%i", tsk.destination.filename, dataspace_id % CHUNK_LIMIT);
+      dataspace_id = map_server->counter_inc(COUNTER_DB, DATASPACE_ID, std::to_string(-1));
       sub_task->source.offset = data_offset + tsk.source.offset;
       sub_task->source.size = remaining_data;
       sub_task->destination = file(tsk.destination);
@@ -117,25 +118,31 @@ std::vector<task> default_builder::build_read_task(task t) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto map_server = dtio_system::getInstance(service_i)->map_server();
   auto map_client = dtio_system::getInstance(service_i)->map_client();
-  auto chunks = mdm->fetch_chunks(t);
+  // auto chunks = mdm->fetch_chunks(t);
   size_t data_pointer = 0;
   int server = static_cast<int>(dtio_system::getInstance(LIB)->rank /
                                 PROCS_PER_MEMCACHED);
-  for (auto chunk : chunks) {
-    auto rt = new task();
-    rt->task_id = static_cast<int64_t>(
-        std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count());
-    rt->source = chunk.destination;
-    rt->destination.offset = 0;
-    rt->destination.size = rt->source.size;
-    rt->destination.server = server;
-    data_pointer += rt->destination.size;
-    snprintf(rt->destination.filename, DTIO_FILENAME_MAX, "%d", map_server->counter_inc(COUNTER_DB, DATASPACE_ID, std::to_string(-1)));
-    tasks.push_back(*rt);
-    // delete (rt);
-  }
+  t.publish = true;
+  // t.source.location = BUFFERS;
+  t.destination.size = t.source.size;
+  tasks.push_back(t);
+  // FIXME DataTasks are supposed to get split up into smaller DataTasks for parsing. This logic was removed when chunking was reorganized, but it needs to be reintroduced eventually. For now, let's simply split reads manually in the program
+
+  // for (auto chunk : chunks) {
+  //   auto rt = new task();
+  //   rt->task_id = static_cast<int64_t>(
+  //       std::chrono::duration_cast<std::chrono::microseconds>(
+  //           std::chrono::system_clock::now().time_since_epoch())
+  //           .count());
+  //   rt->source = chunk.destination;
+  //   rt->destination.offset = 0;
+  //   rt->destination.size = rt->source.size;
+  //   rt->destination.server = server;
+  //   data_pointer += rt->destination.size;
+  //   snprintf(rt->destination.filename, DTIO_FILENAME_MAX, "%d", map_server->counter_inc(COUNTER_DB, DATASPACE_ID, std::to_string(-1)) % CHUNK_LIMIT);
+  //   tasks.push_back(*rt);
+  //   // delete (rt);
+  // }
   return tasks;
 }
 

@@ -79,6 +79,12 @@ enum mpi_queue_comms
   QUEUE_WORKER_COLOR = 1
 };
 
+enum mpi_ts_comms
+{
+  QUEUE_TS_NULL_COLOR = 0,
+  QUEUE_TS_COLOR = 1
+};
+
 enum service
 {
   LIB = 0,
@@ -142,7 +148,9 @@ enum io_client_type
 {
   STDIO = 0,
   POSIX = 1,
-  MULTI = 2
+  HDF5 = 2,
+  URING = 3,
+  MULTI = 4
 };
 
 enum Distribution

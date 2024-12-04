@@ -282,7 +282,7 @@ public:
   }
 
   bool check_path(const char *path) {
-    return (strlen(path) < 7) || (path[0] == 'd' && path[1] == 't' && path[2] == 'i' && path[3] == 'o' && path[4] == ':' && path[5] == '/' && path[6] == '/');
+    return (strlen(path) >= 7) && (path[0] == 'd' && path[1] == 't' && path[2] == 'i' && path[3] == 'o' && path[4] == ':' && path[5] == '/' && path[6] == '/');
   }
 
   void add_to_whitelist(std::string execname) {

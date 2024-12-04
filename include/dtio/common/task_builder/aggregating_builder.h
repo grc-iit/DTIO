@@ -33,6 +33,7 @@
 #include <memory>
 #include <vector>
 #include <dtio/common/task_builder/task_builder.h>
+#include <dtio/common/metadata_manager/metadata_manager.h>
 /******************************************************************************
  *Class
  ******************************************************************************/
@@ -48,8 +49,8 @@ private:
 
   std::vector<task *> aggregation_tasks;
 
-  bool aggregation_closed;
-  char aggregate_buffer[MAX_IO_UNIT];
+  char *aggregate_buffer;
+  off_t aggregation_offset;
   /******************************************************************************
    *Constructor
    ******************************************************************************/
@@ -57,9 +58,10 @@ private:
 public:
   aggregating_builder(service service) : task_builder(service) {
     // Initialize variables used for aggregations
+    aggregate_buffer = (char *)malloc(MAX_IO_UNIT);
     current_aggregate_size = 0;
     aggregation_tasks = std::vector<task *>();
-    aggregation_closed = false; // TODO Aggregation closes on seek or read. The plan is to package the aggregation and send it at next write or before the read, but this will take some work.
+    aggregation_offset = -1; // This gets set to -1 so that you can change the aggregation start offset
   }
 
   /******************************************************************************
@@ -69,10 +71,11 @@ public:
   std::vector<task> build_read_task(task t) override;
   std::vector<task> build_delete_task(task tsk) override;
 
+  void close_aggregation();
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~aggregating_builder() {}
+  virtual ~aggregating_builder() { free(aggregate_buffer); }
 };
 
 #endif // DTIO_AGGREGATING_BUILDER_H

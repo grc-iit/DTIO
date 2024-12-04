@@ -44,7 +44,7 @@ dtio::MPI_Init (int *argc, char ***argv)
      to have to wait to log until after MPI has initialized.
    */
   DTIO_LOG_DEBUG("[MPI] Init Entered");
-  
+
   /* NOTE: If we're intercepting MPI_Init, we can't assume that
      argv[1] is the DTIO conf path
    */
@@ -79,6 +79,7 @@ dtio::MPI_Init (int *argc, char ***argv)
   // PMPI_Comm_split (MPI_COMM_WORLD, QUEUE_TASKSCHED_COLOR, rank - 1,
   //                 &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
   // DTIO_LOG_DEBUG ("[MPI] Comm: Queue Taskscheduler");
+  std::cout << "Getting dtio system lib" << std::endl;
   dtio_system::getInstance (service::LIB);
   DTIO_LOG_DEBUG ("[MPI] Comm: Complete");
   return 0;

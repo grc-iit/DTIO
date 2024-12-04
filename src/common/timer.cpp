@@ -26,9 +26,9 @@
 #include <iostream>
 #include <dtio/common/timer.h>
 
-void Timer::startTime() { t1 = std::chrono::high_resolution_clock::now(); }
+void dtio::Timer::startTime() { t1 = std::chrono::high_resolution_clock::now(); }
 
-double Timer::endTimeWithPrint(std::string fnName) {
+double dtio::Timer::endTimeWithPrint(std::string fnName) {
   auto t2 = std::chrono::high_resolution_clock::now();
   auto t =
       std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() /
@@ -39,14 +39,14 @@ double Timer::endTimeWithPrint(std::string fnName) {
   return t;
 }
 
-double Timer::stopTime() {
+double dtio::Timer::stopTime() {
   return std::chrono::duration_cast<std::chrono::nanoseconds>(
              std::chrono::high_resolution_clock::now() - t1)
              .count() /
          1000000000.0;
 }
 
-double Timer::pauseTime() {
+double dtio::Timer::pauseTime() {
   elapsed_time += std::chrono::duration_cast<std::chrono::nanoseconds>(
                       std::chrono::high_resolution_clock::now() - t1)
                       .count() /
@@ -54,7 +54,7 @@ double Timer::pauseTime() {
   return elapsed_time;
 }
 
-int Timer::resumeTime() {
+int dtio::Timer::resumeTime() {
   t1 = std::chrono::high_resolution_clock::now();
   return 0;
 }

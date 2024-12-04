@@ -35,7 +35,7 @@ std::shared_ptr<data_manager> data_manager::instance = nullptr;
 std::string data_manager::get(const table &name, std::string key,
                               std::string server) {
 #ifdef TIMERDM
-  Timer t = Timer();
+  hcl::Timer t = hcl::Timer();
   t.resumeTime();
 #endif
   auto return_value = dtio_system::getInstance(service_i)->map_client()->get(
@@ -52,7 +52,7 @@ std::string data_manager::get(const table &name, std::string key,
 void data_manager::get(const table &name, std::string key,
                               std::string server, char *result) {
 #ifdef TIMERDM
-  Timer t = Timer();
+  hcl::Timer t = hcl::Timer();
   t.resumeTime();
 #endif
   dtio_system::getInstance(service_i)->map_client()->get(
@@ -70,7 +70,7 @@ int data_manager::put(const table &name, std::string key, const char *data,
                       int size, std::string server)
 {
 #ifdef TIMERDM
-  Timer t = Timer();
+  hcl::Timer t = hcl::Timer();
   t.resumeTime();
 #endif
   DTIO_LOG_TRACE("Data manager put table " << name << " key " << key << " size " << size << std::endl);
@@ -88,7 +88,7 @@ int data_manager::put(const table &name, std::string key, const char *data,
 int data_manager::put(const table &name, std::string key, std::string data,
                       std::string server) {
 #ifdef TIMERDM
-  Timer t = Timer();
+  hcl::Timer t = hcl::Timer();
   t.resumeTime();
 #endif
   DTIO_LOG_TRACE("Data manager put size " << data.size() << std::endl);
@@ -112,7 +112,7 @@ bool data_manager::exists(const table &name, std::string key,
 std::string data_manager::remove(const table &name, std::string key,
                                  std::string server) {
 #ifdef TIMERDM
-  Timer t = Timer();
+  hcl::Timer t = hcl::Timer();
   t.resumeTime();
 #endif
   auto return_value =

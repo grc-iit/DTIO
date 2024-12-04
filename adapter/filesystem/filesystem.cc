@@ -23,7 +23,7 @@
  */
 
 #include "filesystem.h"
-#include "hermes_shm/util/singleton.h"
+#include "dtio_shm/util/singleton.h"
 #include "filesystem_mdm.h"
 #include "mapper/mapper_factory.h"
 
@@ -32,11 +32,11 @@
 
 namespace stdfs = std::filesystem;
 
-namespace hermes::adapter::fs {
+namespace dtio::adapter::fs {
 
 File Filesystem::Open(AdapterStat &stat, const std::string &path) {
   File f;
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   if (stat.adapter_mode_ == AdapterMode::kNone) {
     stat.adapter_mode_ = mdm->GetAdapterMode(path);
   }
@@ -49,7 +49,7 @@ File Filesystem::Open(AdapterStat &stat, const std::string &path) {
 }
 
 void Filesystem::Open(AdapterStat &stat, File &f, const std::string &path) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   Context ctx;
   std::shared_ptr<AdapterStat> exists = mdm->Find(f);
   if (!exists) {
@@ -59,23 +59,23 @@ void Filesystem::Open(AdapterStat &stat, File &f, const std::string &path) {
     auto path_shm = hipc::make_uptr<hipc::charbuf>(stat.path_);
     // Verify the bucket exists if not in CREATE mode
     if (stat.adapter_mode_ == AdapterMode::kScratch &&
-        !stat.hflags_.Any(HERMES_FS_EXISTS) &&
-        !stat.hflags_.Any(HERMES_FS_CREATE)) {
-      TagId bkt_id = HERMES->GetTagId(stat.path_);
+        !stat.hflags_.Any(DTIO_FS_EXISTS) &&
+        !stat.hflags_.Any(DTIO_FS_CREATE)) {
+      TagId bkt_id = DTIO->GetTagId(stat.path_);
       if (bkt_id.IsNull()) {
         f.status_ = false;
         return;
       }
     }
     // Get or create the bucket
-    if (stat.hflags_.Any(HERMES_FS_TRUNC)) {
+    if (stat.hflags_.Any(DTIO_FS_TRUNC)) {
       // The file was opened with TRUNCATION
-      stat.bkt_id_ = HERMES->GetBucket(stat.path_, ctx, 0);
+      stat.bkt_id_ = DTIO->GetBucket(stat.path_, ctx, 0);
       stat.bkt_id_.Clear();
     } else {
       // The file was opened regularly
       stat.file_size_ = io_client_->GetSize(*path_shm);
-      stat.bkt_id_ = HERMES->GetBucket(stat.path_, ctx, stat.file_size_);
+      stat.bkt_id_ = DTIO->GetBucket(stat.path_, ctx, stat.file_size_);
     }
     HILOG(kDebug, "File has size: {}", stat.bkt_id_.GetSize());
     // Attach trait to bucket (if not scratch mode)
@@ -86,15 +86,15 @@ void Filesystem::Open(AdapterStat &stat, File &f, const std::string &path) {
       }
     }
     // Update file position pointer
-    if (stat.hflags_.Any(HERMES_FS_APPEND)) {
+    if (stat.hflags_.Any(DTIO_FS_APPEND)) {
       stat.st_ptr_ = std::numeric_limits<size_t>::max();
     }
     // Update page size
     stat.page_size_ = mdm->GetAdapterPageSize(path);
-    // Allocate internal hermes data
+    // Allocate internal dtio data
     auto stat_ptr = std::make_shared<AdapterStat>(stat);
     FilesystemIoClientState fs_ctx(&mdm->fs_mdm_, (void*)stat_ptr.get());
-    io_client_->HermesOpen(f, stat, fs_ctx);
+    io_client_->DtioOpen(f, stat, fs_ctx);
     mdm->Create(f, stat_ptr);
   } else {
     HILOG(kDebug, "File already opened by adapter")
@@ -144,9 +144,9 @@ Status Filesystem::PartialPutOrCreate(hapi::Bucket &bkt,
                                       Context &ctx) {
   Blob full_blob(page_size);
   if (bkt.ContainsBlob(blob_name, blob_id)) {
-    // Case 1: The blob already exists (read from hermes)
-    // Read blob from Hermes
-    HILOG(kDebug, "Blob existed. Reading from Hermes.")
+    // Case 1: The blob already exists (read from dtio)
+    // Read blob from Dtio
+    HILOG(kDebug, "Blob existed. Reading from Dtio.")
     bkt.Get(blob_id, full_blob, ctx);
   }
   if (blob_off == 0 &&
@@ -308,9 +308,9 @@ Status Filesystem::PartialGetOrCreate(hapi::Bucket &bkt,
                                       Context &ctx) {
   Blob full_blob(page_size);
   if (bkt.ContainsBlob(blob_name, blob_id)) {
-    // Case 1: The blob already exists (read from hermes)
-    // Read blob from Hermes
-    HILOG(kDebug, "Blob existed. Reading from Hermes."
+    // Case 1: The blob already exists (read from dtio)
+    // Read blob from Dtio
+    HILOG(kDebug, "Blob existed. Reading from Dtio."
           " offset: {}"
           " size: {}",
           opts.backend_off_, blob_size)
@@ -435,14 +435,14 @@ size_t Filesystem::Read(File &f, AdapterStat &stat, void *ptr,
   return ret;
 }
 
-HermesRequest* Filesystem::AWrite(File &f, AdapterStat &stat, const void *ptr,
+DtioRequest* Filesystem::AWrite(File &f, AdapterStat &stat, const void *ptr,
                                   size_t off, size_t total_size, size_t req_id,
                                   IoStatus &io_status, FsIoOptions opts) {
   (void) io_status;
   HILOG(kDebug, "Starting an asynchronous write",
         opts.backend_size_)
-  auto pool = HERMES_FS_THREAD_POOL;
-  HermesRequest *hreq = new HermesRequest();
+  auto pool = DTIO_FS_THREAD_POOL;
+  DtioRequest *hreq = new DtioRequest();
   auto lambda =
       [](Filesystem *fs, File &f, AdapterStat &stat, const void *ptr,
          size_t off, size_t total_size, IoStatus &io_status, FsIoOptions opts) {
@@ -451,17 +451,17 @@ HermesRequest* Filesystem::AWrite(File &f, AdapterStat &stat, const void *ptr,
   auto func = std::bind(lambda, this, f, stat, ptr, off,
                         total_size, hreq->io_status, opts);
   hreq->return_future = pool->run(func);
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   mdm->request_map.emplace(req_id, hreq);
   return hreq;/**/
 }
 
-HermesRequest* Filesystem::ARead(File &f, AdapterStat &stat, void *ptr,
+DtioRequest* Filesystem::ARead(File &f, AdapterStat &stat, void *ptr,
                                  size_t off, size_t total_size, size_t req_id,
                                  IoStatus &io_status, FsIoOptions opts) {
   (void) io_status;
-  auto pool = HERMES_FS_THREAD_POOL;
-  HermesRequest *hreq = new HermesRequest();
+  auto pool = DTIO_FS_THREAD_POOL;
+  DtioRequest *hreq = new DtioRequest();
   auto lambda =
       [](Filesystem *fs, File &f, AdapterStat &stat, void *ptr,
          size_t off, size_t total_size, IoStatus &io_status, FsIoOptions opts) {
@@ -470,18 +470,18 @@ HermesRequest* Filesystem::ARead(File &f, AdapterStat &stat, void *ptr,
   auto func = std::bind(lambda, this, f, stat,
                         ptr, off, total_size, hreq->io_status, opts);
   hreq->return_future = pool->run(func);
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   mdm->request_map.emplace(req_id, hreq);
   return hreq;
 }
 
 size_t Filesystem::Wait(uint64_t req_id) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto req_iter = mdm->request_map.find(req_id);
   if (req_iter == mdm->request_map.end()) {
     return 0;
   }
-  HermesRequest *req = (*req_iter).second;
+  DtioRequest *req = (*req_iter).second;
   size_t ret = req->return_future.get();
   delete req;
   return ret;
@@ -505,7 +505,7 @@ size_t Filesystem::GetSize(File &f, AdapterStat &stat) {
 
 off_t Filesystem::Seek(File &f, AdapterStat &stat,
                        SeekMode whence, off64_t offset) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   switch (whence) {
     case SeekMode::kSet: {
       stat.st_ptr_ = offset;
@@ -550,10 +550,10 @@ off_t Filesystem::Tell(File &f, AdapterStat &stat) {
 }
 
 int Filesystem::Sync(File &f, AdapterStat &stat) {
-  if (HERMES->client_config_.flushing_mode_ == FlushingMode::kSync) {
+  if (DTIO->client_config_.flushing_mode_ == FlushingMode::kSync) {
     // NOTE(llogan): only for the unit tests
     // Please don't enable synchronous flushing
-    HERMES->Flush();
+    DTIO->Flush();
   }
   return 0;
 }
@@ -566,15 +566,15 @@ int Filesystem::Truncate(File &f, AdapterStat &stat, size_t new_size) {
 
 int Filesystem::Close(File &f, AdapterStat &stat) {
   Sync(f, stat);
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   FilesystemIoClientState fs_ctx(&mdm->fs_mdm_, (void*)&stat);
-  io_client_->HermesClose(f, stat, fs_ctx);
+  io_client_->DtioClose(f, stat, fs_ctx);
   io_client_->RealClose(f, stat);
   mdm->Delete(stat.path_, f);
   if (stat.amode_ & MPI_MODE_DELETE_ON_CLOSE) {
     Remove(stat.path_);
   }
-  if (HERMES->client_config_.flushing_mode_ == FlushingMode::kSync) {
+  if (DTIO->client_config_.flushing_mode_ == FlushingMode::kSync) {
     // NOTE(llogan): only for the unit tests
     // Please don't enable synchronous flushing
     // stat.bkt_id_.Destroy();
@@ -583,10 +583,10 @@ int Filesystem::Close(File &f, AdapterStat &stat) {
 }
 
 int Filesystem::Remove(const std::string &pathname) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   int ret = io_client_->RealRemove(pathname);
   // Destroy the bucket. It's created if it doesn't exist
-  auto bkt = HERMES->GetBucket(pathname);
+  auto bkt = DTIO->GetBucket(pathname);
   HILOG(kDebug, "Destroying the bucket: {}", bkt.GetName());
   bkt.Destroy();
   // Destroy all file descriptors
@@ -599,9 +599,9 @@ int Filesystem::Remove(const std::string &pathname) {
   for (File &f : files) {
     auto stat = mdm->Find(f);
     if (stat == nullptr) { continue; }
-    auto mdm = HERMES_FS_METADATA_MANAGER;
+    auto mdm = DTIO_FS_METADATA_MANAGER;
     FilesystemIoClientState fs_ctx(&mdm->fs_mdm_, (void *)&stat);
-    io_client_->HermesClose(f, *stat, fs_ctx);
+    io_client_->DtioClose(f, *stat, fs_ctx);
     io_client_->RealClose(f, *stat);
     mdm->Delete(stat->path_, f);
     if (stat->adapter_mode_ == AdapterMode::kScratch) {
@@ -631,14 +631,14 @@ size_t Filesystem::Read(File &f, AdapterStat &stat, void *ptr,
   return Read(f, stat, ptr, off, total_size, io_status, opts);
 }
 
-HermesRequest* Filesystem::AWrite(File &f, AdapterStat &stat, const void *ptr,
+DtioRequest* Filesystem::AWrite(File &f, AdapterStat &stat, const void *ptr,
                        size_t total_size, size_t req_id,
                        IoStatus &io_status, FsIoOptions opts) {
   off_t off = stat.st_ptr_;
   return AWrite(f, stat, ptr, off, total_size, req_id, io_status, opts);
 }
 
-HermesRequest* Filesystem::ARead(File &f, AdapterStat &stat, void *ptr,
+DtioRequest* Filesystem::ARead(File &f, AdapterStat &stat, void *ptr,
                       size_t total_size, size_t req_id,
                       IoStatus &io_status, FsIoOptions opts) {
   off_t off = stat.st_ptr_;
@@ -654,7 +654,7 @@ HermesRequest* Filesystem::ARead(File &f, AdapterStat &stat, void *ptr,
 size_t Filesystem::Write(File &f, bool &stat_exists, const void *ptr,
                          size_t total_size,
                          IoStatus &io_status, FsIoOptions opts) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -667,7 +667,7 @@ size_t Filesystem::Write(File &f, bool &stat_exists, const void *ptr,
 size_t Filesystem::Read(File &f, bool &stat_exists, void *ptr,
                         size_t total_size,
                         IoStatus &io_status, FsIoOptions opts) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -680,7 +680,7 @@ size_t Filesystem::Read(File &f, bool &stat_exists, void *ptr,
 size_t Filesystem::Write(File &f, bool &stat_exists, const void *ptr,
                          size_t off, size_t total_size,
                          IoStatus &io_status, FsIoOptions opts) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -694,7 +694,7 @@ size_t Filesystem::Write(File &f, bool &stat_exists, const void *ptr,
 size_t Filesystem::Read(File &f, bool &stat_exists, void *ptr,
                         size_t off, size_t total_size,
                         IoStatus &io_status, FsIoOptions opts) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -705,10 +705,10 @@ size_t Filesystem::Read(File &f, bool &stat_exists, void *ptr,
   return Read(f, *stat, ptr, off, total_size, io_status, opts);
 }
 
-HermesRequest* Filesystem::AWrite(File &f, bool &stat_exists, const void *ptr,
+DtioRequest* Filesystem::AWrite(File &f, bool &stat_exists, const void *ptr,
                        size_t total_size, size_t req_id,
                        IoStatus &io_status, FsIoOptions opts) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -718,10 +718,10 @@ HermesRequest* Filesystem::AWrite(File &f, bool &stat_exists, const void *ptr,
   return AWrite(f, *stat, ptr, total_size, req_id, io_status, opts);
 }
 
-HermesRequest* Filesystem::ARead(File &f, bool &stat_exists, void *ptr,
+DtioRequest* Filesystem::ARead(File &f, bool &stat_exists, void *ptr,
                       size_t total_size, size_t req_id,
                       IoStatus &io_status, FsIoOptions opts) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -731,10 +731,10 @@ HermesRequest* Filesystem::ARead(File &f, bool &stat_exists, void *ptr,
   return ARead(f, *stat, ptr, total_size, req_id, io_status, opts);
 }
 
-HermesRequest* Filesystem::AWrite(File &f, bool &stat_exists, const void *ptr,
+DtioRequest* Filesystem::AWrite(File &f, bool &stat_exists, const void *ptr,
                        size_t off, size_t total_size, size_t req_id,
                        IoStatus &io_status, FsIoOptions opts) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -745,10 +745,10 @@ HermesRequest* Filesystem::AWrite(File &f, bool &stat_exists, const void *ptr,
   return AWrite(f, *stat, ptr, off, total_size, req_id, io_status, opts);
 }
 
-HermesRequest* Filesystem::ARead(File &f, bool &stat_exists, void *ptr,
+DtioRequest* Filesystem::ARead(File &f, bool &stat_exists, void *ptr,
                       size_t off, size_t total_size, size_t req_id,
                       IoStatus &io_status, FsIoOptions opts) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -761,7 +761,7 @@ HermesRequest* Filesystem::ARead(File &f, bool &stat_exists, void *ptr,
 
 off_t Filesystem::Seek(File &f, bool &stat_exists,
                        SeekMode whence, off_t offset) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -772,7 +772,7 @@ off_t Filesystem::Seek(File &f, bool &stat_exists,
 }
 
 size_t Filesystem::GetSize(File &f, bool &stat_exists) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -783,7 +783,7 @@ size_t Filesystem::GetSize(File &f, bool &stat_exists) {
 }
 
 off_t Filesystem::Tell(File &f, bool &stat_exists) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -794,7 +794,7 @@ off_t Filesystem::Tell(File &f, bool &stat_exists) {
 }
 
 int Filesystem::Sync(File &f, bool &stat_exists) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -805,7 +805,7 @@ int Filesystem::Sync(File &f, bool &stat_exists) {
 }
 
 int Filesystem::Truncate(File &f, bool &stat_exists, size_t new_size) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -816,7 +816,7 @@ int Filesystem::Truncate(File &f, bool &stat_exists, size_t new_size) {
 }
 
 int Filesystem::Close(File &f, bool &stat_exists) {
-  auto mdm = HERMES_FS_METADATA_MANAGER;
+  auto mdm = DTIO_FS_METADATA_MANAGER;
   auto stat = mdm->Find(f);
   if (!stat) {
     stat_exists = false;
@@ -826,4 +826,4 @@ int Filesystem::Close(File &f, bool &stat_exists) {
   return Close(f, *stat);
 }
 
-}  // namespace hermes::adapter::fs
+}  // namespace dtio::adapter::fs

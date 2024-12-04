@@ -26,7 +26,6 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
-#include <cstdio>
 #include <cstring>
 #include <dtio/common/data_manager/data_manager.h>
 #include <dtio/common/metadata_manager/metadata_manager.h>
@@ -36,6 +35,7 @@
  *DTIO Namespace
  ******************************************************************************/
 namespace dtio {
+namespace stdio {
 /******************************************************************************
  *Interface
  ******************************************************************************/
@@ -49,7 +49,8 @@ std::size_t fread_wait(void *ptr, std::vector<task> &tasks,
 std::vector<task *> fwrite_async(void *ptr, size_t size, size_t count,
 				 FILE *stream);
 size_t fwrite_wait(std::vector<task *> tasks);
-size_t fwrite(void *ptr, size_t size, size_t count, FILE *stream);
+size_t fwrite(const void *ptr, size_t size, size_t count, FILE *stream);
+} // namespace stdio
 } // namespace dtio
 
 #endif // DTIO_MAIN_STDIO_H

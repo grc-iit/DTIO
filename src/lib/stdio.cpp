@@ -36,13 +36,31 @@
 /******************************************************************************
  *Interface
  ******************************************************************************/
-FILE *dtio::fopen(const char *filename, const char *mode) {
+FILE *dtio::stdio::fopen(const char *filename, const char *mode) {
   auto mdm = metadata_manager::getInstance(LIB);
   FILE *fh = nullptr;
+  bool file_exists_in_fs = false;
   if (!mdm->is_created(filename)) {
-    if (strcmp(mode, "r") == 0 || strcmp(mode, "w") == 0 ||
-        strcmp(mode, "a") == 0) {
-      return nullptr;
+    if (strcmp(mode, "a") == 0 && strcmp(mode, "w") == 0) {
+      if (ConfigManager::get_instance ()->CHECKFS)
+	{
+	  struct stat st;
+	  if (stat (filename, &st) == 0)
+	    {
+	      file_exists_in_fs = true;
+	    }
+	}
+      if (!file_exists_in_fs)
+	{
+	  return nullptr;
+	}
+      else
+	{
+	  if (mdm->update_on_open (filename, mode, fh) != SUCCESS)
+	    {
+	      throw std::runtime_error ("dtio::fopen() update failed!");
+	    }
+	}
     } else {
       if (mdm->create(filename, mode, fh) != SUCCESS) {
         throw std::runtime_error("dtio::fopen() create failed!");
@@ -60,7 +78,7 @@ FILE *dtio::fopen(const char *filename, const char *mode) {
   return fh;
 }
 
-int dtio::fclose(FILE *stream) {
+int dtio::stdio::fclose(FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   if (!mdm->is_opened(stream))
     return LIB__FCLOSE_FAILED;
@@ -69,28 +87,32 @@ int dtio::fclose(FILE *stream) {
   return SUCCESS;
 }
 
-int dtio::fseek(FILE *stream, long int offset, int origin) {
+int dtio::stdio::fseek(FILE *stream, long int offset, int origin) {
   auto mdm = metadata_manager::getInstance(LIB);
-  auto filename = mdm->get_filename(stream);
+  if (!mdm->is_opened(stream)) {
+    return EBADF;
+  }
+ auto filename = mdm->get_filename(stream);
   if (mdm->get_mode(filename) == "a" || mdm->get_mode(filename) == "a+")
     return 0;
   auto size = mdm->get_filesize(filename);
   auto fp = mdm->get_fp(filename);
   switch (origin) {
   case SEEK_SET:
-    if (offset > size)
-      return -1;
+    // if (offset > size)
+    //   return -1;
     break;
   case SEEK_CUR:
-    if (fp + offset > size || fp + offset < 0)
+    // fp + offset > size ||
+    if (fp + offset < 0)
       return -1;
     break;
   case SEEK_END:
-    if (offset > 0)
-      return -1;
+    // if (offset > 0)
+    //   return -1;
     break;
   default:
-    fprintf(stderr, "Seek origin fault!\n");
+    // fprintf(stderr, "Seek origin fault!\n");
     return -1;
   }
   if (!mdm->is_opened(stream))
@@ -99,254 +121,199 @@ int dtio::fseek(FILE *stream, long int offset, int origin) {
                              static_cast<size_t>(origin));
 }
 
-std::vector<task> dtio::fread_async(size_t size, size_t count,
-                                           FILE *stream) {
+size_t dtio::stdio::fread(void *ptr, size_t size, size_t count, FILE *stream) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
   auto task_m = dtio_system::getInstance(LIB)->task_composer();
+  auto data_m = data_manager::getInstance(LIB);
   auto filename = mdm->get_filename(stream);
   auto offset = mdm->get_fp(filename);
-  if (!mdm->is_opened(filename))
-    return std::vector<task>();
-  auto r_task = task(task_type::READ_TASK, file(filename, offset, size * count), file());
-#ifdef TIMERTB
-  Timer t = Timer();
-  t.resumeTime();
-#endif
-  auto tasks = task_m->build_read_task(r_task);
-#ifdef TIMERTB
-  std::stringstream stream1;
-  stream1 << "build_read_task()," << std::fixed << std::setprecision(10)
-          << t.pauseTime() << "\n";
-  std::cout << stream1.str();
-#endif
+  bool check_fs = false;
+  task *task_i;
+  task_i = nullptr;
 
-  for (auto task : tasks) {
-    std::string data;
-    switch (task.source.location) {
-    case PFS: {
-      std::cerr << "async in pfs\n";
-    }
-    case BUFFERS: {
-      // std::cerr<<"async in buffers\n";
-      client_queue->publish_task(&task);
-      break;
-    }
-    case CACHE: {
-      std::cerr << "async in cache\n";
-      break;
-    }
-    }
-  }
-  return tasks;
-}
-
-std::size_t dtio::fread_wait(void *ptr, std::vector<task> &tasks,
-                               std::string filename) {
-  auto mdm = metadata_manager::getInstance(LIB);
-  auto data_m = data_manager::getInstance(LIB);
-  int ptr_pos = 0;
-  std::size_t size_read = 0;
-  for (auto task : tasks) {
-    std::string data;
-    switch (task.source.location) {
-    case PFS: {
-      std::cerr << "wait in pfs\n";
-    }
-    case BUFFERS: {
-      // std::cerr<<"wait in buffers\n";
-      Timer wait_timer = Timer();
-      int count = 0;
-      while (!data_m->exists(DATASPACE_DB, task.destination.filename,
-                             std::to_string(task.destination.server))) {
-        wait_timer.pauseTime();
-        if (wait_timer.getElapsedTime() > 5 && count % 1000000 == 0) {
-          int rank;
-          MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-          std::stringstream stream;
-          stream << "Waiting for task more than 5 seconds rank:" << rank
-                 << "dataspace_id:" << task.destination.filename;
-          count++;
-        }
-	wait_timer.resumeTime();
+  if (!mdm->is_opened(filename)) {
+    if (!ConfigManager::get_instance ()->CHECKFS)
+      {
+	return 0;
       }
-      data = data_m->get(DATASPACE_DB, task.destination.filename,
-                         std::to_string(task.destination.server));
-
-      data_m->remove(DATASPACE_DB, task.destination.filename,
-                     std::to_string(task.destination.server));
-      memcpy(ptr + ptr_pos, data.c_str() + task.destination.offset,
-             task.destination.size);
-      size_read += task.destination.size;
-      break;
-    }
-    case CACHE: {
-      std::cerr << "wait in cache\n";
-      data = data_m->get(DATASPACE_DB, task.source.filename,
-                         std::to_string(task.destination.server));
-      memcpy(ptr + ptr_pos, data.c_str() + task.source.offset,
-             task.source.size);
-      size_read += task.source.size;
-      break;
-    }
-    }
-    ptr_pos += task.destination.size;
+    if (!mdm->is_created (filename))
+      {
+	check_fs = true;
+      }
   }
-  mdm->update_read_task_info(tasks, filename);
-  return size_read;
-}
-
-size_t dtio::fread(void *ptr, size_t size, size_t count, FILE *stream) {
-  auto mdm = metadata_manager::getInstance(LIB);
-  auto client_queue =
-      dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
-  auto task_m = dtio_system::getInstance(LIB)->task_composer();
-  auto data_m = data_manager::getInstance(LIB);
-  auto filename = mdm->get_filename(stream);
-  auto offset = mdm->get_fp(filename);
-  if (!mdm->is_opened(filename))
-    return 0;
   auto r_task = task(task_type::READ_TASK, file(filename, offset, size * count), file());
+  r_task.check_fs = check_fs;
+  r_task.iface = io_client_type::STDIO;
 #ifdef TIMERTB
-  Timer t = Timer();
+  hcl::Timer t = hcl::Timer();
   t.resumeTime();
 #endif
   auto tasks = task_m->build_read_task(r_task);
+  DTIO_LOG_TRACE("Task len " << tasks.size() << std::endl);
 #ifdef TIMERTB
   std::stringstream stream1;
   stream1 << "build_read_task()," << std::fixed << std::setprecision(10)
           << t.pauseTime() << "\n";
-  std::cout << stream1.str();
+  DTIO_LOG_TRACE(stream1.str ());
 #endif
   int ptr_pos = 0;
   size_t size_read = 0;
-  for (auto task : tasks) {
+  task *ttp;
+  for (auto t : tasks) {
     std::string data;
-    switch (task.source.location) {
-    case PFS: {
-      std::cerr << "in pfs\n";
-    }
-    case BUFFERS: {
-      Timer timer = Timer();
-      client_queue->publish_task(&task);
-
-      while (!data_m->exists(DATASPACE_DB, task.source.filename,
-                             std::to_string(task.destination.server))) {
-        // std::cerr<<"looping\n";
+#if(STACK_ALLOCATION)
+    {
+      char char_data[MAX_IO_UNIT];
+      switch (t.source.location) {
+      case PFS: {
+	DTIO_LOG_DEBUG ("in pfs");
+	if (ConfigManager::get_instance ()->CHECKFS)
+	  {
+	    hcl::Timer timer = hcl::Timer ();
+	    client_queue->publish_task (&t);
+	    
+	    while (!data_m->exists (DATASPACE_DB, t.source.filename,
+				    std::to_string (t.destination.server)))
+	      {
+	      }
+	    
+	    data_m->get (DATASPACE_DB, t.source.filename,
+			 std::to_string (t.destination.server), char_data);
+	    
+	    strncpy ((char *)ptr + ptr_pos,
+		     char_data + t.source.offset, t.destination.size);
+	    auto print_test = std::string ((char *)ptr);
+	    
+	    data_m->remove (DATASPACE_DB, t.source.filename,
+			    std::to_string (t.destination.server));
+	    
+	    size_read += t.source.size;
+	  }
+	else
+	  {
+	    DTIO_LOG_DEBUG ("in pfs no checkfs");
+	  }
       }
-      data = data_m->get(DATASPACE_DB, task.source.filename,
-                         std::to_string(task.destination.server));
+	break;
+      case BUFFERS: {
+	hcl::Timer timer = hcl::Timer();
+	client_queue->publish_task(&t);
 
-      memcpy(ptr + ptr_pos, data.c_str() + task.destination.offset,
-             task.source.size);
+	while (!data_m->exists(DATASPACE_DB, t.source.filename,
+			       std::to_string(t.destination.server))) {
+	  // std::cerr<<"looping\n";
+	}
+	data_m->get(DATASPACE_DB, t.source.filename,
+		    std::to_string(t.destination.server), char_data);
+	
+	strncpy((char *)ptr + ptr_pos, char_data + t.source.offset,
+	       t.destination.size);
 
-      data_m->remove(DATASPACE_DB, task.source.filename,
-                     std::to_string(task.destination.server));
+	data_m->remove(DATASPACE_DB, t.source.filename,
+		       std::to_string(t.destination.server));
 
-      size_read += task.source.size;
-      break;
+	size_read += t.destination.size;
+	break;
+      }
+      case CACHE: {
+	DTIO_LOG_TRACE("Cache" << std::endl);
+	data_m->get(DATASPACE_DB, t.source.filename,
+		    std::to_string(t.destination.server), char_data);
+	DTIO_LOG_TRACE("Doing memcpy " << ptr_pos << " " << t.source.offset << " " << t.destination.size << " " << t.source.size << std::endl);
+	memcpy((char *)ptr + ptr_pos, char_data + (t.source.offset % t.source.size),
+	       t.destination.size);
+	size_read += t.destination.size;
+	break;
+      }
+      }
     }
-    case CACHE: {
-      data = data_m->get(DATASPACE_DB, task.source.filename,
-                         std::to_string(task.destination.server));
-      memcpy(ptr + ptr_pos, data.c_str() + task.source.offset,
-             task.source.size);
-      size_read += task.source.size;
-      break;
-    }
-    }
+#else
+    {
+      char *char_data = (char *)malloc(MAX_IO_UNIT);
+      switch (t.source.location)
+	{
+	case PFS:
+	  {
+	    DTIO_LOG_DEBUG ("in pfs");
+	    if (ConfigManager::get_instance ()->CHECKFS)
+	      {
+		hcl::Timer timer = hcl::Timer ();
+		client_queue->publish_task (&t);
 
-    ptr_pos += task.destination.size;
+		while (!data_m->exists (DATASPACE_DB, t.source.filename,
+					std::to_string (t.destination.server)))
+		  {
+		  }
+
+		data_m->get (DATASPACE_DB, t.source.filename,
+			     std::to_string (t.destination.server), char_data);
+
+		strncpy ((char *)ptr + ptr_pos,
+			 char_data + t.source.offset, t.destination.size);
+		free(char_data);
+		// auto print_test = std::string ((char *)buf);
+
+		data_m->remove (DATASPACE_DB, t.source.filename,
+				std::to_string (t.destination.server));
+
+		size_read += t.source.size;
+	      }
+	    else
+	      {
+		DTIO_LOG_DEBUG ("in pfs no checkfs");
+	      }
+	  }
+	  break;
+	case BUFFERS:
+	  {
+	    hcl::Timer timer = hcl::Timer ();
+	    client_queue->publish_task (&t);
+	    while (!data_m->exists (DATASPACE_DB, t.source.filename,
+				    std::to_string (t.destination.server)))
+	      {
+		// std::cerr<<"looping\n";
+	      }
+	    data_m->get (DATASPACE_DB, t.source.filename,
+			 std::to_string (t.destination.server), char_data);
+
+	    strncpy ((char *)ptr + ptr_pos, char_data + t.source.offset,
+		     t.destination.size);
+	    free(char_data);
+	    data_m->remove (DATASPACE_DB, t.source.filename,
+			    std::to_string (t.destination.server));
+
+	    size_read += t.destination.size;
+	    break;
+	  }
+	case CACHE:
+	  {
+	    DTIO_LOG_TRACE("Cache" << std::endl);
+	    // data = data_m->get (DATASPACE_DB, t.source.filename,
+	    //                     std::to_string (t.destination.server));
+	    data_m->get(DATASPACE_DB, t.source.filename,
+			std::to_string (t.destination.server), char_data);
+	    DTIO_LOG_TRACE("Doing memcpy " << ptr_pos << " " << t.source.offset << " " << t.destination.size << " " << t.source.size << std::endl);
+	    memcpy ((char *)ptr + ptr_pos, char_data + (t.source.offset % t.source.size),
+		    t.destination.size); // Might not actually be necessary
+	    DTIO_LOG_TRACE("Memcpy finished" << std::endl);
+	    free(char_data);
+	    size_read += t.destination.size;
+	    break;
+	  }
+	}
+    }
+#endif
+
+    ptr_pos += t.destination.size;
   }
   mdm->update_read_task_info(tasks, filename);
   return size_read;
 }
 
-std::vector<task *> dtio::fwrite_async(void *ptr, size_t size,
-				       size_t count, FILE *stream) {
-  auto mdm = metadata_manager::getInstance(LIB);
-  auto client_queue =
-      dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
-  auto task_m = dtio_system::getInstance(LIB)->task_composer();
-  auto data_m = data_manager::getInstance(LIB);
-  auto filename = mdm->get_filename(stream);
-  auto offset = mdm->get_fp(filename);
-  if (!mdm->is_opened(filename))
-    throw std::runtime_error("dtio::fwrite() file not opened!");
-  auto w_task = task(task_type::WRITE_TASK, file(filename, offset, size * count), file());
-#ifdef TIMERTB
-  Timer t = Timer();
-  t.resumeTime();
-#endif
-  auto write_tasks = task_m->build_write_task(w_task, static_cast<char *>(ptr));
-#ifdef TIMERTB
-  std::stringstream stream1;
-  stream1 << "build_write_task()," << std::fixed << std::setprecision(10)
-          << t.pauseTime() << "\n";
-  std::cout << stream1.str();
-#endif
-
-  int index = 0;
-  std::string write_data(static_cast<char *>(ptr));
-  for (auto tsk : write_tasks) {
-    if (tsk->addDataspace) {
-      if (write_data.length() >= tsk->source.offset + tsk->source.size) {
-        auto data = write_data.substr(tsk->source.offset, tsk->source.size);
-        data_m->put(DATASPACE_DB, tsk->destination.filename, data,
-                    std::to_string(tsk->destination.server));
-      } else {
-        data_m->put(DATASPACE_DB, tsk->destination.filename, write_data,
-                    std::to_string(tsk->destination.server));
-      }
-    }
-    if (tsk->publish) {
-      if (size * count < tsk->source.size)
-        mdm->update_write_task_info(*tsk, filename, size * count);
-      else
-        mdm->update_write_task_info(*tsk, filename, tsk->source.size);
-      client_queue->publish_task(tsk);
-    } else {
-      mdm->update_write_task_info(*tsk, filename, tsk->source.size);
-    }
-    index++;
-  }
-  return write_tasks;
-}
-
-size_t dtio::fwrite_wait(std::vector<task *> tasks) {
-  size_t total_size_written = 0;
-  auto map_client = dtio_system::getInstance(LIB)->map_client();
-  auto map_server = dtio_system::getInstance(LIB)->map_server();
-  for (auto task : tasks) {
-    int count = 0;
-    Timer wait_timer = Timer();
-
-    while (!map_server->exists(table::WRITE_FINISHED_DB,
-                               task->destination.filename,
-                               std::to_string(-1))) {
-      wait_timer.pauseTime();
-      if (wait_timer.getElapsedTime() > 5 && count % 10000 == 0) {
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        std::stringstream stream;
-        stream << "Waiting for task more than 5 seconds rank:" << rank
-               << "dataspace_id:" << task->destination.filename;
-        count++;
-      }
-      wait_timer.resumeTime();
-    }
-    map_server->remove(table::WRITE_FINISHED_DB, task->destination.filename,
-                       std::to_string(-1));
-    map_client->remove(table::DATASPACE_DB, task->destination.filename,
-                       std::to_string(task->destination.server));
-    total_size_written += task->destination.size;
-    delete (task);
-  }
-  return total_size_written;
-}
-
-size_t dtio::fwrite(void *ptr, size_t size, size_t count, FILE *stream) {
+size_t dtio::stdio::fwrite(const void *ptr, size_t size, size_t count, FILE *stream) {
+  DTIO_LOG_DEBUG ("[STDIO] fwrite entered");
   auto mdm = metadata_manager::getInstance(LIB);
   auto client_queue =
       dtio_system::getInstance(LIB)->get_client_queue(CLIENT_TASK_SUBJECT);
@@ -358,57 +325,120 @@ size_t dtio::fwrite(void *ptr, size_t size, size_t count, FILE *stream) {
   auto offset = mdm->get_fp(filename);
   if (!mdm->is_opened(filename))
     throw std::runtime_error("dtio::fwrite() file not opened!");
-  auto w_task = task(task_type::WRITE_TASK, file(filename, offset, size * count), file());
+  auto source = file();
+  source.offset = 0; // buffer offset, NOT file offset
+  source.size = size * count;
+  auto destination = file(filename, offset, size * count);
+
+  auto w_task = task(task_type::WRITE_TASK, source, destination);
+
+  w_task.iface = io_client_type::STDIO;
 #ifdef TIMERTB
-  Timer t = Timer();
+  hcl::Timer t = hcl::Timer();
   t.resumeTime();
 #endif
-  auto write_tasks = task_m->build_write_task(w_task, static_cast<char *>(ptr));
+  auto write_tasks = task_m->build_write_task(w_task, static_cast<const char *>(ptr));
 #ifdef TIMERTB
   std::stringstream stream1;
   stream1 << "build_write_task()," << std::fixed << std::setprecision(10)
           << t.pauseTime() << "\n";
-  std::cout << stream1.str();
+  DTIO_LOG_TRACE(stream1.str ());
 #endif
 
+  const char *write_data_char = static_cast<const char *>(ptr);
+  std::string write_data (static_cast<const char *> (ptr), count);
+
   int index = 0;
-  std::string write_data(static_cast<char *>(ptr));
+
+  /* Note: We cannot assume buf is null-terminated. It would likely be
+   * better to get rid of the string entirely, but for now if we copy
+   * with count then it will not assume a null-terminated C string */
   std::vector<std::pair<std::string, std::string>> task_ids =
       std::vector<std::pair<std::string, std::string>>();
-  for (auto tsk : write_tasks) {
-    if (tsk->addDataspace) {
-      if (write_data.length() >= tsk->source.offset + tsk->source.size) {
-        auto data = write_data.substr(tsk->source.offset, tsk->source.size);
-        data_m->put(DATASPACE_DB, tsk->source.filename, data,
-                    std::to_string(tsk->destination.server));
-      } else {
-        data_m->put(DATASPACE_DB, tsk->source.filename, write_data,
-                    std::to_string(tsk->destination.server));
-      }
-    }
-    if (tsk->publish) {
-      if (size * count < tsk->source.size)
-        mdm->update_write_task_info(*tsk, filename, size * count);
-      else
-        mdm->update_write_task_info(*tsk, filename, tsk->source.size);
-      client_queue->publish_task(tsk);
-      task_ids.emplace_back(
-          std::make_pair(tsk->source.filename,
-                         std::to_string(tsk->destination.server)));
-    } else {
-      mdm->update_write_task_info(*tsk, filename, tsk->source.size);
-    }
+  for (auto tsk : write_tasks)
+    {
+      if (tsk->addDataspace)
+	{
+	  if (write_data.length () >= tsk->source.offset + tsk->source.size)
+	    {
+	      auto data
+		= write_data.substr (tsk->source.offset, tsk->source.size);
+	      DTIO_LOG_TRACE("Write v1 " << write_data.length() << " " << data.length() << " " << tsk->source.offset << " " << tsk->source.size << std::endl);
+	      DTIO_LOG_TRACE("WRITE Count " << count << std::endl);
+	      data_m->put (DATASPACE_DB, tsk->source.filename, write_data_char, count,
+			   std::to_string (tsk->destination.server));
+	  
+	      // data_m->put (DATASPACE_DB, tsk->source.filename, write_data,
+	      //              std::to_string (tsk->destination.server));
+	    }
+	  else
+	    {
+	      DTIO_LOG_TRACE("Write v2 " << write_data.length() << " " << tsk->source.size << " " << write_tasks.size() << std::endl);
+	      // data_m->put (DATASPACE_DB, tsk->source.filename, write_data,
+	      //              std::to_string (tsk->destination.server));
+	      DTIO_LOG_TRACE("WRITE Count " << count << std::endl);
+	      data_m->put (DATASPACE_DB, tsk->source.filename, write_data_char, count,
+			   std::to_string (tsk->destination.server));
+	    }
+	}
 
-    index++;
-    delete tsk;
-  }
+      if (tsk->publish)
+        {
+          if (count < tsk->source.size) {
+            mdm->update_write_task_info (*tsk, tsk->destination.filename, count);
+	  }
+          else {
+            mdm->update_write_task_info (*tsk, tsk->destination.filename, tsk->source.size);
+	  }
+          client_queue->publish_task (tsk);
+          task_ids.emplace_back (std::make_pair (
+						 std::to_string(tsk->task_id), std::to_string (tsk->destination.server)));
+        }
+      else
+        {
+          mdm->update_write_task_info (*tsk, tsk->destination.filename, tsk->source.size);
+        }
+
+      index++;
+      delete tsk;
+    }
+  // {
+  //   if (tsk->addDataspace) {
+  //     if (write_data.length() >= tsk->source.offset + tsk->source.size) {
+  //       auto data = write_data.substr(tsk->source.offset, tsk->source.size);
+  //       data_m->put(DATASPACE_DB, tsk->source.filename, data,
+  //                   std::to_string(tsk->destination.server));
+  //     } else {
+  //       data_m->put(DATASPACE_DB, tsk->source.filename, write_data,
+  //                   std::to_string(tsk->destination.server));
+  //     }
+  //   }
+  //   if (tsk->publish) {
+  //     if (size * count < tsk->source.size)
+  //       mdm->update_write_task_info(*tsk, filename, size * count);
+  //     else
+  //       mdm->update_write_task_info(*tsk, filename, tsk->source.size);
+  //     client_queue->publish_task(tsk);
+  //     task_ids.emplace_back(
+  //         std::make_pair(tsk->source.filename,
+  //                        std::to_string(tsk->destination.server)));
+  //   } else {
+  //     mdm->update_write_task_info(*tsk, filename, tsk->source.size);
+  //   }
+
+  //   index++;
+  //   delete tsk;
+  // }
+
+
+  // NOTE Without this, it's not synchronous. Easy way to add async later
   for (auto task_id : task_ids) {
     while (!map_server->exists(table::WRITE_FINISHED_DB, task_id.first,
                                std::to_string(-1))) {
     }
     map_server->remove(table::WRITE_FINISHED_DB, task_id.first,
                        std::to_string(-1));
-    map_client->remove(table::DATASPACE_DB, task_id.first, task_id.second);
+    // map_client->remove(table::DATASPACE_DB, task_id.first, task_id.second);
   }
   return size * count;
 }

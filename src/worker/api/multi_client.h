@@ -28,6 +28,8 @@
 #include "io_client.h"
 #include "posix_client.h"
 #include "stdio_client.h"
+#include "uring_client.h"
+#include "hdf5_client.h"
 #include "dtio/common/config_manager.h"
 #include <chrono>
 #include <dtio/common/data_structures.h>
@@ -47,11 +49,13 @@ public:
     clients = (std::shared_ptr<io_client> *)calloc(io_client_type::MULTI, sizeof(std::shared_ptr<io_client>));
     clients[io_client_type::POSIX] = std::make_shared<posix_client>(worker_index);
     clients[io_client_type::STDIO] = std::make_shared<stdio_client>(worker_index);
+    clients[io_client_type::URING] = std::make_shared<uring_client>(worker_index);
+    clients[io_client_type::HDF5] = std::make_shared<hdf5_client>(worker_index);
   }
-  int dtio_write(task tsk) override;
-  int dtio_read(task tsk) override;
-  int dtio_delete_file(task tsk) override;
-  int dtio_flush_file(task tsk) override;
+  int dtio_write(task *tsk[]) override;
+  int dtio_read(task *tsk[]) override;
+  int dtio_delete_file(task *tsk[]) override;
+  int dtio_flush_file(task *tsk[]) override;
 
   virtual ~multi_client() { free(clients); }
 };

@@ -30,27 +30,61 @@
 #include <dtio/common/task_builder/aggregating_builder.h>
 #include <vector>
 
+void aggregating_builder::close_aggregation() {
+  /* Aggregation closes on seek or read or once filename changes. When
+     this happens, we need to package and send the current aggregation
+  */
+
+  if (aggregation_tasks.size() == 0) {
+    // Just a quick check to avoid this if we don't have to do it
+    return;
+  }
+  
+  auto map_client = dtio_system::getInstance(service_i)->map_client();
+  auto sub_task = new task(*aggregation_tasks.back());
+  auto mdm = metadata_manager::getInstance (LIB);
+  auto client_queue = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
+  auto map_server = dtio_system::getInstance (LIB)->map_server ();
+
+  sub_task->t_type = task_type::WRITE_TASK;
+  sub_task->task_id = static_cast<int64_t>(
+					   std::chrono::duration_cast<std::chrono::microseconds>(
+												 std::chrono::system_clock::now().time_since_epoch())
+					   .count());
+  sub_task->publish = true;
+  sub_task->addDataspace = false;
+
+  while (aggregation_tasks.size() > 0) {
+    // Smallest offset
+    task *agg_tsk = aggregation_tasks.back();
+    sub_task->source.offset = std::min(sub_task->source.offset, agg_tsk->source.offset);
+    sub_task->destination.offset = std::min(sub_task->destination.offset, agg_tsk->destination.offset);
+    aggregation_tasks.pop_back();
+  }
+  sub_task->destination.size = current_aggregate_size; // Aggregate size
+  sub_task->source.size = sub_task->destination.size;
+
+  map_client->put(table::DATASPACE_DB, sub_task->source.filename, aggregate_buffer + sub_task->source.offset, sub_task->destination.size, std::to_string(-1));
+
+  mdm->update_write_task_info (*sub_task, sub_task->destination.filename, sub_task->destination.size);
+  // Publish aggregation and wait for a result
+  client_queue->publish_task (sub_task);
+  while (!map_server->exists (table::WRITE_FINISHED_DB, std::to_string(sub_task->task_id),
+			      std::to_string (-1)))
+    {
+    }
+  map_server->remove (table::WRITE_FINISHED_DB, std::to_string(sub_task->task_id),
+		      std::to_string (-1));
+
+  current_aggregate_size = 0;
+  aggregation_offset = -1;
+}
+
 /******************************************************************************
  *Interface
  ******************************************************************************/
 std::vector<task *> aggregating_builder::build_write_task(task tsk,
-						   const char *data) {
-  /* Checks data size, if data would fit in buffer then just return
-     given task. If data would not fit in buffer then split task into
-     multiple subtasks. Is there a cache? If so, we also have to check
-     the limits of the cache for putting data in. Could still be
-     useful to generate tasks for metadata purposes.
-
-     buffer size 100 task size 350
-
-     Alternatives: 
-     - Biggest task first 100 100 100 50 (current)
-     - Evenly split tasks 87 87 88 88
-
-     What happens when we exceed memory limits? Are there plans to
-     flush/retrieve data.
-   */
-
+							  const char *data) {
   auto map_client = dtio_system::getInstance(service_i)->map_client();
   auto map_server = dtio_system::getInstance(service_i)->map_server();
   auto tasks = std::vector<task *>();
@@ -65,9 +99,21 @@ std::vector<task *> aggregating_builder::build_write_task(task tsk,
   int64_t data_offset = 0;
   std::size_t remaining_data = source.size;
   std::size_t chunk_index = 0;
-  bool aggregate_tasks = false;
 
+  if (aggregation_offset = -1) {
+    aggregation_offset = tsk.destination.offset;
+  }
+  
   auto sub_task = new task(tsk);
+  if (aggregation_offset != tsk.destination.offset) {
+    DTIO_LOG_DEBUG("Closing aggregate due to seek " << aggregation_offset << " != " << tsk.destination.offset);
+    close_aggregation();
+  }
+  if (aggregation_tasks.size() != 0 && strcmp(tsk.destination.filename, aggregation_tasks.back()->destination.filename) != 0) {
+    DTIO_LOG_DEBUG("Closing aggregate due to filename change " << tsk.destination.filename << " != " << aggregation_tasks.back()->destination.filename);
+    close_aggregation();
+  }
+
   if (remaining_data < MIN_IO_UNIT) {
     // Task is small, can be aggregated
     sub_task->t_type = task_type::WRITE_TASK;
@@ -96,19 +142,21 @@ std::vector<task *> aggregating_builder::build_write_task(task tsk,
       while (aggregation_tasks.size() > 0) {
 	// Smallest offset
 	task *agg_tsk = aggregation_tasks.back();
-	sub_task->source.offset = min(sub_task->source.offset, agg_tsk->source.offset);
-	sub_task->destination.offset = min(sub_task->destination.offset, agg_tsk->destination.offset);
+	sub_task->source.offset = std::min(sub_task->source.offset, agg_tsk->source.offset);
+	sub_task->destination.offset = std::min(sub_task->destination.offset, agg_tsk->destination.offset);
 	aggregation_tasks.pop_back();
       }
       map_client->put(table::DATASPACE_DB, sub_task->source.filename, aggregate_buffer + data_offset + sub_task->source.offset, sub_task->destination.size, std::to_string(-1));
       sub_task->publish = true;
       tasks.emplace_back(sub_task);
       current_aggregate_size = 0;
+      aggregation_offset = -1;
     }
     else {
       // Store task for later aggregation
       aggregation_tasks.emplace_back(sub_task);
       current_aggregate_size += sub_task->destination.size;
+      aggregation_offset = sub_task->destination.offset + sub_task->destination.size;
     }
   }
   else {
@@ -167,6 +215,8 @@ std::vector<task> aggregating_builder::build_read_task(task t) {
   size_t data_pointer = 0;
   int server = static_cast<int>(dtio_system::getInstance(LIB)->rank /
                                 PROCS_PER_MEMCACHED);
+  // We don't aggregate reads here, because reads expect an immediate response
+  close_aggregation();
   for (auto chunk : chunks) {
     auto rt = new task();
     rt->task_id = static_cast<int64_t>(

@@ -39,7 +39,12 @@
 int
 main (int argc, char **argv)
 {
-  MPI_Init (&argc, &argv);
+  int provided;
+  MPI_Init_thread (&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+  if (provided < MPI_THREAD_MULTIPLE) {
+    printf("Threading wrong\n");
+    exit(EXIT_FAILURE);
+  }
   ConfigManager::get_instance ()->LoadConfig (argv[1]);
   int rank;
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
@@ -55,12 +60,22 @@ main (int argc, char **argv)
   MPI_Comm_split (MPI_COMM_WORLD, METADATA_COLOR, rank - 1,
                   &ConfigManager::get_instance ()->METADATA_COMM);
   for (int i = 0; i < ConfigManager::get_instance ()->NUM_WORKERS; i++) {
-    MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_COLOR, process_rank + 1,
+    MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_NULL_COLOR,
+		    ConfigManager::get_instance()->NUM_WORKERS + process_rank,
 		    &ConfigManager::get_instance ()->QUEUE_WORKER_COMM[i]);
   }
-
+  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_TS_COLOR, process_rank + 1,
+		  &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
   auto scheduler_service = task_scheduler::getInstance (TASK_SCHEDULER);
   DTIO_LOG_DEBUG("[Task Scheduler] Created");
+
+  // volatile int foo = 0;
+  // char hostname[256];
+  // gethostname(hostname, sizeof(hostname));
+  // printf("PID %d task scheduler\n", getpid());
+  // fflush(stdout);
+  // while (0 == foo)
+  //   sleep(5);
   scheduler_service->run ();
   MPI_Finalize ();
   return 0;
