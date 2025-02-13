@@ -30,7 +30,7 @@
 #include <cereal/types/string.hpp>
 #include <dtio/common/constants.h>
 #include <dtio/common/enumerations.h>
-#include <rpc/msgpack/adaptor/define_decl.hpp>
+// #include <rpc/msgpack/adaptor/define_decl.hpp>
 #include <utility>
 #include <vector>
 
@@ -40,9 +40,9 @@
 
 #include <hcl.h>
 // #include <hcl/common/data_structures.h>
-#include <rpc/client.h>
-#include <rpc/rpc_error.h>
-#include <rpc/server.h>
+// #include <rpc/client.h>
+// #include <rpc/rpc_error.h>
+// #include <rpc/server.h>
 
 #include <string.h>
 
@@ -276,8 +276,10 @@ struct file
   void
   serialize (Archive &archive)
   {
-    archive (this->filename, this->offset, this->size, this->location,
+    auto location_ = static_cast<int>(this->location);
+    archive (this->filename, this->offset, this->size, location_,
              this->worker, this->server);
+    location = static_cast<location_type>(location_);
   }
 };
 
@@ -405,7 +407,7 @@ struct chunk_msg
 struct file_meta
 {
   file file_struct;
-  chunk_meta chunks[CHUNK_LIMIT];
+  std::array<chunk_meta, CHUNK_LIMIT> chunks;
   int current_chunk_index;
   int num_chunks;
 
@@ -415,22 +417,22 @@ struct file_meta
   file_meta(file_meta &&other)
     : file_meta(other.file_struct, other.chunks, other.current_chunk_index, other.num_chunks) {} /* move constructor*/
 
-  file_meta(file file_struct_, const chunk_meta *chunks_, int current_chunk_index_, int num_chunks_) {
-    this->file_struct = file_struct_;
-    this->current_chunk_index = current_chunk_index_;
-    std::cout << "Copying chunks in constructor from current index " << current_chunk_index << std::endl;
-    for (int i = 0; i < num_chunks_; i++) {
-      if (current_chunk_index_ - i - 1 >= 0) {
-	this->chunks[current_chunk_index_ - i - 1] = chunks_[current_chunk_index_ - i - 1];
-      }
-      else {
-	this->chunks[CHUNK_LIMIT + current_chunk_index_ - i - 1] = chunks_[CHUNK_LIMIT + current_chunk_index_ - i - 1];
-      }
-    }
-    this->num_chunks = num_chunks_;
-  }
+  // file_meta(file file_struct_, const std::array<chunk_meta, CHUNK_LIMIT> chunks_, int current_chunk_index_, int num_chunks_) {
+  //   this->file_struct = file_struct_;
+  //   this->current_chunk_index = current_chunk_index_;
+  //   std::cout << "Copying chunks in constructor from current index " << current_chunk_index << std::endl;
+  //   for (int i = 0; i < num_chunks_; i++) {
+  //     if (current_chunk_index_ - i - 1 >= 0) {
+  // 	this->chunks[current_chunk_index_ - i - 1] = chunks_[current_chunk_index_ - i - 1];
+  //     }
+  //     else {
+  // 	this->chunks[CHUNK_LIMIT + current_chunk_index_ - i - 1] = chunks_[CHUNK_LIMIT + current_chunk_index_ - i - 1];
+  //     }
+  //   }
+  //   this->num_chunks = num_chunks_;
+  // }
 
-  file_meta(file file_struct_, chunk_meta *chunks_, int current_chunk_index_, int num_chunks_) {
+  file_meta(file file_struct_, std::array<chunk_meta, CHUNK_LIMIT> chunks_, int current_chunk_index_, int num_chunks_) {
     this->file_struct = file_struct_;
     this->current_chunk_index = current_chunk_index_;
     this->num_chunks = num_chunks_;
@@ -659,7 +661,11 @@ struct task
   void
   serialize (Archive &archive)
   {
-    archive (this->t_type, this->iface, this->task_id, this->publish, this->addDataspace, this->async, this->source, this->destination, this->meta_updated, this->local_copy, this->check_fs);
+    auto t_type_ = static_cast<int64_t>(this->t_type);
+    auto iface_ = static_cast<int>(this->iface);
+    archive (t_type_, iface_, this->task_id, this->publish, this->addDataspace, this->async, this->source, this->destination, this->meta_updated, this->local_copy, this->check_fs);
+    t_type = static_cast<task_type>(t_type_);
+    iface = static_cast<io_client_type>(iface_);
   }
 };
 

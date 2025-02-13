@@ -30,7 +30,40 @@
 #include <dtio/dtio_system.h>
 #include <vector>
 
-int posix_client::dtio_read(task *tsk[]) {
+int posix_client::dtio_stage(task *tsk[], char *staging_space) {
+  auto map_client = dtio_system::getInstance(WORKER)->map_client();
+  // auto map_cm_client = dtio_system::getInstance(WORKER)->map_client("metadata+chunkmeta");
+  int task_idx;
+  for (task_idx = 0; task_idx < BATCH_SIZE; task_idx++) {
+#ifdef TIMERW
+  hcl::Timer t = hcl::Timer();
+  t.resumeTime();
+#endif
+  char *filepath = (strncmp(tsk[task_idx]->source.filename, "dtio://", 7) == 0) ? (tsk[task_idx]->source.filename + 7) : tsk[task_idx]->source.filename;
+
+  int fd = open64(filepath, O_RDWR | O_CREAT, 0664); // "r+"
+  temp_fd = fd;
+  size_t count;
+  while ((count = read(fd, staging_space, tsk[task_idx]->source.size)) != 0);
+
+  // map_client->get(
+  //     table::CHUNK_DB,
+  //     tsk[task_idx]->source.filename + std::to_string(chunk_index * MAX_IO_UNIT),
+  //     std::to_string(-1), &chunk_meta1);
+
+  // size_t chunk_index = (tsk[task_idx]->source.offset / MAX_IO_UNIT);
+
+  // auto data = static_cast<char *>(calloc(tsk[task_idx]->source.size, sizeof(char)));
+
+  // TODO put to something the scheduler can access for this file, send next file request to this worker
+  // map_client->put(DATASPACE_DB, tsk[task_idx]->source.filename, data,
+  // 		  std::to_string(tsk[task_idx]->destination.server)); 
+
+  }
+  return 0;
+}
+
+int posix_client::dtio_read(task *tsk[], char *staging_space) {
   auto map_client = dtio_system::getInstance(WORKER)->map_client();
   // auto map_cm_client = dtio_system::getInstance(WORKER)->map_client("metadata+chunkmeta");
   auto map_fm_client = dtio_system::getInstance(WORKER)->map_client("metadata+filemeta");
@@ -41,6 +74,14 @@ int posix_client::dtio_read(task *tsk[]) {
   t.resumeTime();
 #endif
   char *filepath = (strncmp(tsk[task_idx]->source.filename, "dtio://", 7) == 0) ? (tsk[task_idx]->source.filename + 7) : tsk[task_idx]->source.filename;
+
+  // Check locally for data in staging area
+  if (tsk[task_idx]->source.offset + tsk[task_idx]->source.size < ConfigManager::get_instance()->WORKER_STAGING_SIZE && tsk[task_idx]->source.offset >= 0) {
+    map_client->put(DATASPACE_DB, tsk[task_idx]->source.filename,
+		    &staging_space[tsk[task_idx]->source.offset],
+		    tsk[task_idx]->source.size,
+		    std::to_string(tsk[task_idx]->destination.server));
+  }
 
   // Query the metadata maps to get the datatasks associated with a file
   file_meta fm;
@@ -318,63 +359,6 @@ int posix_client::dtio_write(task *tsk[]) {
     // close(fd);
   }
 #endif
-//   if (chunk_meta1.destination.location == location_type::CACHE) {
-//     /*
-//      * New I/O
-//      */
-//     auto file_id = static_cast<int64_t>(
-//         std::chrono::duration_cast<std::chrono::microseconds>(
-//             std::chrono::system_clock::now().time_since_epoch())
-//             .count());
-//     file_path = dir + std::to_string(file_id);
-// #ifdef DEBUG
-//     std::cout << strlen(data) << " chunk index:" << chunk_index
-//               << " dataspaceId:" << tsk[task_idx]->destination.filename
-//               << " created filename:" << file_path
-//               << " clientId: " << tsk[task_idx]->destination.server << "\n";
-// #endif
-//     int fd = open64(file_path.c_str(), O_RDWR | O_CREAT); // "w+"
-//     auto count = write(fd, data, tsk[task_idx]->destination.size);
-//     if (count != tsk[task_idx]->destination.size)
-//       std::cerr << "written less" << count << "\n";
-//     close(fd);
-//   } else {
-//     /*cd
-//      * existing I/O
-//      */
-// #ifdef DEBUG
-//     std::cout << "update file  " << strlen(data)
-//               << " chunk index:" << chunk_index
-//               << " dataspaceId:" << tsk[task_idx]->destination.filename
-//               << " clientId: " << tsk[task_idx]->destination.server << "\n";
-// #endif
-
-//     file_path = chunk_meta1.destination.filename;
-//     int fd = open64(chunk_meta1.destination.filename, O_RDWR | O_CREAT); // "r+"
-//     lseek64(fd, tsk[task_idx]->source.offset - base_offset, SEEK_SET);
-//     write(fd, data, tsk[task_idx]->source.size);
-//     close(fd);
-//   }
-// chunk_meta1.actual_user_chunk = tsk[task_idx]->source;
-// chunk_meta1.destination.location = BUFFERS;
-// strncpy(chunk_meta1.destination.filename, file_path.c_str(), DTIO_FILENAME_MAX);
-// chunk_meta1.destination.offset = 0;
-// chunk_meta1.destination.size = tsk[task_idx]->destination.size;
-// chunk_meta1.destination.worker = worker_index;
-// #ifdef TIMERMDM
-//   hcl::Timer t1 = hcl::Timer();
-//   t1.resumeTime();
-// #endif
-// map_client->put(table::CHUNK_DB,
-//                 tsk[task_idx]->source.filename +
-// 		  std::to_string(chunk_index * MAX_IO_UNIT),
-//                 &chunk_meta1, std::to_string(-1));
-
-//    map_client->remove(DATASPACE_DB,task.destination.filename,
-//    std::to_string(task.destination.server));
-// #ifdef TIMERMDM
-//   std::cout << "posix_client::write()::update_meta," << t1.pauseTime() << "\n";
-// #endif
   // NOTE Removing this makes I/O asynchronous by default
   map_server->put(table::WRITE_FINISHED_DB, std::to_string(tsk[task_idx]->task_id),
                   std::to_string(-1), std::to_string(-1));

@@ -34,8 +34,9 @@ protected:
 public:
   io_client(int worker_index) : worker_index(worker_index) {}
   virtual int dtio_write(task *task[]) = 0;
-  virtual int dtio_read(task *t[]) = 0;
+  virtual int dtio_read(task *t[], char *staging_space) = 0;
   virtual int dtio_delete_file(task *task[]) = 0;
   virtual int dtio_flush_file(task *task[]) = 0;
+  virtual int dtio_stage(task *tsk[], char *staging_space) = 0;
 };
 #endif // DTIO_MAIN_IO_CLIENT_H

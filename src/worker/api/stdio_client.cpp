@@ -28,7 +28,10 @@
 #include <hcl/common/debug.h>
 #include <dtio/dtio_system.h>
 
-int stdio_client::dtio_read(task *tsk[]) {
+int stdio_client::dtio_stage(task *tsk[], char *staging_space) {
+}
+
+int stdio_client::dtio_read(task *tsk[], char *staging_space) {
   int task_idx;
   for (task_idx = 0; task_idx < BATCH_SIZE; task_idx++) {
 

@@ -31,7 +31,10 @@
 #include <dtio/dtio_system.h>
 #include <vector>
 
-int hdf5_client::dtio_read(task *tsk[]) {
+int hdf5_client::dtio_stage(task *tsk[], char *staging_space) {
+}
+
+int hdf5_client::dtio_read(task *tsk[], char *staging_space) {
   int task_idx;
   for (task_idx = 0; task_idx < BATCH_SIZE; task_idx++) {
 #ifdef TIMERW

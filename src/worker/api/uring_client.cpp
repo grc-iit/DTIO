@@ -28,7 +28,10 @@
 #include <hcl/common/debug.h>
 #include <dtio/dtio_system.h>
 
-int uring_client::dtio_read(task *tsk[]) {
+int uring_client::dtio_stage(task *tsk[], char *staging_space) {
+}
+
+int uring_client::dtio_read(task *tsk[], char *staging_space) {
   int task_idx;
   for (task_idx = 0; task_idx < BATCH_SIZE; task_idx++) {
   struct io_uring ring;

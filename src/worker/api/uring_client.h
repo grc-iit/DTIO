@@ -45,8 +45,9 @@ public:
           std::to_string(worker_index) + "/";
     temp_fd = -1;
   }
+  int dtio_stage (task *tsk[], char *staging_space = NULL) override;
   int dtio_write(task *tsk[]) override;
-  int dtio_read(task *tsk[]) override;
+  int dtio_read(task *tsk[], char *staging_space = NULL) override;
   int dtio_delete_file(task *tsk[]) override;
   int dtio_flush_file(task *tsk[]) override;
   ~uring_client() {

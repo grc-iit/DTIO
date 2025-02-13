@@ -69,7 +69,7 @@ int dtio::DTIO_write (std::string filename, std::string buf, int64_t offset, siz
     = task_m->build_write_task (w_task, buf.data());
 #ifdef TIMERTB
   std::stringstream stream1;
-  stream1 << "build_write_task()," << std::fixed << std::setprecision (10)
+  stream1 << "build_write_task(),"
           << t.pauseTime () << "\n";
   DTIO_LOG_TRACE(stream1.str ());
 #endif
@@ -192,7 +192,7 @@ std::string dtio::DTIO_read(std::string filename, int64_t offset, size_t count)
   DTIO_LOG_TRACE("Task len " << tasks.size() << std::endl);
 #ifdef TIMERTB
   std::stringstream stream1;
-  stream1 << "build_read_task()," << std::fixed << std::setprecision (10)
+  stream1 << "build_read_task(),"
           << t.pauseTime () << "\n";
   DTIO_LOG_TRACE(stream1.str ());
 #endif

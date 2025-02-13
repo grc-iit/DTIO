@@ -28,8 +28,12 @@
 #include <hcl/common/debug.h>
 #include <dtio/dtio_system.h>
 
-int multi_client::dtio_read(task *tsk[]) {
-  return clients[tsk[0]->iface]->dtio_read(tsk);
+int multi_client::dtio_stage(task *tsk[], char *staging_space) {
+  return clients[tsk[0]->iface]->dtio_stage(tsk, staging_space);
+}
+
+int multi_client::dtio_read(task *tsk[], char *staging_space) {
+  return clients[tsk[0]->iface]->dtio_read(tsk, staging_space);
 }
 
 int multi_client::dtio_write(task *tsk[]) {

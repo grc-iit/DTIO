@@ -40,8 +40,9 @@ public:
     dir = ConfigManager::get_instance()->WORKER_PATH + "/" +
           std::to_string(worker_index) + "/";
   }
+  int dtio_stage(task *tsk[], char *staging_space = NULL) override;
   int dtio_write(task *tsk[]) override;
-  int dtio_read(task *tsk[]) override;
+  int dtio_read(task *tsk[], char *staging_space = NULL) override;
   int dtio_delete_file(task *tsk[]) override;
   int dtio_flush_file(task *tsk[]) override;
 };

@@ -33,7 +33,6 @@
 #include "api/uring_client.h"
 #include "api/hdf5_client.h"
 #include "api/multi_client.h"
-#include <dtio/common/external_clients/memcached_impl.h>
 #include <dtio/dtio_system.h>
 /******************************************************************************
  *Class
@@ -41,7 +40,7 @@
 class worker {
 private:
   /******************************************************************************
-   *Variables and members
+   *Variables and memers
    ******************************************************************************/
   static std::shared_ptr<worker> instance;
   service service_i;
@@ -49,6 +48,9 @@ private:
   std::shared_ptr<distributed_queue> queue;
   std::shared_ptr<distributed_hashmap> map;
   std::shared_ptr<io_client> client;
+
+  char *staging_space;
+
   /******************************************************************************
    *Constructor
    ******************************************************************************/
@@ -73,6 +75,7 @@ private:
     queue =
         dtio_system::getInstance(service_i)->get_worker_queue(worker_index);
     map = dtio_system::getInstance(service_i)->map_server();
+    staging_space = (char *)malloc(ConfigManager::get_instance()->WORKER_STAGING_SIZE);
   }
   /******************************************************************************
    *Interface
@@ -98,7 +101,7 @@ public:
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~worker() {}
+  virtual ~worker() { free(staging_space); }
 };
 
 #endif // DTIO_MAIN_WORKERSERVICE_H

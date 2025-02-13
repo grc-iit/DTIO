@@ -52,8 +52,9 @@ public:
     clients[io_client_type::URING] = std::make_shared<uring_client>(worker_index);
     clients[io_client_type::HDF5] = std::make_shared<hdf5_client>(worker_index);
   }
+  int dtio_stage(task *tsk[], char *staging_space = NULL) override;
   int dtio_write(task *tsk[]) override;
-  int dtio_read(task *tsk[]) override;
+  int dtio_read(task *tsk[], char *staging_space = NULL) override;
   int dtio_delete_file(task *tsk[]) override;
   int dtio_flush_file(task *tsk[]) override;
 

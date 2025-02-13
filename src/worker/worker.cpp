@@ -67,6 +67,19 @@ worker::run ()
 	  if (task_index >= BATCH_SIZE) {
 	    switch (task_i[0]->t_type)
 	      {
+	      case task_type::STAGING_TASK:
+		{
+#ifdef DEBUG
+		  std::cout << "Task#" << task_i[task_index-1]->task_id << "\tOperation: STAGE" << "\n";
+#endif
+		  // This depends on situation. w does nothing, not even scheduled. r stages file. rw complicated
+		  client->dtio_stage (task_i, staging_space);
+
+                  // Create worker pool to stage file from system
+
+		  // Set up metadata
+		  break;
+		}
 	      case task_type::WRITE_TASK:
 		{
 		  // auto *wt = task_i; //reinterpret_cast<write_task *> (task_i);
@@ -87,7 +100,7 @@ worker::run ()
 			    << "\tSize:" << task_i[task_index-1]->source.size
 			    << "\tFilename:" << task_i[task_index-1]->source.filename << "\n";
 #endif
-		  client->dtio_read (task_i);
+		  client->dtio_read (task_i, staging_space);
 		  break;
 		}
 	      case task_type::FLUSH_TASK:
@@ -142,7 +155,7 @@ worker::update_score (bool before_sleeping = false)
     {
       if (map->put (table::WORKER_SCORE, std::to_string (worker_index),
                     std::to_string (worker_score), std::to_string (-1))
-          != MEMCACHED_SUCCESS)
+          != 0)
         return WORKER__UPDATE_SCORE_FAILED;
     }
   return SUCCESS;
@@ -198,7 +211,7 @@ worker::update_capacity ()
   auto remaining_cap = get_remaining_capacity ();
   if (map->put (table::WORKER_CAPACITY, std::to_string (worker_index),
                 std::to_string (remaining_cap), std::to_string (-1))
-      == MEMCACHED_SUCCESS)
+      == 0)
     {
       // std::cout<<"worker capacity:
       // "<<std::setprecision(6)<<remaining_cap<<"\n";
