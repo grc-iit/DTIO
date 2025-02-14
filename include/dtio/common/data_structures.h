@@ -132,7 +132,7 @@ typedef struct DTIOCharStruct {
   void
   serialize (Archive &archive)
   {
-    archive (this->length, this->value);
+    archive (this->length, cereal::binary_data(this->value, MAX_IO_UNIT));
   }
 
 } DTIOCharStruct;
@@ -277,7 +277,7 @@ struct file
   serialize (Archive &archive)
   {
     auto location_ = static_cast<int>(this->location);
-    archive (this->filename, this->offset, this->size, location_,
+    archive (cereal::binary_data(this->filename, DTIO_FILENAME_MAX), this->offset, this->size, location_,
              this->worker, this->server);
     location = static_cast<location_type>(location_);
   }
