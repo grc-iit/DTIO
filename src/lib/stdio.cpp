@@ -30,7 +30,6 @@
 #include <dtio/common/task_builder/task_builder.h>
 #include <hcl/common/debug.h>
 #include <dtio/drivers/stdio.h>
-#include <rpc/detail/log.h>
 #include <zconf.h>
 
 /******************************************************************************
