@@ -812,14 +812,14 @@ dtio::posix::read (int fd, void *buf, size_t count)
   task *task_i;
   task_i = nullptr;
 
-  bool pfs = true;
-  if (filename[27] == 'c') {
-    std::cout << "Doing buffer read" << std::endl;
-    pfs = false;
-  }
-  else {
-    std::cout << "Doing PFS read" << std::endl;
-  }
+  // bool pfs = true;
+  // if (filename[27] == 'c') {
+  //   std::cout << "Doing buffer read" << std::endl;
+  //   pfs = false;
+  // }
+  // else {
+  //   std::cout << "Doing PFS read" << std::endl;
+  // }
 
   if (!mdm->is_opened (filename))
     {
@@ -837,15 +837,15 @@ dtio::posix::read (int fd, void *buf, size_t count)
       = task (task_type::READ_TASK, file (filename, offset, count), file ());
   std::cout << "Numbers from read task " << r_task.source.size << " " << r_task.destination.size << " " << count << std::endl;
   r_task.check_fs = check_fs;
-  if (pfs) {
-    r_task.source.location = PFS;
-  }
-  else {
+  // if (pfs) {
+  //   r_task.source.location = PFS;
+  // }
+  // else {
+  //   r_task.source.location = BUFFERS;
+  // }
+  if (ConfigManager::get_instance()->USE_CACHE) {
     r_task.source.location = BUFFERS;
   }
-  // if (ConfigManager::get_instance()->USE_CACHE) {
-  //   r_task.source.location = CACHE;
-  // }
   if (ConfigManager::get_instance()->USE_URING) {
     r_task.iface = io_client_type::URING;
   }

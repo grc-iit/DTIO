@@ -100,7 +100,7 @@ std::vector<task *> aggregating_builder::build_write_task(task tsk,
   std::size_t remaining_data = source.size;
   std::size_t chunk_index = 0;
 
-  if (aggregation_offset = -1) {
+  if (aggregation_offset == -1) {
     aggregation_offset = tsk.destination.offset;
   }
   
@@ -217,21 +217,24 @@ std::vector<task> aggregating_builder::build_read_task(task t) {
                                 PROCS_PER_MEMCACHED);
   // We don't aggregate reads here, because reads expect an immediate response
   close_aggregation();
-  for (auto chunk : chunks) {
-    auto rt = new task();
-    rt->task_id = static_cast<int64_t>(
-        std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count());
-    rt->source = chunk.destination;
-    rt->destination.offset = 0;
-    rt->destination.size = rt->source.size;
-    rt->destination.server = server;
-    data_pointer += rt->destination.size;
-    snprintf(rt->destination.filename, DTIO_FILENAME_MAX, "%d", map_server->counter_inc(COUNTER_DB, DATASPACE_ID, std::to_string(-1)));
-    tasks.push_back(*rt);
-    // delete (rt);
-  }
+  t.publish = true;
+  t.destination.size = t.source.size;
+  tasks.push_back(t);
+  // for (auto chunk : chunks) {
+  //   auto rt = new task();
+  //   rt->task_id = static_cast<int64_t>(
+  //       std::chrono::duration_cast<std::chrono::microseconds>(
+  //           std::chrono::system_clock::now().time_since_epoch())
+  //           .count());
+  //   rt->source = chunk.destination;
+  //   rt->destination.offset = 0;
+  //   rt->destination.size = rt->source.size;
+  //   rt->destination.server = server;
+  //   data_pointer += rt->destination.size;
+  //   snprintf(rt->destination.filename, DTIO_FILENAME_MAX, "%d", map_server->counter_inc(COUNTER_DB, DATASPACE_ID, std::to_string(-1)));
+  //   tasks.push_back(*rt);
+  //   // delete (rt);
+  // }
   return tasks;
 }
 

@@ -76,80 +76,80 @@ int posix_client::dtio_read(task *tsk[], char *staging_space) {
   char *filepath = (strncmp(tsk[task_idx]->source.filename, "dtio://", 7) == 0) ? (tsk[task_idx]->source.filename + 7) : tsk[task_idx]->source.filename;
 
   // Check locally for data in staging area
-  if (tsk[task_idx]->source.offset + tsk[task_idx]->source.size < ConfigManager::get_instance()->WORKER_STAGING_SIZE && tsk[task_idx]->source.offset >= 0) {
-    map_client->put(DATASPACE_DB, tsk[task_idx]->source.filename,
-		    &staging_space[tsk[task_idx]->source.offset],
-		    tsk[task_idx]->source.size,
-		    std::to_string(tsk[task_idx]->destination.server));
-  }
+  // if (tsk[task_idx]->source.offset + tsk[task_idx]->source.size < ConfigManager::get_instance()->WORKER_STAGING_SIZE && tsk[task_idx]->source.offset >= 0) {
+  //   map_client->put(DATASPACE_DB, tsk[task_idx]->source.filename,
+  // 		    &staging_space[tsk[task_idx]->source.offset],
+  // 		    tsk[task_idx]->source.size,
+  // 		    std::to_string(tsk[task_idx]->destination.server));
+  // }
 
-  // Query the metadata maps to get the datatasks associated with a file
-  file_meta fm;
-  // std::cout << "Filemeta retrieval" << std::endl;
-  map_fm_client->get(table::FILE_CHUNK_DB, tsk[task_idx]->source.filename, std::to_string(-1), &fm);
+  // // Query the metadata maps to get the datatasks associated with a file
+  // file_meta fm;
+  // // std::cout << "Filemeta retrieval" << std::endl;
+  // map_fm_client->get(table::FILE_CHUNK_DB, tsk[task_idx]->source.filename, std::to_string(-1), &fm);
 
-  std::vector<file> resolve_dts;
+  // std::vector<file> resolve_dts;
 
-  // Query those datatasks for range
-  // std::cout << "Query dts for range" << std::endl;
-  int *range_bound = (int *)malloc(tsk[task_idx]->source.size * sizeof(int));
-  range_bound[0] = tsk[task_idx]->source.offset;
-  // std::cout << "Populate range bound" << std::endl;
-  for (int i = 1; i < tsk[task_idx]->source.size; ++i) {
-    range_bound[i] = range_bound[i-1] + 1;
-  }
-  // std::cout << "Range requests" << std::endl;
-  int range_lower = tsk[task_idx]->source.offset;
-  int range_upper = tsk[task_idx]->source.offset + tsk[task_idx]->source.size;
-  bool range_resolved = false;
-  file *curr_chunk;
-  for (int i = 0; i < fm.num_chunks; ++i) {
-    // std::cout << "i is " << i << std::endl;
-    // std::cout << "Check 1" << std::endl;
-    if (fm.current_chunk_index - i - 1 >= 0) {
-      // std::cout << "Condition A " << fm.current_chunk_index << std::endl;
-      curr_chunk = &(fm.chunks[fm.current_chunk_index - i - 1].actual_user_chunk);
+  // // Query those datatasks for range
+  // // std::cout << "Query dts for range" << std::endl;
+  // int *range_bound = (int *)malloc(tsk[task_idx]->source.size * sizeof(int));
+  // range_bound[0] = tsk[task_idx]->source.offset;
+  // // std::cout << "Populate range bound" << std::endl;
+  // for (int i = 1; i < tsk[task_idx]->source.size; ++i) {
+  //   range_bound[i] = range_bound[i-1] + 1;
+  // }
+  // // std::cout << "Range requests" << std::endl;
+  // int range_lower = tsk[task_idx]->source.offset;
+  // int range_upper = tsk[task_idx]->source.offset + tsk[task_idx]->source.size;
+  // bool range_resolved = false;
+  // file *curr_chunk;
+  // for (int i = 0; i < fm.num_chunks; ++i) {
+  //   // std::cout << "i is " << i << std::endl;
+  //   // std::cout << "Check 1" << std::endl;
+  //   if (fm.current_chunk_index - i - 1 >= 0) {
+  //     // std::cout << "Condition A " << fm.current_chunk_index << std::endl;
+  //     curr_chunk = &(fm.chunks[fm.current_chunk_index - i - 1].actual_user_chunk);
       
-      // std::cout << "Check 2" << std::endl;
-      if (dtio_system::getInstance(WORKER)->range_resolve(&range_bound, tsk[task_idx]->source.size, range_lower, range_upper, curr_chunk->offset, curr_chunk->offset + curr_chunk->size, &range_resolved)) {
-	// std::cout << "Push" << std::endl;
-	resolve_dts.push_back(*curr_chunk);
-      }
-      if (range_resolved) {
-	break;
-      }
-    }
-    else {
-      // std::cout << "Condition B" << std::endl;
-      curr_chunk = &(fm.chunks[CHUNK_LIMIT + fm.current_chunk_index - i - 1].actual_user_chunk);
-      // std::cout << "Check 2" << std::endl;
-      if (dtio_system::getInstance(WORKER)->range_resolve(&range_bound, tsk[task_idx]->source.size, range_lower, range_upper, curr_chunk->offset, curr_chunk->offset + curr_chunk->size, &range_resolved)) {
-	// std::cout << "Push" << std::endl;
-	resolve_dts.push_back(*curr_chunk);
-      }
-      if (range_resolved) {
-	break;
-      }
-    }
-  }
+  //     // std::cout << "Check 2" << std::endl;
+  //     if (dtio_system::getInstance(WORKER)->range_resolve(&range_bound, tsk[task_idx]->source.size, range_lower, range_upper, curr_chunk->offset, curr_chunk->offset + curr_chunk->size, &range_resolved)) {
+  // 	// std::cout << "Push" << std::endl;
+  // 	resolve_dts.push_back(*curr_chunk);
+  //     }
+  //     if (range_resolved) {
+  // 	break;
+  //     }
+  //   }
+  //   else {
+  //     // std::cout << "Condition B" << std::endl;
+  //     curr_chunk = &(fm.chunks[CHUNK_LIMIT + fm.current_chunk_index - i - 1].actual_user_chunk);
+  //     // std::cout << "Check 2" << std::endl;
+  //     if (dtio_system::getInstance(WORKER)->range_resolve(&range_bound, tsk[task_idx]->source.size, range_lower, range_upper, curr_chunk->offset, curr_chunk->offset + curr_chunk->size, &range_resolved)) {
+  // 	// std::cout << "Push" << std::endl;
+  // 	resolve_dts.push_back(*curr_chunk);
+  //     }
+  //     if (range_resolved) {
+  // 	break;
+  //     }
+  //   }
+  // }
 
-  // Check if the read can be performed from buffers. To avoid fragmentation, we read from disk when any part of the read buffer isn't in DTIO.
-  // TODO it would be far better to allow some fragmentation, but this requires significant changes to the read code and considerations about split and sieved read
-  // std::cout << "Check if read can be performed from buffers" << std::endl;
-  if (!range_resolved) {
-    range_resolved = true;
-    // std::cout << "Source size " << tsk[task_idx]->source.size << std::endl;
-    // std::cout << "Destination size " << tsk[task_idx]->destination.size << std::endl;
-    for (int i = 0; i < tsk[task_idx]->source.size; i++) {
-      if (range_bound[i] != -1) {
-	std::cout << "Range not resolved at " << range_bound[i] << std::endl;
-	range_resolved = false;
-	break;
-      }
-    }
-  }
-  free(range_bound);
-  // Range resolved on current tasks lower down
+  // // Check if the read can be performed from buffers. To avoid fragmentation, we read from disk when any part of the read buffer isn't in DTIO.
+  // // TODO it would be far better to allow some fragmentation, but this requires significant changes to the read code and considerations about split and sieved read
+  // // std::cout << "Check if read can be performed from buffers" << std::endl;
+  // if (!range_resolved) {
+  //   range_resolved = true;
+  //   // std::cout << "Source size " << tsk[task_idx]->source.size << std::endl;
+  //   // std::cout << "Destination size " << tsk[task_idx]->destination.size << std::endl;
+  //   for (int i = 0; i < tsk[task_idx]->source.size; i++) {
+  //     if (range_bound[i] != -1) {
+  // 	std::cout << "Range not resolved at " << range_bound[i] << std::endl;
+  // 	range_resolved = false;
+  // 	break;
+  //     }
+  //   }
+  // }
+  // free(range_bound);
+  // // Range resolved on current tasks lower down
 
   int fd;
   if (temp_fd == -1) {
@@ -174,21 +174,20 @@ int posix_client::dtio_read(task *tsk[], char *staging_space) {
   auto data = static_cast<char *>(calloc(tsk[task_idx]->source.size, sizeof(char)));
 
   // Resolve range on current task
-  if (range_resolved) {
-    for (unsigned i = resolve_dts.size(); i-- > 0; ) {
-      // Currently, we're just iterating backwards so newer DTs overwrite older ones.
-      // TODO better way to do this is to resolve the range by precalculating the offsets and sizes that get pulled into the buffer from each DT.
-      map_client->get(DATASPACE_DB, resolve_dts[i].filename, std::to_string(resolve_dts[i].server), data + resolve_dts[i].offset - tsk[task_idx]->source.offset,
-		      tsk[task_idx]->source.size - resolve_dts[i].offset + tsk[task_idx]->source.offset);
-      // Make sure we get only the size number of elements, and start from the correct offset that is achieved by the DT.
-    }
-    map_client->put(DATASPACE_DB, tsk[task_idx]->source.filename, data,
-		    std::to_string(tsk[task_idx]->destination.server));
-    // std::cout << data << std::endl;
-    free(data);
-    continue;
-  }
-
+  // if (range_resolved) {
+  //   for (unsigned i = resolve_dts.size(); i-- > 0; ) {
+  //     // Currently, we're just iterating backwards so newer DTs overwrite older ones.
+  //     // TODO better way to do this is to resolve the range by precalculating the offsets and sizes that get pulled into the buffer from each DT.
+  //     map_client->get(DATASPACE_DB, resolve_dts[i].filename, std::to_string(resolve_dts[i].server), data + resolve_dts[i].offset - tsk[task_idx]->source.offset,
+  // 		      tsk[task_idx]->source.size - resolve_dts[i].offset + tsk[task_idx]->source.offset);
+  //     // Make sure we get only the size number of elements, and start from the correct offset that is achieved by the DT.
+  //   }
+  //   map_client->put(DATASPACE_DB, tsk[task_idx]->source.filename, data,
+  // 		    std::to_string(tsk[task_idx]->destination.server));
+  //   // std::cout << data << std::endl;
+  //   free(data);
+  //   continue;
+  // }
 
   long long int pos = lseek64(fd, (off_t)tsk[task_idx]->source.offset, SEEK_SET);
   if (pos < 0)

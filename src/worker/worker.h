@@ -75,7 +75,9 @@ private:
     queue =
         dtio_system::getInstance(service_i)->get_worker_queue(worker_index);
     map = dtio_system::getInstance(service_i)->map_server();
-    staging_space = (char *)malloc(ConfigManager::get_instance()->WORKER_STAGING_SIZE);
+    if (ConfigManager::get_instance()->WORKER_STAGING_SIZE > 0) {
+      staging_space = (char *)malloc(ConfigManager::get_instance()->WORKER_STAGING_SIZE);
+    }
   }
   /******************************************************************************
    *Interface
@@ -101,7 +103,7 @@ public:
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~worker() { free(staging_space); }
+  virtual ~worker() { if (ConfigManager::get_instance()->WORKER_STAGING_SIZE > 0) { free(staging_space); } }
 };
 
 #endif // DTIO_MAIN_WORKERSERVICE_H
