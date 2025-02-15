@@ -73,6 +73,18 @@ solver_output DPSolver::solve(solver_input input) {
       }
       break;
     }
+    case task_type::STAGING_TASK: {
+      auto *st = task_t;
+      if (st->source.worker == -1) {
+        solver_task_map.emplace(actual_index, solver_index);
+        input.task_size[solver_index] = st->destination.size;
+        solver_index++;
+      } else {
+        static_task_map.emplace(actual_index, st->source.worker);
+        static_index++;
+      }
+      break;
+    }
     default:
       std::cout << "schedule_tasks(): Error in task type\n";
       break;

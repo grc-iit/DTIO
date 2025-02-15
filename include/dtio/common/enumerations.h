@@ -116,7 +116,8 @@ enum table
   WORKER_CAPACITY = 6,
   TASK_DB = 7,
   WRITE_FINISHED_DB = 8,
-  COUNTER_DB = 9
+  COUNTER_DB = 9,
+  STAGING_DB = 10
 };
 enum builder_impl_type
 {

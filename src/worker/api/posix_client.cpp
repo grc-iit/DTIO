@@ -46,6 +46,7 @@ int posix_client::dtio_stage(task *tsk[], char *staging_space) {
   size_t count;
   while ((count = read(fd, staging_space, tsk[task_idx]->source.size)) != 0);
 
+  map_client->put(table::STAGING_DB, tsk[task_idx]->source.filename, std::to_string(worker_index), std::to_string(-1));
   // map_client->get(
   //     table::CHUNK_DB,
   //     tsk[task_idx]->source.filename + std::to_string(chunk_index * MAX_IO_UNIT),
@@ -76,12 +77,13 @@ int posix_client::dtio_read(task *tsk[], char *staging_space) {
   char *filepath = (strncmp(tsk[task_idx]->source.filename, "dtio://", 7) == 0) ? (tsk[task_idx]->source.filename + 7) : tsk[task_idx]->source.filename;
 
   // Check locally for data in staging area
-  // if (tsk[task_idx]->source.offset + tsk[task_idx]->source.size < ConfigManager::get_instance()->WORKER_STAGING_SIZE && tsk[task_idx]->source.offset >= 0) {
-  //   map_client->put(DATASPACE_DB, tsk[task_idx]->source.filename,
-  // 		    &staging_space[tsk[task_idx]->source.offset],
-  // 		    tsk[task_idx]->source.size,
-  // 		    std::to_string(tsk[task_idx]->destination.server));
-  // }
+  if (tsk[task_idx]->source.offset + tsk[task_idx]->source.size < ConfigManager::get_instance()->WORKER_STAGING_SIZE && tsk[task_idx]->source.offset >= 0) {
+    map_client->put(DATASPACE_DB, tsk[task_idx]->source.filename,
+		    &staging_space[tsk[task_idx]->source.offset],
+		    tsk[task_idx]->source.size,
+		    std::to_string(tsk[task_idx]->destination.server));
+    return 0;
+  }
 
   // // Query the metadata maps to get the datatasks associated with a file
   // file_meta fm;

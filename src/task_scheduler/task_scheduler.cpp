@@ -24,6 +24,7 @@
 
 // include files
 #include "task_scheduler.h"
+#include "dtio/common/enumerations.h"
 #include "dtio/common/logger.h"
 #include <algorithm>
 #include <dtio/common/external_clients/hcl_queue_impl.h>
@@ -94,7 +95,13 @@ task_scheduler::schedule_tasks (std::vector<task *> &tasks)
 									   (element.first-1));
       for (auto tsk : element.second)
         {
-
+	  if (ConfigManager::get_instance()->WORKER_STAGING_SIZE != 0) {
+	    auto map_client = dtio_system::getInstance(service_i)->map_client();
+	    std::string worker = map_client->get(table::STAGING_DB, tsk->source.filename, std::to_string(-1));
+	    if (worker.length() != 0) {
+	      queue = dtio_system::getInstance (service_i)->get_worker_queue (stoi(worker));
+	    }
+	  }
           switch (tsk->t_type)
             {
             case task_type::WRITE_TASK:
@@ -128,6 +135,23 @@ task_scheduler::schedule_tasks (std::vector<task *> &tasks)
                 queue->publish_task (rt);
                 break;
               }
+	    case task_type::STAGING_TASK:
+	      {
+                auto *st = tsk;
+#ifdef DEBUG
+                std::cout
+                    << "threadID:" << std::this_thread::get_id ()
+                    << "\tOperation"
+                    << static_cast<std::underlying_type<task_type>::type> (
+                           tsk->t_type)
+                    << "\tTask#" << tsk->task_id << "\tWorker#"
+                    << (element.first-1) << "\n";
+#endif
+                queue->publish_task (st);
+                break;
+		
+		break;
+	      }
             }
         }
     }

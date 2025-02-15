@@ -224,6 +224,7 @@ dtio::posix::open (const char *filename, int flags)
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
   bool file_exists_in_fs = false;
+  bool publish_task = false;
   if (!mdm->is_created (filename))
     {
       if (!(flags & O_CREAT))
@@ -247,6 +248,7 @@ dtio::posix::open (const char *filename, int flags)
                   throw std::runtime_error (
                       "dtio::posix::open() update failed!");
                 }
+	      publish_task = true;
             }
         }
       else
@@ -255,6 +257,7 @@ dtio::posix::open (const char *filename, int flags)
             {
               throw std::runtime_error ("dtio::posix::open() create failed!");
             }
+	  publish_task = true;
         }
     }
   else
@@ -265,10 +268,19 @@ dtio::posix::open (const char *filename, int flags)
             {
               throw std::runtime_error ("dtio::posix::open() update failed!");
             }
+	  publish_task = true;
         }
       else
         return -1;
     }
+  if (publish_task && ConfigManager::get_instance()->WORKER_STAGING_SIZE != 0) {
+    // Publish staging task
+    auto f = file (std::string (filename), 0, 0);
+    auto s_task = task (task_type::STAGING_TASK, f);
+    auto client_queue
+      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
+    client_queue->publish_task (&s_task);
+  }
   return fd;
 }
 
@@ -278,6 +290,7 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
   bool file_exists_in_fs = false;
+  bool publish_task = false;
   if (!mdm->is_created (filename))
     {
       if (!(flags & O_CREAT))
@@ -301,6 +314,7 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
                   throw std::runtime_error (
                       "dtio::posix::open() update failed!");
                 }
+	      publish_task = true;
             }
         }
       else
@@ -309,6 +323,7 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
             {
               throw std::runtime_error ("dtio::posix::open() create failed!");
             }
+	  publish_task = true;
         }
     }
   else
@@ -319,10 +334,19 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
             {
               throw std::runtime_error ("dtio::posix::open() update failed!");
             }
+	  publish_task = true;
         }
       else
         return -1;
     }
+  if (publish_task && ConfigManager::get_instance()->WORKER_STAGING_SIZE != 0) {
+    // Publish staging task
+    auto f = file (std::string (filename), 0, 0);
+    auto s_task = task (task_type::STAGING_TASK, f);
+    auto client_queue
+      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
+    client_queue->publish_task (&s_task);
+  }
   return fd;
 }
 
@@ -333,6 +357,7 @@ dtio::posix::open64 (const char *filename, int flags)
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
   bool file_exists_in_fs = false;
+  bool publish_task = false;
   if (!mdm->is_created (filename))
     {
       if (!(flags & O_CREAT))
@@ -357,6 +382,7 @@ dtio::posix::open64 (const char *filename, int flags)
                   throw std::runtime_error (
                       "dtio::posix::open() update failed!");
                 }
+	      publish_task = true;
             }
         }
       else
@@ -365,6 +391,7 @@ dtio::posix::open64 (const char *filename, int flags)
             {
               throw std::runtime_error ("dtio::posix::open() create failed!");
             }
+	  publish_task = true;
         }
     }
   else
@@ -375,6 +402,7 @@ dtio::posix::open64 (const char *filename, int flags)
             {
               throw std::runtime_error ("dtio::posix::open() update failed!");
             }
+	  publish_task = true;
         }
       else
         {
@@ -382,6 +410,14 @@ dtio::posix::open64 (const char *filename, int flags)
           return -1;
         }
     }
+  if (publish_task && ConfigManager::get_instance()->WORKER_STAGING_SIZE != 0) {
+    // Publish staging task
+    auto f = file (std::string (filename), 0, 0);
+    auto s_task = task (task_type::STAGING_TASK, f);
+    auto client_queue
+      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
+    client_queue->publish_task (&s_task);
+  }
   return fd;
 }
 
@@ -392,6 +428,7 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
   bool file_exists_in_fs = false;
+  bool publish_task = false;
   if (!mdm->is_created (filename))
     {
       if (!(flags & O_CREAT))
@@ -416,6 +453,7 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
                   throw std::runtime_error (
                       "dtio::posix::open() update failed!");
                 }
+	      publish_task = true;
             }
         }
       else
@@ -424,6 +462,7 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
             {
               throw std::runtime_error ("dtio::posix::open() create failed!");
             }
+	  publish_task = true;
         }
     }
   else
@@ -434,6 +473,7 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
             {
               throw std::runtime_error ("dtio::posix::open() update failed!");
             }
+	  publish_task = true;
         }
       else
         {
@@ -441,6 +481,14 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
           return -1;
         }
     }
+  if (publish_task && ConfigManager::get_instance()->WORKER_STAGING_SIZE != 0) {
+    // Publish staging task
+    auto f = file (std::string (filename), 0, 0);
+    auto s_task = task (task_type::STAGING_TASK, f);
+    auto client_queue
+      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
+    client_queue->publish_task (&s_task);
+  }
   return fd;
 }
 
