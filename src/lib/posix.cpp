@@ -232,7 +232,7 @@ dtio::posix::open (const char *filename, int flags)
           if (ConfigManager::get_instance ()->CHECKFS)
             {
               struct stat st;
-              if (stat (filename, &st) == 0)
+              if (stat ((strncmp(filename, "dtio://", 7) == 0) ? (filename + 7) : filename, &st) == 0)
                 {
                   file_exists_in_fs = true;
                 }
@@ -298,7 +298,7 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
           if (ConfigManager::get_instance ()->CHECKFS)
             {
               struct stat st;
-              if (stat (filename, &st) == 0)
+              if (stat ((strncmp(filename, "dtio://", 7) == 0) ? (filename + 7) : filename, &st) == 0)
                 {
                   file_exists_in_fs = true;
                 }
@@ -366,7 +366,7 @@ dtio::posix::open64 (const char *filename, int flags)
           if (ConfigManager::get_instance ()->CHECKFS)
             {
               struct stat st;
-              if (stat (filename, &st) == 0)
+              if (stat ((strncmp(filename, "dtio://", 7) == 0) ? (filename + 7) : filename, &st) == 0)
                 {
                   file_exists_in_fs = true;
                 }
@@ -437,7 +437,7 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
           if (ConfigManager::get_instance ()->CHECKFS)
             {
               struct stat st;
-              if (stat (filename, &st) == 0)
+              if (stat ((strncmp(filename, "dtio://", 7) == 0) ? (filename + 7) : filename, &st) == 0)
                 {
                   file_exists_in_fs = true;
                 }
