@@ -64,7 +64,7 @@ public:
       }
     else
       {
-	std::cout << "I'm uncertain why this happens " << service << std::endl;
+	DTIO_LOG_INFO("I'm uncertain why this happens " << service);
       }
 
     hclmapname = mapname;

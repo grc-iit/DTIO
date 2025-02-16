@@ -139,7 +139,7 @@ worker::run ()
           t.resumeTime ();
           task_count = 0;
         }
-	std::cout << "Elapsed time is " << total_time << std::endl;
+	DTIO_LOG_INFO("Elapsed time is " << total_time);
     }
   while (!kill);
 

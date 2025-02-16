@@ -79,7 +79,6 @@ dtio::MPI_Init (int *argc, char ***argv)
   // PMPI_Comm_split (MPI_COMM_WORLD, QUEUE_TASKSCHED_COLOR, rank - 1,
   //                 &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
   // DTIO_LOG_DEBUG ("[MPI] Comm: Queue Taskscheduler");
-  std::cout << "Getting dtio system lib" << std::endl;
   dtio_system::getInstance (service::LIB);
   DTIO_LOG_DEBUG ("[MPI] Comm: Complete");
   return 0;

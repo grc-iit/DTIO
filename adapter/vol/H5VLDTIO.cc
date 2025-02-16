@@ -595,7 +595,6 @@ H5VL_dtio_init(hid_t vipl_id)
 
     /* Shut compiler up about unused parameter */
     (void)vipl_id;
-    std::cout << "Doing init from VOL" << std::endl;
     dtio::hdf5::DTIO_Init();
 
     return 0;
@@ -1213,7 +1212,6 @@ H5VL_dtio_dataset_create(void *obj, const H5VL_loc_params_t *loc_params, const c
 
     int result;
     char *dsetname = strdup(name);
-    std::cout << "Doing dataset create from VOL" << std::endl;
     result = dtio::hdf5::DTIO_open(o->file_name, dsetname, o->flags, true, false);
     // under = H5VLdataset_create(o->under_object, loc_params, o->under_vol_id, name, lcpl_id, type_id, space_id,
     //                            dcpl_id, dapl_id, dxpl_id, req);
@@ -1253,7 +1251,6 @@ H5VL_dtio_dataset_open(void *obj, const H5VL_loc_params_t *loc_params, const cha
 
     // under = H5VLdataset_open(o->under_object, loc_params, o->under_vol_id, name, dapl_id, dxpl_id, req);
     int result;
-    std::cout << "Doing dataset open from VOL" << std::endl;
     result = dtio::hdf5::DTIO_open(o->file_name, o->dataset_name, o->flags, true, false);
 
     if (result != -1) {
@@ -1894,7 +1891,6 @@ H5VL_dtio_build_io_op_match(char *filename, char *dsetname, hid_t file_space_id,
 	}
 	else {
 	  for(szi = 0; szi < nseq; szi++) {
-	    std::cout << "Doing write from VOL" << std::endl;
 	    dtio::hdf5::DTIO_write(filename, dsetname, (const char *)wbuf + off[szi], len[szi], (uint64_t)off[szi]);
 	  }
 	}
@@ -2493,7 +2489,6 @@ H5VL_dtio_build_io_op_merge(char *filename, char *dsetname, hid_t mem_space_id, 
 	  dtio::hdf5::DTIO_read(filename, dsetname, (char *)rbuf + mem_off[mem_i] + mem_ei, io_len, (uint64_t)(file_off[file_i] + file_ei));
 	}
 	else {
-	  std::cout << "Doing write from VOL" << std::endl;
 	  dtio::hdf5::DTIO_write(filename, dsetname, (const char *)wbuf + mem_off[mem_i] + mem_ei, io_len, (uint64_t)(file_off[file_i] + file_ei));
 	}
 
@@ -2565,7 +2560,6 @@ H5VL_dtio_build_io_op_contig(char *filename, char *dsetname, hid_t file_space_id
 	    dtio::hdf5::DTIO_read(filename, dsetname, (char *)rbuf + mem_off, len[szi], (uint64_t)off[szi]);
 	  }
 	  if(wbuf) {
-	    std::cout << "Doing write from VOL" << std::endl;
 	    dtio::hdf5::DTIO_write(filename, dsetname, (const char *)wbuf + mem_off, len[szi], (uint64_t)off[szi]);
 	  }
             mem_off += len[szi];
@@ -2948,7 +2942,6 @@ H5VL_dtio_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t fap
     /* Open the file with the underlying VOL connector */
     char *filename = strdup(name);
     int fd;
-    std::cout << "Doing file create from VOL" << std::endl;
     fd = dtio::hdf5::DTIO_open(filename, NULL, flags, true, true);
     if (fd != -1) {
       file = H5VL_dtio_new_obj(fd, filename, NULL, flags, -1, -1, -1);
@@ -2996,7 +2989,6 @@ H5VL_dtio_file_open(const char *name, unsigned flags, hid_t fapl_id, hid_t dxpl_
     /* Open the file with the underlying VOL connector */
     int fd;
     char *filename = strdup(name);
-    std::cout << "Doing file open from VOL" << std::endl;
     fd = dtio::hdf5::DTIO_open(name, NULL, flags, false, true);
     if (fd != -1) {
       file = H5VL_dtio_new_obj(fd, filename, NULL, flags, -1, -1, -1);

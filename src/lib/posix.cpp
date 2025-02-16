@@ -873,7 +873,7 @@ dtio::posix::read (int fd, void *buf, size_t count)
     {
       if (!ConfigManager::get_instance ()->CHECKFS)
         {
-	  std::cout << "File not opened" << std::endl;
+	  DTIO_LOG_DEBUG("File not opened");
           return 0;
         }
       if (!mdm->is_created (filename))
@@ -883,7 +883,7 @@ dtio::posix::read (int fd, void *buf, size_t count)
     }
   auto r_task
       = task (task_type::READ_TASK, file (filename, offset, count), file ());
-  std::cout << "Numbers from read task " << r_task.source.size << " " << r_task.destination.size << " " << count << std::endl;
+  DTIO_LOG_INFO("Numbers from read task " << r_task.source.size << " " << r_task.destination.size << " " << count);
   r_task.check_fs = check_fs;
   // if (pfs) {
   //   r_task.source.location = PFS;
@@ -893,6 +893,9 @@ dtio::posix::read (int fd, void *buf, size_t count)
   // }
   if (ConfigManager::get_instance()->USE_CACHE) {
     r_task.source.location = BUFFERS;
+  }
+  else {
+    r_task.source.location = PFS;
   }
   if (ConfigManager::get_instance()->USE_URING) {
     r_task.iface = io_client_type::URING;
@@ -1011,16 +1014,13 @@ dtio::posix::read (int fd, void *buf, size_t count)
 					  std::to_string (t.destination.server)))
 		    {
 		    }
-		  std::cout << "Raw data get" << std::endl;
 
 		  data_m->get (DATASPACE_DB, t.source.filename,
 			       std::to_string (t.destination.server), char_data);
 
-		  std::cout << char_data << std::endl;
-		  std::cout << "Get data into " << ptr_pos << " from " << t.source.offset << " size " << t.source.size << std::endl;
+		  DTIO_LOG_INFO("Get data into " << ptr_pos << " from " << t.source.offset << " size " << t.source.size);
 		  strncpy ((char *)buf + ptr_pos,
 			   char_data, t.source.size); //  + t.source.offset
-		  std::cout << "Success" << std::endl;
 		  free(char_data);
 		  // auto print_test = std::string ((char *)buf);
 
@@ -1037,15 +1037,13 @@ dtio::posix::read (int fd, void *buf, size_t count)
 	    break;
 	  case BUFFERS:
 	    {
-	      hcl::Timer timer = hcl::Timer ();
+	      // hcl::Timer timer = hcl::Timer ();
 	      // client_queue->publish_task (&t);
-	      std::cout << "Waiting for " << t.source.filename << std::endl;
 	      // while (!data_m->exists (DATASPACE_DB, t.source.filename,
 	      // 			      std::to_string (t.destination.server)))
 	      // 	{
 	      // 	  // std::cerr<<"looping\n";
 	      // 	}
-	      std::cout << "Raw data get" << std::endl;
 
 	      auto map_client = dtio_system::getInstance(LIB)->map_client();
 	      auto map_fm_client = dtio_system::getInstance(LIB)->map_client("metadata+filemeta");
@@ -1109,7 +1107,7 @@ dtio::posix::read (int fd, void *buf, size_t count)
 		// std::cout << "Destination size " << tsk[task_idx]->destination.size << std::endl;
 		for (int i = 0; i < t.source.size; i++) {
 		  if (range_bound[i] != -1) {
-		    std::cout << "Range not resolved at " << range_bound[i] << std::endl;
+		    DTIO_LOG_INFO("Range not resolved at " << range_bound[i]);
 		    range_resolved = false;
 		    break;
 		  }
@@ -1120,7 +1118,6 @@ dtio::posix::read (int fd, void *buf, size_t count)
 	      // Range resolved on current tasks lower down
 
 	      // Resolve range on current task
-	      std::cout << "Pulling from resolved range" << std::endl;
 	      if (range_resolved) {
 		for (unsigned i = resolve_dts.size(); i-- > 0; ) {
 		  // Currently, we're just iterating backwards so newer DTs overwrite older ones.
@@ -1143,8 +1140,6 @@ dtio::posix::read (int fd, void *buf, size_t count)
 	      // strncpy ((char *)buf + ptr_pos, char_data,
 	      // 	       t.source.size); // + t.source.offset
 
-	      std::cout << "Success" << std::endl;
-
 	      // free(char_data);
 	      // data_m->remove (DATASPACE_DB, t.source.filename,
 	      // 		      std::to_string (t.destination.server));
@@ -1155,7 +1150,6 @@ dtio::posix::read (int fd, void *buf, size_t count)
 	  case CACHE:
 	    {
 	      DTIO_LOG_TRACE("Cache" << std::endl);
-	      std::cout << "Cache" << std::endl;
 	      // data = data_m->get (DATASPACE_DB, t.source.filename,
 	      //                     std::to_string (t.destination.server));
 	      data_m->get(DATASPACE_DB, t.source.filename,
@@ -1289,9 +1283,8 @@ dtio::posix::write_wait (std::vector<task *> tasks)
 ssize_t
 dtio::posix::write (int fd, const void *buf, size_t count)
 {
-  std::cout << "Entering write" << std::endl;
-  hcl::Timer t = hcl::Timer ();
-  t.resumeTime ();
+  // hcl::Timer t = hcl::Timer ();
+  // t.resumeTime ();
   DTIO_LOG_DEBUG ("[POSIX] Write Entered");
   auto mdm = metadata_manager::getInstance (LIB);
   auto client_queue
@@ -1302,9 +1295,9 @@ dtio::posix::write (int fd, const void *buf, size_t count)
   auto data_m = data_manager::getInstance (LIB);
   auto filename = mdm->get_filename (fd);
   auto offset = mdm->get_fp (filename);
-  t.pauseTime ();
-  std::cout << "Time initializing task information " << t.getElapsedTime() << std::endl;
-  t.resumeTime();
+  // t.pauseTime ();
+  // std::cout << "Time initializing task information " << t.getElapsedTime() << std::endl;
+  // t.resumeTime();
   if (!mdm->is_opened (filename))
     throw std::runtime_error ("dtio::write() file not opened!");
   auto source = file();
@@ -1333,9 +1326,9 @@ dtio::posix::write (int fd, const void *buf, size_t count)
 //   DTIO_LOG_TRACE(stream1.str ());
 // #endif
 
-  t.pauseTime();
-  std::cout << "Time to construct task " << t.getElapsedTime() << std::endl;
-  t.resumeTime();
+  // t.pauseTime();
+  // std::cout << "Time to construct task " << t.getElapsedTime() << std::endl;
+  // t.resumeTime();
   const char *write_data_char = static_cast<const char *>(buf);
   std::string write_data (static_cast<const char *> (buf), count);
 
@@ -1396,9 +1389,9 @@ dtio::posix::write (int fd, const void *buf, size_t count)
       index++;
       delete tsk;
     }
-  t.pauseTime();
-  std::cout << "Time to publish and execute task " << t.getElapsedTime() << std::endl;
-  t.resumeTime();
+  // t.pauseTime();
+  // std::cout << "Time to publish and execute task " << t.getElapsedTime() << std::endl;
+  // t.resumeTime();
 
   // NOTE Without this, it's not synchronous. Easy way to add async later
   if (!ConfigManager::get_instance ()->ASYNC) {
@@ -1413,8 +1406,8 @@ dtio::posix::write (int fd, const void *buf, size_t count)
 	// map_client->remove (table::DATASPACE_DB, task_id.first, task_id.second);
       }
   }
-  t.pauseTime();
-  std::cout << "Time from synchronicity " << t.getElapsedTime() << std::endl;
+  // t.pauseTime();
+  // std::cout << "Time from synchronicity " << t.getElapsedTime() << std::endl;
 
   return count;
 }

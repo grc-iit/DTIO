@@ -103,7 +103,7 @@ int hdf5_client::dtio_read(task *tsk[], char *staging_space) {
     // std::cout << "Destination size " << tsk[task_idx]->destination.size << std::endl;
     for (int i = 0; i < tsk[task_idx]->source.size; i++) {
       if (range_bound[i] != -1) {
-	std::cout << "Range not resolved at " << range_bound[i] << std::endl;
+	DTIO_LOG_INFO("Range not resolved at " << range_bound[i])
 	range_resolved = false;
 	break;
       }
@@ -118,7 +118,7 @@ int hdf5_client::dtio_read(task *tsk[], char *staging_space) {
   char *filepath = strndupa(path, (size_t)(dsetname - path)); // Allocates on stack, but it's just a filepath so should be ok. If it isn't, use strndup instead
   hid_t file, dset_id;
 
-  std::cout << "Opening file " << filepath << std::endl;
+  DTIO_LOG_TRACE("Opening file " << filepath);
   if (temp_fd == -1) {
     file = H5Fopen(filepath, H5F_ACC_RDWR, H5P_DEFAULT); // "w+"
     temp_fd = file;
@@ -130,10 +130,9 @@ int hdf5_client::dtio_read(task *tsk[], char *staging_space) {
     std::cerr << "File " << filepath << " didn't open" << std::endl;
   }
 
-  std::cout << "Opening dataset " << dsetname << std::endl;
+  DTIO_LOG_TRACE("Opening dataset " << dsetname);
   dset_id = H5Dopen(file, dsetname, H5P_DEFAULT);
 
-  std::cout << "Dataspace stuff" << std::endl;
   hid_t dataspace_id = H5Dget_space(dset_id);
   int ndims = H5Sget_simple_extent_ndims(dataspace_id);
   hsize_t dims[ndims];
@@ -154,8 +153,6 @@ int hdf5_client::dtio_read(task *tsk[], char *staging_space) {
   int offset = tsk[task_idx]->source.offset;
   int size = tsk[task_idx]->source.size;
 
-  std::cout << "Calculating chunk size" << std::endl;
-
   int chunk_size = 1;
   mem_dims[0] = 1;
   for (i = 1; i < ndims; i++) {
@@ -165,7 +162,6 @@ int hdf5_client::dtio_read(task *tsk[], char *staging_space) {
     chunk_size *= dims[i];
   }
 
-  // std::cout << "Calculating hyperslab offset" << std::endl;
   hslab_offset[0] = 0;
   // hslab_offset[0] = offset / (chunk_size * 2);
   while (offset > 0) {
@@ -176,7 +172,6 @@ int hdf5_client::dtio_read(task *tsk[], char *staging_space) {
     offset -= chunk_size * 2;
   }
 
-  // std::cout << "Calculating hyperslab count" << std::endl;
   hslab_count[0] = std::max(1, size / (chunk_size * 2));
   int datasize = std::pow(chunk_size * 2, hslab_count[0]);
   // hslab_count[0] = 0;
@@ -191,11 +186,9 @@ int hdf5_client::dtio_read(task *tsk[], char *staging_space) {
   // }
   mem_dims[0] *= hslab_count[0];
 
-  // std::cout << "Allocating data" << std::endl;
   void *data = calloc(datasize, sizeof(char *));
 
   // Resolve range on current task
-  std::cout << "Pulling from resolved range" << std::endl;
   if (range_resolved) {
     for (unsigned i = resolve_dts.size(); i-- > 0; ) {
       // Currently, we're just iterating backwards so newer DTs overwrite older ones.
@@ -206,24 +199,20 @@ int hdf5_client::dtio_read(task *tsk[], char *staging_space) {
     }
     map_client->put(DATASPACE_DB, tsk[task_idx]->source.filename, static_cast<char *>(data), datasize,
 		  std::to_string(tsk[task_idx]->destination.server));
-    // std::cout << static_cast<char *>(data) << std::endl;
     free(data);
     continue;
   }
 
-  // std::cout << "Selecting hyperslab" << std::endl;
   H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, hslab_offset, NULL, hslab_count, NULL);
 
-  // std::cout << "Performing read offsets " << hslab_offset[0] << " " << hslab_offset[1] << " " << hslab_offset[2] << " " << hslab_offset[3] << std:: endl;
-  // std::cout << "Performing read counts " << hslab_count[0] << " " << hslab_count[1] << " " << hslab_count[2] << " " << hslab_count[3] << std:: endl;
-  // std::cout << "Performing read datasize " << datasize << std:: endl;
-  // std::cout << "Performing read memdims " << mem_dims[0] << std:: endl;
+  DTIO_LOG_TRACE("Performing read offsets " << hslab_offset[0] << " " << hslab_offset[1] << " " << hslab_offset[2] << " " << hslab_offset[3]);
+  DTIO_LOG_TRACE("Performing read counts " << hslab_count[0] << " " << hslab_count[1] << " " << hslab_count[2] << " " << hslab_count[3]);
+  DTIO_LOG_TRACE("Performing read datasize " << datasize);
+  DTIO_LOG_TRACE("Performing read memdims " << mem_dims[0]);
   
   hid_t memspace_id = H5Screate_simple(1, mem_dims, NULL);
 
   H5Dread(dset_id, H5T_STD_U16LE, memspace_id, dataspace_id, H5P_DEFAULT, data);
-
-  // std::cout << "Read done" << std::endl;
 
 #ifdef TIMERDM
   hcl::Timer t0 = hcl::Timer();
@@ -345,9 +334,7 @@ int hdf5_client::dtio_write(task *tsk[]) {
 
     dset_id = H5Dopen(file, dsetname, H5P_DEFAULT);
 
-    std::cout << "Doing H5Dwrite" << std::endl;
     H5Dwrite(dset_id, H5T_STD_U16LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
-    std::cout << "H5Dwrite done" << std::endl;
     //lseek64(fd, tsk[task_idx]->destination.offset, SEEK_SET);
     // auto count = write(fd, data, tsk[task_idx]->destination.size);
     // if (count != tsk[task_idx]->destination.size)

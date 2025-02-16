@@ -130,7 +130,7 @@ public:
       // Complicated code here
       // FIXME We probably need something in the return to make sure we know how to index into the DTs later
       if (!retval && chunk_lower == lower_bound && chunk_upper == upper_bound) {
-	std::cout << "Full range checked, setting bool" << std::endl;
+	DTIO_LOG_DEBUG("Full range checked, setting bool");
 	*range_resolved = true;
       }
       return retval;

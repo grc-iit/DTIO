@@ -63,7 +63,6 @@ static __attribute__((constructor(101))) void init_posix(void) {
  * MPI
  */
 int HERMES_DECL(MPI_Init)(int *argc, char ***argv) {
-  printf("Intercepted mpi init\n");
   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
   auto real_api = HERMES_POSIX_API;
   // You shouldn't ever be calling the real version
@@ -126,7 +125,6 @@ int HERMES_DECL(MPI_Init_thread)(int *argc, char ***argv, int required, int *pro
  * POSIX
  */
 int HERMES_DECL(open)(const char *path, int flags, ...) {
-  printf("Intercepted open\n");
   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
   auto real_api = HERMES_POSIX_API;
 
@@ -172,7 +170,6 @@ int HERMES_DECL(open)(const char *path, int flags, ...) {
 }
 
 int HERMES_DECL(open64)(const char *path, int flags, ...) {
-  printf("Intercepted open64\n");
   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
   auto real_api = HERMES_POSIX_API;
 
@@ -217,7 +214,6 @@ int HERMES_DECL(open64)(const char *path, int flags, ...) {
 }
 
 int HERMES_DECL(__open_2)(const char *path, int oflag) {
-  printf("Intercepted open 2\n");
   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
   auto real_api = HERMES_POSIX_API;
   std::string caller_name = "";
@@ -243,13 +239,11 @@ int HERMES_DECL(__open_2)(const char *path, int oflag) {
 }
 
 int HERMES_DECL(creat)(const char *path, mode_t mode) {
-  printf("Creat called\n");
   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
   // dtio::posix::creat(path, mode);
 }
 
 int HERMES_DECL(creat64)(const char *path, mode_t mode) {
-  printf("Creat64 called\n");
   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
   // dtio::posix::creat64(path, mode);
 }
@@ -458,7 +452,6 @@ int HERMES_DECL(__xstat)(int __ver, const char *__filename,
 
 int HERMES_DECL(__lxstat)(int __ver, const char *__filename,
 			  struct stat *__stat_buf) {
-  printf("__lxstat called\n");
 }
 // NOTE:not in DTIO
 // int HERMES_DECL(fstat)(int fd, struct stat *buf) {

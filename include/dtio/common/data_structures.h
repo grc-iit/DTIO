@@ -30,6 +30,7 @@
 #include <cereal/types/string.hpp>
 #include <dtio/common/constants.h>
 #include <dtio/common/enumerations.h>
+#include <dtio/common/logger.h>
 // #include <rpc/msgpack/adaptor/define_decl.hpp>
 #include <utility>
 #include <vector>
@@ -436,7 +437,7 @@ struct file_meta
     this->file_struct = file_struct_;
     this->current_chunk_index = current_chunk_index_;
     this->num_chunks = num_chunks_;
-    std::cout << "Copying chunks in constructor from current index " << current_chunk_index << std::endl;
+    DTIO_LOG_DEBUG("Copying chunks in constructor from current index " << current_chunk_index);
     for (int i = 0; i < num_chunks_; i++) {
       if (current_chunk_index_ - i - 1 >= 0) {
 	this->chunks[current_chunk_index_ - i - 1] = chunks_[current_chunk_index_ - i - 1];
@@ -464,18 +465,15 @@ struct file_meta
     file_struct = other.file_struct;
     current_chunk_index = other.current_chunk_index;
     num_chunks = other.num_chunks;
-    std::cout << "Copying chunks from current index " << current_chunk_index << std::endl;
+    DTIO_LOG_DEBUG("Copying chunks from current index " << current_chunk_index);
     for (int i = 0; i < num_chunks; i++) {
       if (current_chunk_index - i - 1 >= 0) {
-	std::cout << "From start" << std::endl;
 	chunks[current_chunk_index - i - 1] = other.chunks[current_chunk_index - i - 1];
       }
       else {
-	std::cout << "From end" << std::endl;
 	chunks[CHUNK_LIMIT + current_chunk_index - i - 1] = other.chunks[CHUNK_LIMIT + current_chunk_index - i - 1];
       }
     }
-    std::cout << "Finished copying chunks" << std::endl;
     return *this;
   }
 

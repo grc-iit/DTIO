@@ -295,15 +295,13 @@ std::string dtio::DTIO_read(std::string filename, int64_t offset, size_t count)
 					  std::to_string (t.destination.server)))
 		    {
 		    }
-		  std::cout << "Raw data get" << std::endl;
 
 		  data_m->get (DATASPACE_DB, t.source.filename,
 			       std::to_string (t.destination.server), char_data);
 
-		  std::cout << "Get data into " << ptr_pos << " from " << t.source.offset << " size " << t.destination.size << std::endl;
+		  DTIO_LOG_INFO("Get data into " << ptr_pos << " from " << t.source.offset << " size " << t.destination.size);
 		  strncpy (buf.data() + ptr_pos,
 			   char_data, t.destination.size); //  + t.source.offset
-		  std::cout << "Success" << std::endl;
 		  free(char_data);
 		  // auto print_test = std::string ((char *)buf);
 
@@ -327,16 +325,13 @@ std::string dtio::DTIO_read(std::string filename, int64_t offset, size_t count)
 		{
 		  // std::cerr<<"looping\n";
 		}
-	      std::cout << "Raw data get" << std::endl;
 	      data_m->get (DATASPACE_DB, t.source.filename,
 			   std::to_string (t.destination.server), char_data);
 
-	      std::cout << "Get data into " << ptr_pos << " from " << t.source.offset << " size " << t.destination.size << std::endl;
+	      DTIO_LOG_INFO("Get data into " << ptr_pos << " from " << t.source.offset << " size " << t.destination.size);
 
 	      strncpy (buf.data() + ptr_pos, char_data,
 		       t.destination.size); // + t.source.offset
-
-	      std::cout << "Success" << std::endl;
 
 	      free(char_data);
 	      data_m->remove (DATASPACE_DB, t.source.filename,
