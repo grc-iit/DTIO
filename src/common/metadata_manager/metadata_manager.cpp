@@ -143,7 +143,7 @@ metadata_manager::update_on_open (std::string filename, std::string mode,
 
 int
 metadata_manager::update_on_open (std::string filename, int flags, mode_t mode,
-                                  int *fd)
+                                  int *fd, int existing_size)
 {
 #ifdef TIMERMDM
   hcl::Timer t = hcl::Timer ();
@@ -156,7 +156,12 @@ metadata_manager::update_on_open (std::string filename, int flags, mode_t mode,
   file_stat stat;
 
   *fd = random ();
-  stat.file_size = iter->second.file_size;
+  if (iter != file_map.end()) {
+    stat.file_size = iter->second.file_size;
+  }
+  else {
+    stat.file_size = existing_size;
+  }
   stat.fd = *fd;
   stat.is_open = true;
   if (flags & O_RDONLY)
@@ -183,9 +188,10 @@ metadata_manager::update_on_open (std::string filename, int flags, mode_t mode,
     }
   
   iter = file_map.find (filename);
-  if (iter != file_map.end ())
+  if (iter != file_map.end ()) {
     file_map.erase (iter);
-  DTIO_LOG_TRACE ("[DTIO][MDMAN][UPDATE_ON_OPEN] " << iter->second.file_size << " " << stat.file_size);
+    DTIO_LOG_TRACE ("[DTIO][MDMAN][UPDATE_ON_OPEN] " << iter->second.file_size << " " << stat.file_size);
+  }
   fd_map.emplace (*fd, filename);
   file_map.emplace (filename, stat);
   map->put (table::FILE_DB, filename, &stat, std::to_string (-1));

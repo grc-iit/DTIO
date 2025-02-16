@@ -229,12 +229,14 @@ dtio::posix::open (const char *filename, int flags)
     {
       if (!(flags & O_CREAT))
         {
+	  int existing_size = 0;
           if (ConfigManager::get_instance ()->CHECKFS)
             {
               struct stat st;
               if (stat ((strncmp(filename, "dtio://", 7) == 0) ? (filename + 7) : filename, &st) == 0)
                 {
                   file_exists_in_fs = true;
+		  existing_size = st.st_size;
                 }
             }
           if (!file_exists_in_fs)
@@ -243,7 +245,7 @@ dtio::posix::open (const char *filename, int flags)
             }
           else
             {
-              if (mdm->update_on_open (filename, flags, 0, &fd) != SUCCESS)
+              if (mdm->update_on_open (filename, flags, 0, &fd, existing_size) != SUCCESS)
                 {
                   throw std::runtime_error (
                       "dtio::posix::open() update failed!");
@@ -295,12 +297,14 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
     {
       if (!(flags & O_CREAT))
         {
+	  int existing_size = 0;
           if (ConfigManager::get_instance ()->CHECKFS)
             {
               struct stat st;
               if (stat ((strncmp(filename, "dtio://", 7) == 0) ? (filename + 7) : filename, &st) == 0)
                 {
                   file_exists_in_fs = true;
+		  existing_size = st.st_size;
                 }
             }
           if (!file_exists_in_fs)
@@ -309,7 +313,7 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
             }
           else
             {
-              if (mdm->update_on_open (filename, flags, mode, &fd) != SUCCESS)
+              if (mdm->update_on_open (filename, flags, mode, &fd, existing_size) != SUCCESS)
                 {
                   throw std::runtime_error (
                       "dtio::posix::open() update failed!");
@@ -363,12 +367,14 @@ dtio::posix::open64 (const char *filename, int flags)
       if (!(flags & O_CREAT))
         {
           DTIO_LOG_TRACE ("[POSIX] Open64 file not marked created");
+	  int existing_size = 0;
           if (ConfigManager::get_instance ()->CHECKFS)
             {
               struct stat st;
               if (stat ((strncmp(filename, "dtio://", 7) == 0) ? (filename + 7) : filename, &st) == 0)
                 {
                   file_exists_in_fs = true;
+		  existing_size = st.st_size;
                 }
             }
           if (!file_exists_in_fs)
@@ -377,7 +383,7 @@ dtio::posix::open64 (const char *filename, int flags)
             }
           else
             {
-              if (mdm->update_on_open (filename, flags, 0, &fd) != SUCCESS)
+              if (mdm->update_on_open (filename, flags, 0, &fd, existing_size) != SUCCESS)
                 {
                   throw std::runtime_error (
                       "dtio::posix::open() update failed!");
@@ -434,12 +440,14 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
       if (!(flags & O_CREAT))
         {
           DTIO_LOG_TRACE ("[POSIX] Open64 file not marked created");
+	  int existing_size = 0;
           if (ConfigManager::get_instance ()->CHECKFS)
             {
               struct stat st;
               if (stat ((strncmp(filename, "dtio://", 7) == 0) ? (filename + 7) : filename, &st) == 0)
                 {
                   file_exists_in_fs = true;
+		  existing_size = st.st_size;
                 }
             }
           if (!file_exists_in_fs)
@@ -448,7 +456,7 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
             }
           else
             {
-              if (mdm->update_on_open (filename, flags, mode, &fd) != SUCCESS)
+              if (mdm->update_on_open (filename, flags, mode, &fd, existing_size) != SUCCESS)
                 {
                   throw std::runtime_error (
                       "dtio::posix::open() update failed!");

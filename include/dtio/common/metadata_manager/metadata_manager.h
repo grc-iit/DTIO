@@ -67,7 +67,7 @@ public:
   bool is_opened(FILE *fh);
   bool is_opened(int fd);
   int update_on_open(std::string filename, std::string mode, FILE *&fh);
-  int update_on_open(std::string filename, int flags, mode_t mode, int *fd);
+  int update_on_open(std::string filename, int flags, mode_t mode, int *fd, int existing_size = 0);
   int update_on_close(FILE *&fh);
   int update_on_close(int fd);
   int remove_chunks(std::string &basic_string);
