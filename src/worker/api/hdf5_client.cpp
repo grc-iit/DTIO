@@ -32,6 +32,116 @@
 #include <vector>
 
 int hdf5_client::dtio_stage(task *tsk[], char *staging_space) {
+  int task_idx;
+  for (task_idx = 0; task_idx < BATCH_SIZE; task_idx++) {
+#ifdef TIMERW
+  hcl::Timer t = hcl::Timer();
+  t.resumeTime();
+#endif
+  auto map_client = dtio_system::getInstance(WORKER)->map_client();
+
+  char *path = (strncmp(tsk[task_idx]->source.filename, "dtio://", 7) == 0) ? (tsk[task_idx]->source.filename + 7) : tsk[task_idx]->source.filename ;
+  char *dsetname = strstr(path, "h5") + 2; // One for the / delimeter
+  char *filepath = strndupa(path, (size_t)(dsetname - path)); // Allocates on stack, but it's just a filepath so should be ok. If it isn't, use strndup instead
+  hid_t file, dset_id;
+
+  DTIO_LOG_TRACE("Opening file " << filepath);
+  if (temp_fd == -1) {
+    file = H5Fopen(filepath, H5F_ACC_RDWR, H5P_DEFAULT); // "w+"
+    temp_fd = file;
+  }
+  else {
+    file = temp_fd;
+  }
+  if (file < 0) {
+    std::cerr << "File " << filepath << " didn't open" << std::endl;
+  }
+
+  DTIO_LOG_TRACE("Opening dataset " << dsetname);
+  dset_id = H5Dopen(file, dsetname, H5P_DEFAULT);
+
+  hid_t dataspace_id = H5Dget_space(dset_id);
+  int ndims = H5Sget_simple_extent_ndims(dataspace_id);
+  hsize_t dims[ndims];
+  H5Sget_simple_extent_dims(dataspace_id, dims, NULL);
+
+  int count = 2; // For testing
+
+  int i;
+  for (i = 0; i < ndims; i++) {
+    count *= dims[i];
+  }
+
+   // Use this and the source.size to determine the selection
+
+  hsize_t hslab_offset[ndims];
+  hsize_t hslab_count[ndims];
+  hsize_t mem_dims[1];
+  int offset = tsk[task_idx]->source.offset;
+  int size = ConfigManager::get_instance()->WORKER_STAGING_SIZE; // tsk[task_idx]->source.size;
+
+  int chunk_size = 1;
+  mem_dims[0] = 1;
+  for (i = 1; i < ndims; i++) {
+    hslab_offset[i] = 0;
+    hslab_count[i] = dims[i];
+    mem_dims[0] *= dims[i];
+    chunk_size *= dims[i];
+  }
+
+  hslab_offset[0] = 0;
+  // hslab_offset[0] = offset / (chunk_size * 2);
+  while (offset > 0) {
+    hslab_offset[0]++;
+    if (hslab_offset[0] > dims[0]) {
+      std::cerr << "HDF5 worker client giving offset beyond end of the dataset" << std::endl;
+    }
+    offset -= chunk_size * 2;
+  }
+
+  hslab_count[0] = std::max(1, size / (chunk_size * 2));
+  int datasize = std::pow(chunk_size * 2, hslab_count[0]);
+  // hslab_count[0] = 0;
+  // int datasize = 1;
+  // while (size > 0) {
+  //   hslab_count[0]++;
+  //   datasize *= chunk_size * 2;
+  //   if (hslab_count[0] > dims[0]) {
+  //     std::cerr << "HDF5 worker client giving count beyond end of the dataset" << std::endl;
+  //   }
+  //   size -= chunk_size * 2;
+  // }
+  mem_dims[0] *= hslab_count[0];
+
+  H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, hslab_offset, NULL, hslab_count, NULL);
+
+  DTIO_LOG_TRACE("Performing read offsets " << hslab_offset[0] << " " << hslab_offset[1] << " " << hslab_offset[2] << " " << hslab_offset[3]);
+  DTIO_LOG_TRACE("Performing read counts " << hslab_count[0] << " " << hslab_count[1] << " " << hslab_count[2] << " " << hslab_count[3]);
+  DTIO_LOG_TRACE("Performing read datasize " << datasize);
+  DTIO_LOG_TRACE("Performing read memdims " << mem_dims[0]);
+  
+  hid_t memspace_id = H5Screate_simple(1, mem_dims, NULL);
+
+  H5Dread(dset_id, H5T_STD_U16LE, memspace_id, dataspace_id, H5P_DEFAULT, staging_space);
+
+#ifdef TIMERDM
+  hcl::Timer t0 = hcl::Timer();
+  t0.resumeTime();
+#endif
+
+
+  // map_client->put(DATASPACE_DB, tsk[task_idx]->source.filename, static_cast<char *>(data), datasize,
+  // 		  std::to_string(tsk[task_idx]->destination.server));
+#ifdef TIMERDM
+  std::stringstream stream;
+  stream << "hdf5_client::read()::send_data," << std::fixed
+         << std::setprecision(10) << t0.pauseTime() << "\n";
+  std::cout << stream.str();
+#endif
+  // std::cout<<tsk[task_idx]->destination.filename<<","<<tsk[task_idx]->destination.server<<"\n";
+  // H5Fclose(file);
+  }
+  return 0;
 }
 
 int hdf5_client::dtio_read(task *tsk[], char *staging_space) {
