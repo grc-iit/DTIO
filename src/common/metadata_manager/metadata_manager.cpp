@@ -383,15 +383,15 @@ metadata_manager::update_write_task_info (std::vector<task> task_ks,
   for (int i = 0; i < task_ks.size (); ++i)
     {
       auto task_k = task_ks[i];
-      update_on_write (task_k.source.filename, task_k.source.size,
-                       task_k.source.offset);
+      update_on_write (task_k.destination.filename, task_k.destination.size,
+                       task_k.destination.offset);
       // if (!task_k.meta_updated)
       //   {
       auto base_offset
 	= (task_k.destination.offset / MAX_IO_UNIT) * MAX_IO_UNIT;
       chunk_meta cm;
-      cm.actual_user_chunk = task_k.source;
-      cm.destination = task_k.source;
+      cm.actual_user_chunk = task_k.destination;
+      cm.destination = task_k.destination;
       // cmmap->put (table::CHUNK_DB, filename + std::to_string (base_offset),
       //           &cm, std::to_string (-1));
       // std::cout << "Updating filemeta for file " << filename << std::endl;
@@ -607,14 +607,14 @@ metadata_manager::update_write_task_info (task task_k, std::string filename,
   auto iter = file_map.find (filename);
   if (iter != file_map.end ())
     fs = iter->second;
-  update_on_write (filename, io_size, task_k.source.offset);
+  update_on_write (filename, io_size, task_k.destination.offset);
       // if (!task_k.meta_updated)
       //   {
   auto base_offset
     = (task_k.destination.offset / MAX_IO_UNIT) * MAX_IO_UNIT;
   chunk_meta cm;
-  cm.actual_user_chunk = task_k.source;
-  cm.destination = task_k.source;
+  cm.actual_user_chunk = task_k.destination;
+  cm.destination = task_k.destination;
   // cmmap->put (table::CHUNK_DB, filename + std::to_string (base_offset),
   //           &cm, std::to_string (-1));
   // std::cout << "Updating filemeta for file " << filename << std::endl;
