@@ -858,7 +858,7 @@ read_wait (void *ptr, std::vector<task> &tasks, std::string filename)
         }
       ptr_pos += task.destination.size;
     }
-  mdm->update_read_task_info (tasks, filename);
+  // mdm->update_read_task_info (tasks, filename);
   return size_read;
 }
 
@@ -1190,7 +1190,6 @@ dtio::posix::read (int fd, void *buf, size_t count)
 
       ptr_pos += t.destination.size;
     }
-  mdm->update_read_task_info (tasks, filename);
   return size_read;
 }
 

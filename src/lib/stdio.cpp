@@ -324,7 +324,7 @@ size_t dtio::stdio::fread(void *ptr, size_t size, size_t count, FILE *stream) {
 
     ptr_pos += t.destination.size;
   }
-  mdm->update_read_task_info(tasks, filename);
+  // mdm->update_read_task_info(tasks, filename);
   return size_read;
 }
 

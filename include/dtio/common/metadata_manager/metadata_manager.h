@@ -80,7 +80,7 @@ public:
   // long long int get_fp(const std::string &basic_string);
   file_stat get_stat(std::string basic_string);
   int update_on_seek(std::string basic_string, size_t offset, size_t origin);
-  int update_read_task_info(std::vector<task> task_k,
+  int update_read_task_info(task *task_ks[],
                             std::string filename);
   int update_write_task_info(task *task_ks[],
                              std::string filename);

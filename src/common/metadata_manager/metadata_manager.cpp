@@ -336,7 +336,7 @@ metadata_manager::get_stat(std::string filename) {
 }
 
 int
-metadata_manager::update_read_task_info (std::vector<task> task_ks,
+metadata_manager::update_read_task_info (task *task_ks[],
                                          std::string filename)
 {
 #ifdef TIMERMDM
@@ -349,11 +349,11 @@ metadata_manager::update_read_task_info (std::vector<task> task_ks,
     DTIO_LOG_ERROR("Update on read file not found " << filename);
   }
   int total_size = 0;
-  for (int i = 0; i < task_ks.size (); ++i)
+  for (int i = 0; i < BATCH_SIZE; ++i)
     {
       auto task_k = task_ks[i];
-      assert (task_k.t_type == task_type::READ_TASK);
-      total_size += task_k.source.size;
+      assert (task_k->t_type == task_type::READ_TASK);
+      total_size += task_k->source.size;
       // update_on_read (filename, task_k.source.size);
     }
   fs.file_pointer += total_size;

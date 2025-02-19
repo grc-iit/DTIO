@@ -558,6 +558,6 @@ int dtio::hdf5::DTIO_read(const char *filename, const char *dsetname, char *buf,
 
       ptr_pos += t.destination.size;
     }
-  mdm->update_read_task_info (tasks, path);
+  // mdm->update_read_task_info (tasks, path);
   return size_read;
 }

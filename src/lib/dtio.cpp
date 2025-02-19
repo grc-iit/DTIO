@@ -113,12 +113,12 @@ int dtio::DTIO_write (std::string filename, std::string buf, int64_t offset, siz
 
       if (tsk->publish)
         {
-          if (count < tsk->source.size) {
-            mdm->update_write_task_info (*tsk, tsk->destination.filename, count);
-	  }
-          else {
-            mdm->update_write_task_info (*tsk, tsk->destination.filename, tsk->source.size);
-	  }
+          // if (count < tsk->source.size) {
+          //   mdm->update_write_task_info (*tsk, tsk->destination.filename, count);
+	  // }
+          // else {
+          //   mdm->update_write_task_info (*tsk, tsk->destination.filename, tsk->source.size);
+	  // }
           client_queue->publish_task (tsk);
 
           task_ids.emplace_back (std::make_pair (
@@ -362,7 +362,7 @@ std::string dtio::DTIO_read(std::string filename, int64_t offset, size_t count)
 
       ptr_pos += t.destination.size;
     }
-  mdm->update_read_task_info (tasks, filename);
+  // mdm->update_read_task_info (tasks, filename);
   return buf;
 }
 
