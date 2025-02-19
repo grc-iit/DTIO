@@ -172,7 +172,7 @@ metadata_manager::update_on_open (std::string filename, int flags, mode_t mode,
   file_stat stat;
 
   *fd = random ();
-  if (file_found) {
+  if (file_found && fs.is_open) {
     stat.file_size = fs.file_size;
   }
   else {
@@ -208,7 +208,7 @@ metadata_manager::update_on_open (std::string filename, int flags, mode_t mode,
   //   file_map.erase (iter);
   //   DTIO_LOG_TRACE ("[DTIO][MDMAN][UPDATE_ON_OPEN] " << iter->second.file_size << " " << stat.file_size);
   // }
-  // fd_map.emplace (*fd, filename);
+  fd_map.emplace (*fd, filename);
   // file_map.emplace (filename, stat);
   map->put (table::FILE_DB, filename, &stat, std::to_string (-1));
 #ifdef TIMERMDM

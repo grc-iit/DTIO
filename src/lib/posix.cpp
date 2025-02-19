@@ -1308,7 +1308,6 @@ dtio::posix::write (int fd, const void *buf, size_t count)
   // hcl::Timer t = hcl::Timer ();
   // t.resumeTime ();
   DTIO_LOG_DEBUG ("[POSIX] Write Entered");
-
   auto mdm = metadata_manager::getInstance (LIB);
   auto client_queue
       = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
@@ -1317,14 +1316,15 @@ dtio::posix::write (int fd, const void *buf, size_t count)
   auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance (LIB);
   auto filename = mdm->get_filename (fd);
-  file_stat st = mdm->get_stat(filename);
-  auto offset = st.file_pointer;
   if (!mdm->is_opened (filename))
     throw std::runtime_error ("dtio::write() file not opened!");
+  file_stat st = mdm->get_stat(filename);
+  auto offset = st.file_pointer;
   auto source = file();
   source.offset = 0; // buffer offset, NOT file offset
   source.size = count;
   auto destination = file(filename, offset, count);
+
   auto w_task
       = task (task_type::WRITE_TASK, source, destination);
 
