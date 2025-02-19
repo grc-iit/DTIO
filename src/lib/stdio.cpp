@@ -39,14 +39,17 @@ FILE *dtio::stdio::fopen(const char *filename, const char *mode) {
   auto mdm = metadata_manager::getInstance(LIB);
   FILE *fh = nullptr;
   bool file_exists_in_fs = false;
+  bool publish_task = false;
   if (!mdm->is_created(filename)) {
     if (strcmp(mode, "a") == 0 && strcmp(mode, "w") == 0) {
+      int existing_size = 0;
       if (ConfigManager::get_instance ()->CHECKFS)
 	{
 	  struct stat st;
 	  if (stat (filename, &st) == 0)
 	    {
 	      file_exists_in_fs = true;
+	      existing_size = st.st_size;
 	    }
 	}
       if (!file_exists_in_fs)
@@ -59,20 +62,31 @@ FILE *dtio::stdio::fopen(const char *filename, const char *mode) {
 	    {
 	      throw std::runtime_error ("dtio::fopen() update failed!");
 	    }
+	  publish_task = true;
 	}
     } else {
       if (mdm->create(filename, mode, fh) != SUCCESS) {
         throw std::runtime_error("dtio::fopen() create failed!");
       }
+      publish_task = true;
     }
   } else {
     if (!mdm->is_opened(filename)) {
       if (mdm->update_on_open(filename, mode, fh) != SUCCESS) {
         throw std::runtime_error("dtio::fopen() update failed!");
       }
+      publish_task = true;
     } else {
       return nullptr;
     }
+  }
+  if (publish_task && ConfigManager::get_instance()->WORKER_STAGING_SIZE != 0) {
+    // Publish staging task
+    auto f = file (std::string (filename), 0, 0);
+    auto s_task = task (task_type::STAGING_TASK, f);
+    auto client_queue
+      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
+    client_queue->publish_task (&s_task);
   }
   return fh;
 }
@@ -92,10 +106,12 @@ int dtio::stdio::fseek(FILE *stream, long int offset, int origin) {
     return EBADF;
   }
  auto filename = mdm->get_filename(stream);
-  if (mdm->get_mode(filename) == "a" || mdm->get_mode(filename) == "a+")
-    return 0;
-  auto size = mdm->get_filesize(filename);
-  auto fp = mdm->get_fp(filename);
+ file_stat st = mdm->get_stat(filename);
+ // FIXME may require bigger metadata adjustments, we don't seem to track STDIO mode yet
+ //  if (mdm->get_mode(filename) == "a" || mdm->get_mode(filename) == "a+")
+ //    return 0;
+  auto size = st.file_size;
+  auto fp = st.file_pointer;
   switch (origin) {
   case SEEK_SET:
     // if (offset > size)
@@ -127,7 +143,8 @@ size_t dtio::stdio::fread(void *ptr, size_t size, size_t count, FILE *stream) {
   auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance(LIB);
   auto filename = mdm->get_filename(stream);
-  auto offset = mdm->get_fp(filename);
+  file_stat st = mdm->get_stat (filename);
+  auto offset = st.file_pointer;
   bool check_fs = false;
   task *task_i;
   task_i = nullptr;
@@ -321,7 +338,8 @@ size_t dtio::stdio::fwrite(const void *ptr, size_t size, size_t count, FILE *str
   auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance(LIB);
   auto filename = mdm->get_filename(stream);
-  auto offset = mdm->get_fp(filename);
+  file_stat st = mdm->get_stat(filename);
+  auto offset = st.file_pointer;
   if (!mdm->is_opened(filename))
     throw std::runtime_error("dtio::fwrite() file not opened!");
   auto source = file();

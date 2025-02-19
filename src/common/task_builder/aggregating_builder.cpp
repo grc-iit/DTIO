@@ -211,7 +211,7 @@ std::vector<task> aggregating_builder::build_read_task(task t) {
   auto mdm = metadata_manager::getInstance(LIB);
   auto map_server = dtio_system::getInstance(service_i)->map_server();
   auto map_client = dtio_system::getInstance(service_i)->map_client();
-  auto chunks = mdm->fetch_chunks(t);
+  // auto chunks = mdm->fetch_chunks(t);
   size_t data_pointer = 0;
   int server = static_cast<int>(dtio_system::getInstance(LIB)->rank /
                                 PROCS_PER_MEMCACHED);

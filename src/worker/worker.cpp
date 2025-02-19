@@ -49,6 +49,7 @@ worker::run ()
     {
       throw std::runtime_error ("worker::update_capacity() failed!");
     }
+  auto mdm = metadata_manager::getInstance(WORKER);
   size_t task_count = 0;
   size_t task_index = 0;
   hcl::Timer t = hcl::Timer ();
@@ -89,6 +90,12 @@ worker::run ()
 			    << "\tSize:" << task_i[task_index-1]->destination.size << "\n";
 #endif
 		  client->dtio_write (task_i);
+		  // if (count < task->source.size)
+		  //   mdm->update_write_task_info (*task, filename, count);
+		  // else
+		  
+		  mdm->update_write_task_info (task_i, task_i[0]->destination.filename);
+
 		  break;
 		}
 	      case task_type::READ_TASK:

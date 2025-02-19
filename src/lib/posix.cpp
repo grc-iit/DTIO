@@ -511,7 +511,8 @@ dtio::posix::unlink (const char *pathname)
   auto map_server = dtio_system::getInstance (LIB)->map_server ();
   auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance (LIB);
-  auto offset = mdm->get_fp (pathname);
+  file_stat st = mdm->get_stat(pathname);
+  auto offset = st.file_pointer;
   if (!mdm->is_created (pathname))
     {
       throw std::runtime_error ("dtio::posix::unlink() file doesn't exist!");
@@ -571,7 +572,8 @@ dtio::posix::mystat (const char *pathname, struct stat *statbuf)
     {
       return -1;
     }
-  statbuf->st_size = mdm->get_filesize (pathname);
+  file_stat st = mdm->get_stat(pathname);
+  statbuf->st_size = st.file_size;
   DTIO_LOG_TRACE ("[DTIO][POSIX][STAT] " << pathname << " "
                                         << statbuf->st_size);
   return 0;
@@ -589,7 +591,8 @@ dtio::posix::myfstat (int fd, struct stat *statbuf)
     {
       return -1;
     }
-  statbuf->st_size = mdm->get_filesize (pathname);
+  file_stat st = mdm->get_stat(pathname);
+  statbuf->st_size = st.file_size;
   DTIO_LOG_TRACE ("[DTIO][POSIX][STAT] " << pathname << " "
                                         << statbuf->st_size);
   return 0;
@@ -607,7 +610,8 @@ dtio::posix::myfstat64 (int fd, struct stat64 *statbuf)
     {
       return -1;
     }
-  statbuf->st_size = mdm->get_filesize (pathname);
+  file_stat st = mdm->get_stat(pathname);
+  statbuf->st_size = st.file_size;
   DTIO_LOG_TRACE ("[DTIO][POSIX][STAT] " << pathname << " "
                                         << statbuf->st_size);
   return 0;
@@ -622,7 +626,8 @@ dtio::posix::mystat64 (const char *pathname, struct stat64 *statbuf)
     {
       return -1;
     }
-  statbuf->st_size = mdm->get_filesize (pathname);
+  file_stat st = mdm->get_stat(pathname);
+  statbuf->st_size = st.file_size;
   DTIO_LOG_TRACE ("[DTIO][POSIX][STAT] " << pathname << " "
                                         << statbuf->st_size);
   return 0;
@@ -658,10 +663,11 @@ dtio::posix::lseek (int fd, off_t offset, int whence)
     return EBADF;
   }
   auto filename = mdm->get_filename (fd);
-  if (mdm->get_flags (filename) & O_APPEND)
+  file_stat st = mdm->get_stat(filename);
+  if (st.flags & O_APPEND)
     return 0;
-  auto size = mdm->get_filesize (filename);
-  auto fp = mdm->get_fp (filename);
+  auto size = st.file_size;
+  auto fp = st.file_pointer;
   switch (whence)
     {
     case SEEK_SET:
@@ -695,13 +701,14 @@ dtio::posix::lseek64 (int fd, off_t offset, int whence)
     return EBADF;
   }
   auto filename = mdm->get_filename (fd);
-  if (mdm->get_flags (filename) & O_APPEND)
+  file_stat st = mdm->get_stat(filename);
+  if (st.flags & O_APPEND)
     return 0;
 
   DTIO_LOG_DEBUG ("[POSIX] Seek filename ", filename);
-  auto size = mdm->get_filesize (filename);
+  auto size = st.file_size;
   DTIO_LOG_DEBUG ("[POSIX] Seek filesize ", size);
-  auto fp = mdm->get_fp (filename);
+  auto fp = st.file_pointer;
   switch (whence)
     {
     case SEEK_SET:
@@ -742,9 +749,10 @@ dtio::posix::read_async (int fd, size_t count)
       = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
   auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto filename = mdm->get_filename (fd);
-  auto offset = mdm->get_fp (filename);
   if (!mdm->is_opened (filename))
     return std::vector<task> ();
+  file_stat st = mdm->get_stat(filename);
+  auto offset = st.file_pointer;
   auto r_task
       = task (task_type::READ_TASK, file (filename, offset, count), file ());
   if (ConfigManager::get_instance()->USE_URING) {
@@ -862,8 +870,10 @@ dtio::posix::read (int fd, void *buf, size_t count)
       = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
   auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance (LIB);
+
   auto filename = mdm->get_filename (fd);
-  auto offset = mdm->get_fp (filename);
+  file_stat st = mdm->get_stat(filename);
+  auto offset = st.file_pointer;
   bool check_fs = false;
   task *task_i;
   task_i = nullptr;
@@ -1017,12 +1027,15 @@ dtio::posix::read (int fd, void *buf, size_t count)
 		{
 		  hcl::Timer timer = hcl::Timer ();
 		  client_queue->publish_task (&t);
+		  // timer.resumeTime();
 
 		  while (!data_m->exists (DATASPACE_DB, t.source.filename,
 					  std::to_string (t.destination.server)))
 		    {
 		    }
 
+		  // timer.pauseTime();
+		  // std::cout << "Time to wait for task completion" << timer.getElapsedTime() << std::endl;
 		  data_m->get (DATASPACE_DB, t.source.filename,
 			       std::to_string (t.destination.server), char_data);
 
@@ -1190,7 +1203,8 @@ dtio::posix::write_async (int fd, const void *buf, size_t count)
   auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance (LIB);
   auto filename = mdm->get_filename (fd);
-  auto offset = mdm->get_fp (filename);
+  file_stat st = mdm->get_stat(filename);
+  auto offset = st.file_pointer;
   if (!mdm->is_opened (filename))
     throw std::runtime_error ("dtio::posix::write() file not opened!");
   auto w_task
@@ -1236,10 +1250,10 @@ dtio::posix::write_async (int fd, const void *buf, size_t count)
         }
       if (task->publish)
         {
-          if (count < task->source.size)
-            mdm->update_write_task_info (*task, filename, count);
-          else
-            mdm->update_write_task_info (*task, filename, task->source.size);
+          // if (count < task->source.size)
+          //   mdm->update_write_task_info (*task, filename, count);
+          // else
+          //   mdm->update_write_task_info (*task, filename, task->source.size);
           client_queue->publish_task (task);
         }
       else
@@ -1294,6 +1308,7 @@ dtio::posix::write (int fd, const void *buf, size_t count)
   // hcl::Timer t = hcl::Timer ();
   // t.resumeTime ();
   DTIO_LOG_DEBUG ("[POSIX] Write Entered");
+
   auto mdm = metadata_manager::getInstance (LIB);
   auto client_queue
       = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
@@ -1302,10 +1317,8 @@ dtio::posix::write (int fd, const void *buf, size_t count)
   auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance (LIB);
   auto filename = mdm->get_filename (fd);
-  auto offset = mdm->get_fp (filename);
-  // t.pauseTime ();
-  // std::cout << "Time initializing task information " << t.getElapsedTime() << std::endl;
-  // t.resumeTime();
+  file_stat st = mdm->get_stat(filename);
+  auto offset = st.file_pointer;
   if (!mdm->is_opened (filename))
     throw std::runtime_error ("dtio::write() file not opened!");
   auto source = file();
@@ -1355,7 +1368,7 @@ dtio::posix::write (int fd, const void *buf, size_t count)
 	    {
 	      auto data
 		= write_data.substr (tsk->source.offset, tsk->source.size);
-	      DTIO_LOG_TRACE("Write v1 " << write_data.length() << " " << data.length() << " " << tsk->source.offset << " " << tsk->source.size << std::endl);
+	      DTIO_LOG_TRACE("Write v1 " << write_data.length() << " " << data.length() << " " << tsk->source.offet << " " << tsk->source.size << std::endl);
 	      DTIO_LOG_TRACE("WRITE Count " << count << std::endl);
 	      data_m->put (DATASPACE_DB, tsk->source.filename, write_data_char, count,
 			   std::to_string (tsk->destination.server));
@@ -1376,12 +1389,16 @@ dtio::posix::write (int fd, const void *buf, size_t count)
 
       if (tsk->publish)
         {
-          if (count < tsk->source.size) {
-            mdm->update_write_task_info (*tsk, tsk->destination.filename, count);
-	  }
-          else {
-            mdm->update_write_task_info (*tsk, tsk->destination.filename, tsk->source.size);
-	  }
+	  // hcl::Timer t2 = hcl::Timer ();
+	  // t2.resumeTime();
+          // if (count < tsk->source.size) {
+          //   mdm->update_write_task_info (*tsk, tsk->destination.filename, count);
+	  // }
+          // else {
+          //   mdm->update_write_task_info (*tsk, tsk->destination.filename, tsk->source.size);
+	  // }
+	  // t2.pauseTime();
+	  // std::cout << "Time updating metadata " << t2.getElapsedTime() << std::endl;
 
 	  // dtio_worker_write(&tsk);
           client_queue->publish_task (tsk);
@@ -1405,10 +1422,14 @@ dtio::posix::write (int fd, const void *buf, size_t count)
   if (!ConfigManager::get_instance ()->ASYNC) {
     for (auto task_id : task_ids)
       {
+	hcl::Timer t = hcl::Timer ();
+	t.resumeTime();
 	while (!map_server->exists (table::WRITE_FINISHED_DB, task_id.first,
 				    std::to_string (-1)))
 	  {
 	  }
+	t.pauseTime();
+	std::cout << "Time to write" << t.getElapsedTime() << std::endl;
 	map_server->remove (table::WRITE_FINISHED_DB, task_id.first,
 			    std::to_string (-1));
 	// map_client->remove (table::DATASPACE_DB, task_id.first, task_id.second);

@@ -29,7 +29,6 @@ link_libraries(${LIBRARY_PATH})
 # define ones we have installed
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(MEMCACHED false)
-set(NATS false)
 set(MPI true)
 set(HCL true)
 set(ROCKS false)
@@ -39,7 +38,6 @@ set(CMAKE_CXX_FLAGS "-g")
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERMDM")
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERTS")
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERTB")
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERNATS")
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERDM")
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMERW")
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTIMER")
@@ -64,7 +62,6 @@ set(COMMON_SRC
     src/common/client_interface/distributed_queue.cpp
     src/common/external_clients/rocksdb_impl.cpp
     # src/common/external_clients/memcached_impl.cpp
-    # src/common/external_clients/nats_impl.cpp
     src/common/external_clients/hcl_queue_impl.cpp
     src/common/external_clients/hcl_map_impl.cpp
     src/common/task_builder/task_builder.cpp
@@ -152,9 +149,6 @@ function(dtio_set_libs target)
   if(MEMCACHED)
     target_link_libraries(${target} -lmemcached)
   endif()
-  if(NATS)
-    target_link_libraries(${target} -lnats)
-  endif()
   if(DEFINED HCL)
     target_link_libraries(${target} -lhcl)
     target_link_libraries(${target} -lmercury)
@@ -187,9 +181,6 @@ function(dtio_set_libs_keyword target)
   endif()
   if(MEMCACHED)
     target_link_libraries(${target} PRIVATE -lmemcached)
-  endif()
-  if(NATS)
-    target_link_libraries(${target} PRIVATE -lnats)
   endif()
   if(DEFINED HCL)
     target_link_libraries(${target} PRIVATE -lhcl)

@@ -164,6 +164,7 @@ HCLMapImpl::put (const table &name, std::string key, const char *value, size_t s
   }
 #else
   {
+
     auto true_val = std::string(value, size);
     if (hcl_string_client->Put (true_key, true_val))
       {

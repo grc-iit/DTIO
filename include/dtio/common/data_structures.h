@@ -457,7 +457,7 @@ struct file_meta
     if (current_chunk_index >= CHUNK_LIMIT) {
       current_chunk_index = 0;
     }
-  } 
+  }
 
   file_meta &
   operator= (const file_meta &other)

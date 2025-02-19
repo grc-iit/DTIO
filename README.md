@@ -40,3 +40,5 @@ project.
     stream << 1 << 2 << 3;
     std::cout << stream.str();`
 
+## Performance
+- For synchronous operations (ASYNC_MODE = false), try using a batch size to compensate for metadata overheads
