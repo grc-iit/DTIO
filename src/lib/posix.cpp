@@ -1,4 +1,4 @@
-/*
+n/*
  * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
@@ -1104,7 +1104,7 @@ dtio::posix::read (int fd, void *buf, size_t count)
 	      break;
 	    }
 	  }
-	free(char_data);
+	// free(char_data);
       }
 #else
       {
@@ -1133,7 +1133,6 @@ dtio::posix::read (int fd, void *buf, size_t count)
 		  DTIO_LOG_INFO("Get data into " << ptr_pos << " from " << t.source.offset << " size " << t.source.size);
 		  strncpy ((char *)buf + ptr_pos,
 			   char_data, t.source.size); //  + t.source.offset
-		  free(char_data);
 		  // auto print_test = std::string ((char *)buf);
 
 		  data_m->remove (DATASPACE_DB, t.source.filename,
@@ -1270,11 +1269,11 @@ dtio::posix::read (int fd, void *buf, size_t count)
 	      memcpy ((char *)buf + ptr_pos, char_data + (t.source.offset % t.source.size),
 		      t.destination.size); // Might not actually be necessary
 	      DTIO_LOG_TRACE("Memcpy finished" << std::endl);
-	      free(char_data);
 	      size_read += t.destination.size;
 	      break;
 	    }
 	  }
+	free(char_data);
       }
 #endif
 

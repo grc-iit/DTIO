@@ -109,7 +109,7 @@ worker::run ()
 #endif
 		  client->dtio_read (task_i, staging_space);
 
-		  mdm->update_read_task_info (task_i, task_i[0]->destination.filename);
+		  mdm->update_read_task_info (task_i, task_i[0]->source.filename);
 		  break;
 		}
 	      case task_type::FLUSH_TASK:
