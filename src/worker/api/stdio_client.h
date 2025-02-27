@@ -34,17 +34,26 @@ using namespace std::chrono;
 
 class stdio_client : public io_client {
   std::string dir;
+  std::string temp_fn;
+  FILE *temp_fh;
 
 public:
   stdio_client(int worker_index) : io_client(worker_index) {
     dir = ConfigManager::get_instance()->WORKER_PATH + "/" +
           std::to_string(worker_index) + "/";
+    temp_fn = "";
+    temp_fh = NULL;
   }
   int dtio_stage(task *tsk[], char *staging_space = NULL) override;
   int dtio_write(task *tsk[]) override;
   int dtio_read(task *tsk[], char *staging_space = NULL) override;
   int dtio_delete_file(task *tsk[]) override;
   int dtio_flush_file(task *tsk[]) override;
+  ~stdio_client() {
+    if (temp_fh != NULL) {
+      fclose(temp_fh);
+    }
+  }
 };
 
 #endif // DTIO_MAIN_STDIOCLIENT_H

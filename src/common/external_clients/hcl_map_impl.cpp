@@ -270,7 +270,7 @@ HCLMapImpl::get (const table &name, std::string key, std::string group_key, char
     if (retval.first)
       {
 	DTIO_LOG_INFO("Get result size " << retval.second.length());
-	strncpy(result, retval.second.data(), retval.second.length());
+	memcpy(result, retval.second.data(), retval.second.length());
       }
   }
 #endif

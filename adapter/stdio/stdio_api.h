@@ -47,6 +47,7 @@ extern "C"
 {
   typedef FILE * (*fopen_t) (const char *filename, const char *mode);
   typedef size_t (*fread_t) (void *ptr, size_t size, size_t count, FILE *stream);
+  typedef char * (*fgets_t) (char *ptr, int count, FILE *stream);
   typedef size_t (*fwrite_t) (const void *ptr, size_t size, size_t count, FILE *stream);
   typedef int (*fseek_t) (FILE *stream, long int offset, int origin);
   typedef int (*fclose_t) (FILE *stream);
@@ -72,6 +73,8 @@ public:
   fopen_t fopen = nullptr;
   /** fread */
   fread_t fread = nullptr;
+  /** fgets */
+  fgets_t fgets = nullptr;
   /** fwrite */
   fwrite_t fwrite = nullptr;
   /** fseek */
@@ -88,6 +91,8 @@ public:
     REQUIRE_API (fopen)
     fread = (fread_t)dlsym (real_lib_, "fread");
     REQUIRE_API (fread)
+    fgets = (fgets_t)dlsym (real_lib_, "fgets");
+    REQUIRE_API (fgets)
     fwrite = (fwrite_t)dlsym (real_lib_, "fwrite");
     REQUIRE_API (fwrite)
     fseek = (fseek_t)dlsym (real_lib_, "fseek");

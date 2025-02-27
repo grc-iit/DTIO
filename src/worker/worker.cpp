@@ -49,7 +49,7 @@ worker::run ()
     {
       throw std::runtime_error ("worker::update_capacity() failed!");
     }
-  auto mdm = metadata_manager::getInstance(WORKER);
+  // auto mdm = metadata_manager::getInstance(WORKER);
   size_t task_count = 0;
   size_t task_index = 0;
   hcl::Timer t = hcl::Timer ();
@@ -94,7 +94,7 @@ worker::run ()
 		  //   mdm->update_write_task_info (*task, filename, count);
 		  // else
 		  
-		  mdm->update_write_task_info (task_i, task_i[0]->destination.filename);
+		  // mdm->update_write_task_info (task_i, task_i[0]->destination.filename);
 
 		  break;
 		}
@@ -109,7 +109,7 @@ worker::run ()
 #endif
 		  client->dtio_read (task_i, staging_space);
 
-		  mdm->update_read_task_info (task_i, task_i[0]->source.filename);
+		  // mdm->update_read_task_info (task_i, task_i[0]->source.filename);
 		  break;
 		}
 	      case task_type::FLUSH_TASK:

@@ -569,6 +569,7 @@ struct task
   bool publish;
   bool addDataspace;
   bool async;
+  bool special_type; // currently used for fgets, which is an fread that breaks on newline, potentially can be used other unusual call types with special behavior
 
   /* Task-specific info
    * ******************
@@ -586,7 +587,7 @@ struct task
   task ()
     : t_type (task_type::READ_TASK), task_id (0), publish (true),
       iface(io_client_type::POSIX), addDataspace (true), async (true), source (),
-      destination (), meta_updated(false), local_copy(false), check_fs(false)
+      destination (), meta_updated(false), local_copy(false), check_fs(false), special_type(false)
   {
   }
 
@@ -594,25 +595,26 @@ struct task
 
   task (task_type t_type)
     : t_type (t_type), iface (io_client_type::POSIX), task_id (0), publish (true), addDataspace (true),
-      async (true), source (), destination (), meta_updated(false), local_copy(false), check_fs(false)
+      async (true), source (), destination (), meta_updated(false), local_copy(false), check_fs(false), special_type(false)
   {
   }
   task (const task &t_other)
     : t_type (t_other.t_type), iface (t_other.iface), task_id (t_other.task_id),
         publish (t_other.publish), addDataspace (t_other.addDataspace),
       async (t_other.async), source (t_other.source), destination(t_other.destination),
-      meta_updated(t_other.meta_updated), local_copy(t_other.local_copy), check_fs(t_other.check_fs)
+      meta_updated(t_other.meta_updated), local_copy(t_other.local_copy), check_fs(t_other.check_fs), special_type(t_other.special_type)
   {
   }
 
   task(task_type t_type_, const file &source_, const file &destination_) : t_type(t_type_), source(source_), destination(destination_), task_id (0), iface(io_client_type::POSIX), publish (true),
-      addDataspace (true), async (true), meta_updated(false), local_copy(false), check_fs(false)
+									   addDataspace (true), async (true), meta_updated(false), local_copy(false), check_fs(false), special_type(false)
   {
   }
   task (task_type t_type_, file &source)
     : t_type (t_type_), source (source), task_id (0), publish (true),
       iface(io_client_type::POSIX), addDataspace (true), async (true),
-      destination (), meta_updated(false), local_copy(false), check_fs(false)
+      destination (), meta_updated(false), local_copy(false), check_fs(false),
+      special_type(false)
   {
   }
 
@@ -635,6 +637,7 @@ struct task
     async = other.async;
     source = other.source;
     destination = other.destination;
+    special_type = other.special_type;
     return *this;
   }
 
@@ -661,7 +664,7 @@ struct task
   {
     auto t_type_ = static_cast<int64_t>(this->t_type);
     auto iface_ = static_cast<int>(this->iface);
-    archive (t_type_, iface_, this->task_id, this->publish, this->addDataspace, this->async, this->source, this->destination, this->meta_updated, this->local_copy, this->check_fs);
+    archive (t_type_, iface_, this->task_id, this->publish, this->addDataspace, this->async, this->source, this->destination, this->meta_updated, this->local_copy, this->check_fs, this->special_type);
     t_type = static_cast<task_type>(t_type_);
     iface = static_cast<io_client_type>(iface_);
   }

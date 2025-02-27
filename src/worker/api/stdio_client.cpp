@@ -29,9 +29,31 @@
 #include <dtio/dtio_system.h>
 
 int stdio_client::dtio_stage(task *tsk[], char *staging_space) {
+  auto map_client = dtio_system::getInstance(WORKER)->map_client();
+  // auto map_cm_client = dtio_system::getInstance(WORKER)->map_client("metadata+chunkmeta");
+  int task_idx;
+  for (task_idx = 0; task_idx < BATCH_SIZE; task_idx++) {
+#ifdef TIMERW
+  hcl::Timer t = hcl::Timer();
+  t.resumeTime();
+#endif
+  char *filepath = (strncmp(tsk[task_idx]->source.filename, "dtio://", 7) == 0) ? (tsk[task_idx]->source.filename + 7) : tsk[task_idx]->source.filename;
+
+  FILE *fh = fopen(filepath, "rw+"); // "r+"
+  temp_fh = fh;
+  size_t count;
+  while ((count = fread(staging_space, sizeof(char), tsk[task_idx]->source.size, fh)) != 0);
+
+  map_client->put(table::STAGING_DB, tsk[task_idx]->source.filename, std::to_string(worker_index), std::to_string(-1));
+
+  }
+  return 0;
 }
 
 int stdio_client::dtio_read(task *tsk[], char *staging_space) {
+  auto map_client = dtio_system::getInstance(WORKER)->map_client();
+  auto map_fm_client = dtio_system::getInstance(WORKER)->map_client("metadata+filemeta");
+  auto mdm = metadata_manager::getInstance(WORKER);
   int task_idx;
   for (task_idx = 0; task_idx < BATCH_SIZE; task_idx++) {
 
@@ -39,24 +61,67 @@ int stdio_client::dtio_read(task *tsk[], char *staging_space) {
   hcl::Timer t = hcl::Timer();
   t.resumeTime();
 #endif
-  FILE *fh = fopen(tsk[task_idx]->source.filename, "r+");
+  char *filepath = (strncmp(tsk[task_idx]->source.filename, "dtio://", 7) == 0) ? (tsk[task_idx]->source.filename + 7) : tsk[task_idx]->source.filename;
+
+  if (tsk[task_idx]->source.offset + tsk[task_idx]->source.size < ConfigManager::get_instance()->WORKER_STAGING_SIZE && tsk[task_idx]->source.offset >= 0) {
+    mdm->update_read_task_info (tsk, tsk[0]->source.filename);
+    map_client->put(DATASPACE_DB, tsk[task_idx]->source.filename,
+		    &staging_space[tsk[task_idx]->source.offset],
+		    tsk[task_idx]->source.size,
+		    std::to_string(tsk[task_idx]->destination.server));
+    return 0;
+  }
+  FILE *fh;
+  if (strcmp(temp_fn.c_str(), tsk[task_idx]->source.filename) != 0) {
+    fh = fopen(filepath, "rw+");
+    temp_fh = fh;
+    temp_fn = tsk[task_idx]->source.filename;
+  }
+  else {
+    fh = temp_fh;
+  }
   auto data = static_cast<char *>(calloc(tsk[task_idx]->source.size, sizeof(char)));
-  long long int pos = fseek(fh, tsk[task_idx]->source.offset, SEEK_SET);
+  int pos = fseek(fh, tsk[task_idx]->source.offset, SEEK_SET);
   if (pos != 0)
     std::cerr << "stdio_client::read() seek failed\n";
   // throw std::runtime_error("stdio_client::read() seek failed");
-  size_t count = fread(data, sizeof(char), tsk[task_idx]->source.size, fh);
-  if (count != tsk[task_idx]->source.size)
+  size_t count;
+  if (tsk[task_idx]->special_type) {
+    char *result;
+    result = fgets(data, tsk[task_idx]->source.size, fh);
+    if (result == NULL) {
+      count = -1;
+    }
+    else {
+      char *comp;
+      comp = strchr(data, '\n');
+      if (comp != NULL) {
+	count = (size_t)(comp - data) + 1;
+      }
+      else {
+	count = tsk[task_idx]->source.size;
+      }
+    }
+  }
+  else {
+    count = fread(data, sizeof(char), tsk[task_idx]->source.size, fh);
+  }
+  if (count == -1)
     std::cerr << "stdio_client::read() read failed\n";
   // throw std::runtime_error("stdio_client::read() read failed");
 
-  auto map_client = dtio_system::getInstance(WORKER)->map_client();
-  auto map_cm_client = dtio_system::getInstance(WORKER)->map_client("metadata+chunkmeta");
 #ifdef TIMERDM
   hcl::Timer t0 = hcl::Timer();
   t0.resumeTime();
 #endif
+  // std::cout << "data " << data << std::endl;
+  tsk[task_idx]->source.size = count; // Quick fix for metadata, now metadata will update correctly for corner cases like fgets
+  // if (count > 1024*1024*1024*5 || tsk[task_idx]->source.size > 1024*1024*1024*5) {
+  //   std::cout << "Weird task spotted " << tsk[task_idx]->special_type << " " << count << " " << tsk[task_idx]->source.size << std::endl;
+  // }
+  mdm->update_read_task_info (tsk, tsk[0]->source.filename);
   map_client->put(DATASPACE_DB, tsk[task_idx]->source.filename, data,
+		  tsk[task_idx]->source.size,
                   std::to_string(tsk[task_idx]->destination.server));
 #ifdef TIMERDM
   std::stringstream stream;
@@ -65,38 +130,38 @@ int stdio_client::dtio_read(task *tsk[], char *staging_space) {
   std::cout << stream.str();
 #endif
   // std::cout<<task.destination.filename<<","<<task.destination.server<<"\n";
-  fclose(fh);
+  // fclose(fh);
   free(data);
-  if (tsk[task_idx]->local_copy) {
-    int file_id = static_cast<int>(
-        duration_cast<milliseconds>(system_clock::now().time_since_epoch())
-            .count());
-    std::string file_path = dir + std::to_string(file_id);
-    FILE *fh1 = fopen(file_path.c_str(), "w+");
-    fwrite(data, tsk[task_idx]->source.size, sizeof(char), fh1);
-    fclose(fh1);
-    size_t chunk_index = (tsk[task_idx]->source.offset / MAX_IO_UNIT);
-    size_t base_offset =
-        chunk_index * MAX_IO_UNIT + tsk[task_idx]->source.offset % MAX_IO_UNIT;
+  // if (tsk[task_idx]->local_copy) {
+//     int file_id = static_cast<int>(
+//         duration_cast<milliseconds>(system_clock::now().time_since_epoch())
+//             .count());
+//     std::string file_path = dir + std::to_string(file_id);
+//     FILE *fh1 = fopen(file_path.c_str(), "w+");
+//     fwrite(data, tsk[task_idx]->source.size, sizeof(char), fh1);
+//     fclose(fh1);
+//     size_t chunk_index = (tsk[task_idx]->source.offset / MAX_IO_UNIT);
+//     size_t base_offset =
+//         chunk_index * MAX_IO_UNIT + tsk[task_idx]->source.offset % MAX_IO_UNIT;
 
-    chunk_meta chunk_meta1;
-    chunk_meta1.actual_user_chunk = tsk[task_idx]->source;
-    chunk_meta1.destination.location = BUFFERS;
-    strncpy(chunk_meta1.destination.filename, file_path.c_str(), DTIO_FILENAME_MAX);
-    chunk_meta1.destination.offset = 0;
-    chunk_meta1.destination.size = tsk[task_idx]->source.size;
-    chunk_meta1.destination.worker = worker_index;
-#ifdef TIMERMDM
-    hcl::Timer t1 = hcl::Timer();
-    t1.resumeTime();
-#endif
-    map_cm_client->put(table::CHUNK_DB,
-                    tsk[task_idx]->source.filename + std::to_string(base_offset),
-                    &chunk_meta1, std::to_string(-1));
-#ifdef TIMERMDM
-    std::cout << "stdio_client::read()::update_meta," << t1.pauseTime() << "\n";
-#endif
-  }
+//     chunk_meta chunk_meta1;
+//     chunk_meta1.actual_user_chunk = tsk[task_idx]->source;
+//     chunk_meta1.destination.location = BUFFERS;
+//     strncpy(chunk_meta1.destination.filename, file_path.c_str(), DTIO_FILENAME_MAX);
+//     chunk_meta1.destination.offset = 0;
+//     chunk_meta1.destination.size = tsk[task_idx]->source.size;
+//     chunk_meta1.destination.worker = worker_index;
+// #ifdef TIMERMDM
+//     hcl::Timer t1 = hcl::Timer();
+//     t1.resumeTime();
+// #endif
+//     map_cm_client->put(table::CHUNK_DB,
+//                     tsk[task_idx]->source.filename + std::to_string(base_offset),
+//                     &chunk_meta1, std::to_string(-1));
+// #ifdef TIMERMDM
+//     std::cout << "stdio_client::read()::update_meta," << t1.pauseTime() << "\n";
+// #endif
+//   }
 #ifdef TIMERW
   std::stringstream stream1;
   stream1 << "stdio_client::read()," << std::fixed << std::setprecision(10)
@@ -114,21 +179,21 @@ int stdio_client::dtio_write(task *tsk[]) {
   hcl::Timer t = hcl::Timer();
   t.resumeTime();
 #endif
+  auto mdm = metadata_manager::getInstance(WORKER);
+
   std::shared_ptr<distributed_hashmap> map_client =
       dtio_system::getInstance(WORKER)->map_client();
-  std::shared_ptr<distributed_hashmap> map_cm_client =
-      dtio_system::getInstance(WORKER)->map_client("metadata+chunkmeta");
   std::shared_ptr<distributed_hashmap> map_server =
       dtio_system::getInstance(WORKER)->map_server();
   auto source = tsk[task_idx]->source;
   size_t chunk_index = (source.offset / MAX_IO_UNIT);
   size_t base_offset = chunk_index * MAX_IO_UNIT + source.offset % MAX_IO_UNIT;
-  std::string chunk_str = map_cm_client->get(
-      table::CHUNK_DB,
-      tsk[task_idx]->source.filename + std::to_string(chunk_index * MAX_IO_UNIT),
-      std::to_string(-1));
+  // std::string chunk_str = map_cm_client->get(
+  //     table::CHUNK_DB,
+  //     tsk[task_idx]->source.filename + std::to_string(chunk_index * MAX_IO_UNIT),
+  //     std::to_string(-1));
 
-  chunk_meta chunk_meta1;
+  // chunk_meta chunk_meta1;
   bool chunk_avail = !tsk[task_idx]->addDataspace;
 #ifdef TIMERDM
   hcl::Timer t0 = hcl::Timer();
@@ -157,7 +222,15 @@ int stdio_client::dtio_write(task *tsk[]) {
 #endif
     // std::string file_path;
     char *filepath = (strncmp(tsk[task_idx]->destination.filename, "dtio://", 7) == 0) ? (tsk[task_idx]->destination.filename + 7) : tsk[task_idx]->destination.filename ;
-    FILE *fp = fopen(filepath, "w+"); // "w+"
+    FILE *fp;
+    if (strcmp(temp_fn.c_str(), tsk[task_idx]->source.filename) != 0) {
+      fp = fopen(filepath, "rw+");
+      temp_fh = fp;
+      temp_fn = tsk[task_idx]->source.filename;
+    }
+    else {
+      fp = temp_fh;
+    }
     if (fp == nullptr) {
       std::cerr << "File " << filepath << " didn't open" << std::endl;
     }
@@ -166,7 +239,6 @@ int stdio_client::dtio_write(task *tsk[]) {
     if (count != tsk[task_idx]->destination.size)
       std::cerr << "written less" << count << "\n";
     free(data);
-    fclose(fp);
   }
 #else
   {
@@ -188,7 +260,15 @@ int stdio_client::dtio_write(task *tsk[]) {
 #endif
     // std::string file_path;
     char *filepath = (strncmp(tsk[task_idx]->destination.filename, "dtio://", 7) == 0) ? (tsk[task_idx]->destination.filename + 7) : tsk[task_idx]->destination.filename ;
-    FILE *fp = fopen(filepath, "w+"); // "w+"
+    FILE *fp;
+    if (strcmp(temp_fn.c_str(), tsk[task_idx]->source.filename) != 0) {
+      fp = fopen(filepath, "rw+");
+      temp_fh = fp;
+      temp_fn = tsk[task_idx]->source.filename;
+    }
+    else {
+      fp = temp_fh;
+    }
     if (fp == nullptr) {
       std::cerr << "File " << filepath << " didn't open" << std::endl;
     }
@@ -197,7 +277,7 @@ int stdio_client::dtio_write(task *tsk[]) {
     if (count != tsk[task_idx]->destination.size)
       std::cerr << "written less" << count << "\n";
     free(data);
-    fclose(fp);
+    // fclose(fp);
   }
 #endif
 #ifdef TIMERDM
@@ -263,8 +343,11 @@ int stdio_client::dtio_write(task *tsk[]) {
 // #ifdef TIMERMDM
 //   std::cout << "stdio_client::write()::update_meta," << t1.pauseTime() << "\n";
 // #endif
-  map_server->put(table::WRITE_FINISHED_DB, std::to_string(tsk[task_idx]->task_id),
-                  std::to_string(-1), std::to_string(-1));
+  mdm->update_write_task_info (tsk, tsk[0]->destination.filename);
+  if (!ConfigManager::get_instance()->ASYNC) {
+    map_server->put(table::WRITE_FINISHED_DB, std::to_string(tsk[task_idx]->task_id),
+		    std::to_string(-1), std::to_string(-1));
+  }
 #ifdef TIMERW
   std::stringstream stream1;
   stream1 << "stdio_client::write()," << std::fixed << std::setprecision(10)

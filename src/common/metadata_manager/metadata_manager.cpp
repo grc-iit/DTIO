@@ -106,7 +106,7 @@ metadata_manager::is_opened (std::string filename)
 
 int
 metadata_manager::update_on_open (std::string filename, std::string mode,
-                                  FILE *&fh)
+                                  FILE *&fh, int existing_size)
 {
 #ifdef TIMERMDM
   hcl::Timer t = hcl::Timer ();
@@ -116,13 +116,21 @@ metadata_manager::update_on_open (std::string filename, std::string mode,
     return MDM__FILENAME_MAX_LENGTH;
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
   file_stat fs;
-  map->get(table::FILE_DB, filename, std::to_string (-1), &fs);
+  bool file_found = false;
+  if (map->get(table::FILE_DB, filename, std::to_string (-1), &fs)) {
+    file_found = true;
+  }
 
   // auto iter = file_map.find (filename);
   file_stat stat;
 
   fh = fmemopen (nullptr, 1, mode.c_str ());
-  stat.file_size = fs.file_size;
+  if (file_found && fs.is_open) {
+    stat.file_size = fs.file_size;
+  }
+  else {
+    stat.file_size = existing_size;
+  }
   stat.fh = fh;
   stat.is_open = true;
   if (mode == "r" || mode == "r+")

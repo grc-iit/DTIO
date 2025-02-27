@@ -110,6 +110,43 @@ FILE * HERMES_DECL(fopen)(const char *filename, const char *mode) {
   }
 }
 
+char * HERMES_DECL(fgets)(char *ptr, int count, FILE *stream) {
+  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
+  auto real_api = HERMES_STDIO_API;
+  std::string caller_name = "";
+
+  if (real_api->fp_whitelistedp(stream)) {
+    // if (ConfigManager::get_instance()->ASYNC) {
+    //   return dtio::posix::read_async(fd, buf, count);
+    // }
+    // else {
+    dtio::stdio::fread(ptr, 1, count, stream, true);
+    return ptr;
+    // }
+  }
+  else {
+    return real_api->fgets(ptr, count, stream);
+  }
+
+  if (boost::stacktrace::stacktrace().size() > 1) {
+    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
+  }
+  auto test = real_api->interceptp(caller_name);
+  if (real_api->interceptp(caller_name)) {
+    // if (ConfigManager::get_instance()->ASYNC) {
+    //   return dtio::posix::read_async(fd, buf, count);
+    // }
+    // else {
+    dtio::stdio::fread(ptr, 1, count, stream, true);
+
+    return ptr;
+    // }
+  }
+  else {
+    return real_api->fgets(ptr, count, stream);
+  }
+}
+
 size_t HERMES_DECL(fread)(void *ptr, size_t size, size_t count, FILE *stream) {
   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
   auto real_api = HERMES_STDIO_API;
