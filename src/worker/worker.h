@@ -30,8 +30,9 @@
 #include "api/io_client.h"
 #include "api/posix_client.h"
 #include "api/stdio_client.h"
+#include "api/uring_client.h"
+#include "api/hdf5_client.h"
 #include "api/multi_client.h"
-#include <dtio/common/external_clients/memcached_impl.h>
 #include <dtio/dtio_system.h>
 /******************************************************************************
  *Class
@@ -39,7 +40,7 @@
 class worker {
 private:
   /******************************************************************************
-   *Variables and members
+   *Variables and memers
    ******************************************************************************/
   static std::shared_ptr<worker> instance;
   service service_i;
@@ -47,6 +48,9 @@ private:
   std::shared_ptr<distributed_queue> queue;
   std::shared_ptr<distributed_hashmap> map;
   std::shared_ptr<io_client> client;
+
+  char *staging_space;
+
   /******************************************************************************
    *Constructor
    ******************************************************************************/
@@ -58,6 +62,12 @@ private:
     else if (io_client_type_t == io_client_type::STDIO) {
       client = std::make_shared<stdio_client>(stdio_client(worker_index));
     }
+    else if (io_client_type_t == io_client_type::HDF5) {
+      client = std::make_shared<hdf5_client>(hdf5_client(worker_index));
+    }
+    else if (io_client_type_t == io_client_type::URING) {
+      client = std::make_shared<uring_client>(uring_client(worker_index));
+    }
     else if (io_client_type_t == io_client_type::MULTI) {
       client = std::make_shared<multi_client>(multi_client(worker_index));
     }
@@ -65,6 +75,9 @@ private:
     queue =
         dtio_system::getInstance(service_i)->get_worker_queue(worker_index);
     map = dtio_system::getInstance(service_i)->map_server();
+    if (ConfigManager::get_instance()->WORKER_STAGING_SIZE > 0) {
+      staging_space = (char *)malloc(ConfigManager::get_instance()->WORKER_STAGING_SIZE);
+    }
   }
   /******************************************************************************
    *Interface
@@ -90,7 +103,7 @@ public:
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~worker() {}
+  virtual ~worker() { if (ConfigManager::get_instance()->WORKER_STAGING_SIZE > 0) { free(staging_space); } }
 };
 
 #endif // DTIO_MAIN_WORKERSERVICE_H

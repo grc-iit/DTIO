@@ -28,6 +28,7 @@
 #include <chrono>
 #include <string>
 
+namespace dtio {
 class Timer {
 public:
   Timer() : elapsed_time(0) {}
@@ -41,5 +42,5 @@ public:
 private:
   std::chrono::high_resolution_clock::time_point t1;
 };
-
+}
 #endif // DTIO_TIMER_H

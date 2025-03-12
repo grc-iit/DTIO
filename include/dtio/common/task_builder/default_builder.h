@@ -21,57 +21,45 @@
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
-#ifndef DTIO_MAIN_NATSCLIENT_H
-#define DTIO_MAIN_NATSCLIENT_H
+#ifndef DTIO_MAIN_TASK_HANDLER_H
+#define DTIO_MAIN_TASK_HANDLER_H
 /******************************************************************************
  *include files
  ******************************************************************************/
+#include <chrono>
 #include <dtio/common/client_interface/distributed_queue.h>
-#include <nats.h>
-
+#include <dtio/common/data_structures.h>
+#include <dtio/common/enumerations.h>
+#include <memory>
+#include <dtio/common/task_builder/task_builder.h>
 /******************************************************************************
  *Class
  ******************************************************************************/
-class NatsImpl : public distributed_queue {
+class default_builder : public task_builder {
 private:
   /******************************************************************************
    *Variables and members
    ******************************************************************************/
-  natsConnection *nc = nullptr;
-  natsSubscription *sub = nullptr;
-  std::string subject;
-
-public:
+  service service_i;
   /******************************************************************************
    *Constructor
    ******************************************************************************/
-  NatsImpl(service service, const std::string &url, const std::string &subject,
-           std::string queue_group, bool subscribe)
-      : distributed_queue(service), subject(subject) {
-    natsConnection_ConnectTo(&nc, url.c_str());
-    if (subscribe) {
-      if (queue_group.empty())
-        natsConnection_SubscribeSync(&sub, nc, subject.c_str());
-      else
-        natsConnection_QueueSubscribeSync(&sub, nc, subject.c_str(),
-                                          queue_group.c_str());
-    }
 
-    // natsConnection_SubscribeSync(&sub, nc, subject.c_str());
+public:
+  default_builder(service service) : task_builder(service) {
   }
+
   /******************************************************************************
    *Interface
    ******************************************************************************/
-  int publish_task(task *task_t) override;
-  task *subscribe_task_with_timeout(int &status) override;
-  task *subscribe_task(int &status) override;
-  int get_queue_count() override;
-  int get_queue_size() override;
-  int get_queue_count_limit() override;
+  std::vector<task *> build_write_task(task tsk, const char *data) override;
+  std::vector<task> build_read_task(task t) override;
+  std::vector<task> build_delete_task(task tsk) override;
+
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~NatsImpl() {}
+  virtual ~default_builder() {}
 };
 
-#endif // DTIO_MAIN_NATSCLIENT_H
+#endif // DTIO_MAIN_TASK_HANDLER_H

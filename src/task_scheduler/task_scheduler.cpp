@@ -24,10 +24,11 @@
 
 // include files
 #include "task_scheduler.h"
+#include "dtio/common/enumerations.h"
 #include "dtio/common/logger.h"
 #include <algorithm>
+#include <dtio/common/external_clients/hcl_queue_impl.h>
 #include <dtio/common/data_structures.h>
-#include <dtio/common/external_clients/memcached_impl.h>
 #include <dtio/dtio_system.h>
 #include <iomanip>
 
@@ -40,13 +41,12 @@ task_scheduler::run ()
 {
   auto queue = dtio_system::getInstance (service_i)->get_client_queue (
       CLIENT_TASK_SUBJECT);
-  auto task_list = std::vector<task *> ();
-  Timer t = Timer ();
+  std::vector<task *> *task_list = new std::vector<task *> ();
+  // hcl::Timer t = hcl::Timer ();
   int status;
   task *task_i = nullptr;
 
   DTIO_LOG_TRACE ("[DTIO-TS] Looping");
-
   // queue->clear(); // Clean out the queue before the task scheduler starts
 
   while (!kill)
@@ -58,22 +58,22 @@ task_scheduler::run ()
       task_i = queue->subscribe_task_with_timeout (status);
       if (status != -1 && task_i != nullptr)
         {
-          task_list.push_back (task_i);
+          task_list->push_back (task_i);
         }
 
-      auto time_elapsed = t.pauseTime ();
+      // auto time_elapsed = t.pauseTime ();
       DTIO_LOG_TRACE ("[DTIO-TS] RUN :: SUBSCRIBED");
-      if (!task_list.empty ()
-          && (task_list.size () >= MAX_NUM_TASKS_IN_QUEUE
-              || time_elapsed >= MAX_SCHEDULE_TIMER))
+      if (!task_list->empty ()
+          && task_list->size () >= MAX_NUM_TASKS_IN_QUEUE)
         {
           // scheduling_threads.submit(std::bind(schedule_tasks, task_list));
-          schedule_tasks (task_list);
-          t.resumeTime ();
-          task_list.clear ();
+          schedule_tasks (*task_list);
+          // t.resumeTime ();
+          task_list->clear ();
         }
     DTIO_LOG_TRACE ("[DTIO-TS] RUN :: EoL");
     }
+  free(task_list);
   DTIO_LOG_ERROR ("[DTIO-TS] DEAD");
   return 0;
 }
@@ -82,7 +82,7 @@ void
 task_scheduler::schedule_tasks (std::vector<task *> &tasks)
 {
 #ifdef TIMERTS
-  Timer t = Timer ();
+  hcl::Timer t = hcl::Timer ();
   t.resumeTime ();
 #endif
   auto solver_i = dtio_system::getInstance (service_i)->solver_i;
@@ -92,10 +92,16 @@ task_scheduler::schedule_tasks (std::vector<task *> &tasks)
   for (auto element : output.worker_task_map)
     {
       auto queue = dtio_system::getInstance (service_i)->get_worker_queue (
-          element.first);
+									   (element.first-1));
       for (auto tsk : element.second)
         {
-
+	  if (ConfigManager::get_instance()->WORKER_STAGING_SIZE != 0) {
+	    auto map_client = dtio_system::getInstance(service_i)->map_client();
+	    std::string worker = map_client->get(table::STAGING_DB, tsk->source.filename, std::to_string(-1));
+	    if (worker.length() != 0) {
+	      queue = dtio_system::getInstance (service_i)->get_worker_queue (stoi(worker));
+	    }
+	  }
           switch (tsk->t_type)
             {
             case task_type::WRITE_TASK:
@@ -109,7 +115,7 @@ task_scheduler::schedule_tasks (std::vector<task *> &tasks)
                            tsk->t_type)
                     << "\tDataspaceID#" << wt->destination.filename
                     << "\tTask#" << tsk->task_id << "\tWorker#"
-                    << element.first << "\n";
+                    << (element.first-1) << "\n";
 #endif
                 queue->publish_task (wt);
                 break;
@@ -124,11 +130,28 @@ task_scheduler::schedule_tasks (std::vector<task *> &tasks)
                     << static_cast<std::underlying_type<task_type>::type> (
                            tsk->t_type)
                     << "\tTask#" << tsk->task_id << "\tWorker#"
-                    << element.first << "\n";
+                    << (element.first-1) << "\n";
 #endif
                 queue->publish_task (rt);
                 break;
               }
+	    case task_type::STAGING_TASK:
+	      {
+                auto *st = tsk;
+#ifdef DEBUG
+                std::cout
+                    << "threadID:" << std::this_thread::get_id ()
+                    << "\tOperation"
+                    << static_cast<std::underlying_type<task_type>::type> (
+                           tsk->t_type)
+                    << "\tTask#" << tsk->task_id << "\tWorker#"
+                    << (element.first-1) << "\n";
+#endif
+                queue->publish_task (st);
+                break;
+		
+		break;
+	      }
             }
         }
     }

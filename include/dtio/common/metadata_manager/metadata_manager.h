@@ -66,29 +66,30 @@ public:
   bool is_opened(std::string filename);
   bool is_opened(FILE *fh);
   bool is_opened(int fd);
-  int update_on_open(std::string filename, std::string mode, FILE *&fh);
-  int update_on_open(std::string filename, int flags, mode_t mode, int *fd);
+  int update_on_open(std::string filename, std::string mode, FILE *&fh, int existing_size = 0);
+  int update_on_open(std::string filename, int flags, mode_t mode, int *fd, int existing_size = 0);
   int update_on_close(FILE *&fh);
   int update_on_close(int fd);
   int remove_chunks(std::string &basic_string);
   std::string get_filename(FILE *fh);
   std::string get_filename(int fd);
-  std::size_t get_filesize(std::string basic_string);
-  std::string get_mode(std::string basic_string);
-  int get_flags(std::string basic_string);
-  mode_t get_posix_mode(std::string basic_string);
-  long long int get_fp(const std::string &basic_string);
+  // std::size_t get_filesize(std::string basic_string);
+  // std::string get_mode(std::string basic_string);
+  // int get_flags(std::string basic_string);
+  // mode_t get_posix_mode(std::string basic_string);
+  // long long int get_fp(const std::string &basic_string);
+  file_stat get_stat(std::string basic_string);
   int update_on_seek(std::string basic_string, size_t offset, size_t origin);
-  int update_read_task_info(std::vector<task> task_k,
+  int update_read_task_info(task *task_ks[],
                             std::string filename);
-  int update_write_task_info(std::vector<task> task_ks,
+  int update_write_task_info(task *task_ks[],
                              std::string filename);
   int update_delete_task_info(task task_ks, std::string filename);
   int update_write_task_info(task task_ks, std::string filename,
                              std::size_t io_size);
   std::vector<chunk_meta> fetch_chunks(task task);
   void update_on_read(std::string filename, size_t size);
-  void update_on_write(std::string filename, size_t size, size_t offset);
+  void update_on_write(std::string filename, size_t size, size_t offset, file_stat *st);
   void update_on_delete(std::string filename);
   /******************************************************************************
    *Destructor

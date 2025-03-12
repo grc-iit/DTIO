@@ -45,20 +45,30 @@ dtio_system::init (service service)
   if (service == LIB) {
     get_client_queue(CLIENT_TASK_SUBJECT);
   }
+
+  if (builder_impl_type_t == builder_impl_type::DEFAULT_B)
+    {
+      task_builder_ = std::make_shared<default_builder>(service);
+    }
+  else if (builder_impl_type_t == builder_impl_type::AGGREGATING_B)
+    {
+      task_builder_ = std::make_shared<aggregating_builder>(service);
+    }
   
-  if (map_impl_type_t == map_impl_type::MEMCACHE_D)
-    {
-      map_server_ = std::make_shared<MemcacheDImpl> (
-          service, ConfigManager::get_instance ()->MEMCACHED_URL_SERVER, 0);
-    }
-  else if (map_impl_type_t == map_impl_type::ROCKS_DB)
-    {
-      map_server_ = std::make_shared<RocksDBImpl> (service, kDBPath_server);
-    }
-  else if (map_impl_type_t == map_impl_type::HCLMAP)
+  // if (map_impl_type_t == map_impl_type::MEMCACHE_D)
+  //   {
+  //     map_server_ = std::make_shared<MemcacheDImpl> (
+  //         service, ConfigManager::get_instance ()->MEMCACHED_URL_SERVER, 0);
+  //   }
+  // else if (map_impl_type_t == map_impl_type::ROCKS_DB)
+  //   {
+  //     map_server_ = std::make_shared<RocksDBImpl> (service, kDBPath_server);
+  //   }
+  // else
+  if (map_impl_type_t == map_impl_type::HCLMAP)
     {
       map_server_
-	= std::make_shared<HCLMapImpl> (service, "dataspace", 0, 1);
+	= std::make_shared<HCLMapImpl> (service, "dataspace", 0, 1, hcl_init);
     }
 
   if (solver_impl_type_t == solver_impl_type::DP)
@@ -111,8 +121,7 @@ dtio_system::init (service service)
       }
     case TASK_SCHEDULER:
       {
-        std::size_t t = map_server ()->counter_inc (
-            COUNTER_DB, ROUND_ROBIN_INDEX, std::to_string (-1));
+	map_server()->counter_inc (COUNTER_DB, ROUND_ROBIN_INDEX, std::to_string (-1));
         break;
       }
     case WORKER_MANAGER:
@@ -125,20 +134,27 @@ dtio_system::init (service service)
       }
     }
 
-  if (map_impl_type_t == map_impl_type::MEMCACHE_D)
-    {
-      map_client_ = std::make_shared<MemcacheDImpl> (
-          service, ConfigManager::get_instance ()->MEMCACHED_URL_CLIENT,
-          application_id);
-    }
-  else if (map_impl_type_t == map_impl_type::ROCKS_DB)
-    {
-      map_client_ = std::make_shared<RocksDBImpl> (service, kDBPath_client);
-    }
-  else if (map_impl_type_t == map_impl_type::HCLMAP)
+  // if (map_impl_type_t == map_impl_type::MEMCACHE_D)
+  //   {
+  //     map_client_ = std::make_shared<MemcacheDImpl> (
+  //         service, ConfigManager::get_instance ()->MEMCACHED_URL_CLIENT,
+  //         application_id);
+  //   }
+  // else if (map_impl_type_t == map_impl_type::ROCKS_DB)
+  //   {
+  //     map_client_ = std::make_shared<RocksDBImpl> (service, kDBPath_client);
+  //   }
+  // else 
+  if (map_impl_type_t == map_impl_type::HCLMAP)
     {
       map_client_
-	= std::make_shared<HCLMapImpl> (service, "metadata", 0, 1);
+	= std::make_shared<HCLMapImpl> (service, "metadata", 0, 1, hcl_init);
+      fs_map_
+	= std::make_shared<HCLMapImpl> (service, "metadata+fs", 0, 1, hcl_init);
+      // cm_map_
+      // 	= std::make_shared<HCLMapImpl> (service, "metadata+chunkmeta", 0, 1, hcl_init);
+      fm_map_
+	= std::make_shared<HCLMapImpl> (service, "metadata+filemeta", 0, 1, hcl_init);
     }
 }
 

@@ -22,8 +22,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef HERMES_ADAPTER_FILESYSTEM_FILESYSTEM_H_
-#define HERMES_ADAPTER_FILESYSTEM_FILESYSTEM_H_
+#ifndef DTIO_ADAPTER_FILESYSTEM_FILESYSTEM_H_
+#define DTIO_ADAPTER_FILESYSTEM_FILESYSTEM_H_
 
 #ifndef O_TMPFILE
 #define O_TMPFILE 0x0
@@ -36,14 +36,14 @@
 #include <string>
 
 // #include "bucket.h"
-// #include "hermes.h"
+// #include "dtio.h"
 
 #include "filesystem_io_client.h"
 #include <filesystem>
 
-namespace hapi = hermes::api;
+namespace hapi = dtio::api;
 
-namespace hermes::adapter::fs {
+namespace dtio::adapter::fs {
 
 /** The maximum length of a posix path */
 static inline const int kMaxPathLen = 4096;
@@ -133,11 +133,11 @@ class Filesystem {
               IoStatus &io_status, FsIoOptions opts = FsIoOptions());
 
   /** write asynchronously */
-  HermesRequest *AWrite(File &f, AdapterStat &stat, const void *ptr, size_t off,
+  DtioRequest *AWrite(File &f, AdapterStat &stat, const void *ptr, size_t off,
                         size_t total_size, size_t req_id, IoStatus &io_status,
                         FsIoOptions opts = FsIoOptions());
   /** read asynchronously */
-  HermesRequest *ARead(File &f, AdapterStat &stat, void *ptr, size_t off,
+  DtioRequest *ARead(File &f, AdapterStat &stat, void *ptr, size_t off,
                        size_t total_size, size_t req_id, IoStatus &io_status,
                        FsIoOptions opts = FsIoOptions());
   /** wait for \a req_id request ID */
@@ -172,11 +172,11 @@ class Filesystem {
   size_t Read(File &f, AdapterStat &stat, void *ptr, size_t total_size,
               IoStatus &io_status, FsIoOptions opts);
   /** write asynchronously */
-  HermesRequest *AWrite(File &f, AdapterStat &stat, const void *ptr,
+  DtioRequest *AWrite(File &f, AdapterStat &stat, const void *ptr,
                         size_t total_size, size_t req_id, IoStatus &io_status,
                         FsIoOptions opts);
   /** read asynchronously */
-  HermesRequest *ARead(File &f, AdapterStat &stat, void *ptr, size_t total_size,
+  DtioRequest *ARead(File &f, AdapterStat &stat, void *ptr, size_t total_size,
                        size_t req_id, IoStatus &io_status, FsIoOptions opts);
 
   /*
@@ -200,18 +200,18 @@ class Filesystem {
               size_t total_size, IoStatus &io_status,
               FsIoOptions opts = FsIoOptions());
   /** write asynchronously */
-  HermesRequest *AWrite(File &f, bool &stat_exists, const void *ptr,
+  DtioRequest *AWrite(File &f, bool &stat_exists, const void *ptr,
                         size_t total_size, size_t req_id, IoStatus &io_status,
                         FsIoOptions opts);
   /** read asynchronously */
-  HermesRequest *ARead(File &f, bool &stat_exists, void *ptr, size_t total_size,
+  DtioRequest *ARead(File &f, bool &stat_exists, void *ptr, size_t total_size,
                        size_t req_id, IoStatus &io_status, FsIoOptions opts);
   /** write \a off offset asynchronously */
-  HermesRequest *AWrite(File &f, bool &stat_exists, const void *ptr, size_t off,
+  DtioRequest *AWrite(File &f, bool &stat_exists, const void *ptr, size_t off,
                         size_t total_size, size_t req_id, IoStatus &io_status,
                         FsIoOptions opts);
   /** read \a off offset asynchronously */
-  HermesRequest *ARead(File &f, bool &stat_exists, void *ptr, size_t off,
+  DtioRequest *ARead(File &f, bool &stat_exists, void *ptr, size_t off,
                        size_t total_size, size_t req_id, IoStatus &io_status,
                        FsIoOptions opts);
   /** seek */
@@ -228,13 +228,13 @@ class Filesystem {
   int Close(File &f, bool &stat_exists);
 
  public:
-  /** Whether or not \a path PATH is tracked by Hermes */
+  /** Whether or not \a path PATH is tracked by Dtio */
   static bool IsPathTracked(const std::string &path) {
-    if (!HERMES->IsInitialized()) {
+    if (!DTIO->IsInitialized()) {
       return false;
     }
     std::string abs_path = stdfs::absolute(path).string();
-    auto &paths = HERMES->client_config_.path_list_;
+    auto &paths = DTIO->client_config_.path_list_;
     // Check if path is included or excluded
     for (config::UserPathInfo &pth : paths) {
       if (abs_path.rfind(pth.path_) != std::string::npos) {
@@ -250,6 +250,6 @@ class Filesystem {
   }
 };
 
-}  // namespace hermes::adapter::fs
+}  // namespace dtio::adapter::fs
 
-#endif  // HERMES_ADAPTER_FILESYSTEM_FILESYSTEM_H_
+#endif  // DTIO_ADAPTER_FILESYSTEM_FILESYSTEM_H_

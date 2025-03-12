@@ -44,7 +44,7 @@ dtio::MPI_Init (int *argc, char ***argv)
      to have to wait to log until after MPI has initialized.
    */
   DTIO_LOG_DEBUG("[MPI] Init Entered");
-  
+
   /* NOTE: If we're intercepting MPI_Init, we can't assume that
      argv[1] is the DTIO conf path
    */

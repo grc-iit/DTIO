@@ -73,8 +73,20 @@ solver_output DPSolver::solve(solver_input input) {
       }
       break;
     }
+    case task_type::STAGING_TASK: {
+      auto *st = task_t;
+      if (st->source.worker == -1) {
+        solver_task_map.emplace(actual_index, solver_index);
+        input.task_size[solver_index] = st->destination.size;
+        solver_index++;
+      } else {
+        static_task_map.emplace(actual_index, st->source.worker);
+        static_index++;
+      }
+      break;
+    }
     default:
-      std::cout << "schedule_tasks(): Error in task type\n";
+      DTIO_LOG_ERROR("schedule_tasks(): Error in task type\n");
       break;
     }
     actual_index++;
@@ -99,9 +111,9 @@ solver_output DPSolver::solve(solver_input input) {
     worker_score[new_index] = atoi(val.c_str());
     worker_capacity[new_index] = pair.first;
     worker_energy[new_index] = WORKER_ENERGY;
-    std::cout << "worker:" << pair.second + 1
-              << " capacity:" << worker_capacity[new_index]
-              << " score:" << worker_score[new_index] << std::endl;
+    DTIO_LOG_INFO("worker:" << pair.second + 1
+		  << " capacity:" << worker_capacity[new_index]
+		  << " score:" << worker_score[new_index] << std::endl);
     new_index++;
   }
   solver_output solver_output_i(input.num_tasks);
@@ -138,8 +150,7 @@ solver_output DPSolver::solve(solver_input input) {
     }
     solver_output_i.solution[t] =
         sorted_workers[solver_output_i.solution[t] - 1].second + 1;
-    std::cout << "task:" << (t) << " worker:" << solver_output_i.solution[t]
-              << std::endl;
+    DTIO_LOG_INFO("task:" << (t) << " worker:" << solver_output_i.solution[t] << std::endl);
   }
 
   //    std::cout<<"Final Solution"<<std::endl;

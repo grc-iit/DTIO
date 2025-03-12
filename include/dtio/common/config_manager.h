@@ -76,7 +76,7 @@ public:
   MPI_Comm PROCESS_COMM;
   // MPI_Comm QUEUE_CLIENT_COMM;
   MPI_Comm *QUEUE_WORKER_COMM;
-  // MPI_Comm QUEUE_TASKSCHED_COMM;
+  MPI_Comm QUEUE_TASKSCHED_COMM;
   int TS_NUM_WORKER_THREADS;
   std::size_t NUM_WORKERS;    // FIXME: make private
   std::size_t NUM_SCHEDULERS; // FIXME: make private
@@ -85,6 +85,9 @@ public:
   bool NEVER_TRACE; // Never perform stacktracing, if the path is not
 		    // a dtio:// path then send directly to real api
   bool ASYNC; // Replace synchronous calls with asynchronous equivalents
+  bool USE_URING; // Use io_uring client or posix calls
+  bool USE_CACHE;
+  size_t WORKER_STAGING_SIZE; // Amount of local space to reserve in a worker for file staging
 
   static std::shared_ptr<ConfigManager>
   get_instance ()
@@ -145,6 +148,9 @@ public:
     CHECKFS = config_["CHECK_FS"].as<bool> ();
     NEVER_TRACE = config_["NEVER_TRACE"].as<bool> ();
     ASYNC = config_["ASYNC_MODE"].as<bool> ();
+    USE_URING = config_["USE_URING"].as<bool> ();
+    USE_CACHE = config_["USE_CACHE"].as<bool> ();
+    WORKER_STAGING_SIZE = config_["WORKER_STAGING_SIZE"].as<size_t> ();
     QUEUE_WORKER_COMM = (MPI_Comm *)calloc (NUM_WORKERS, sizeof (MPI_Comm));
     DTIO_LOG_TRACE ("[ConfigManager] Parsed Config: " << CHECKFS << " "
                                                      << QUEUE_WORKER_COMM);

@@ -79,6 +79,12 @@ enum mpi_queue_comms
   QUEUE_WORKER_COLOR = 1
 };
 
+enum mpi_ts_comms
+{
+  QUEUE_TS_NULL_COLOR = 0,
+  QUEUE_TS_COLOR = 1
+};
+
 enum service
 {
   LIB = 0,
@@ -95,7 +101,8 @@ enum class task_type : int64_t
   WRITE_TASK = 1,
   FLUSH_TASK = 2,
   DELETE_TASK = 3,
-  DUMMY = 4
+  STAGING_TASK = 4,
+  DUMMY = 5
 };
 
 enum table
@@ -109,7 +116,13 @@ enum table
   WORKER_CAPACITY = 6,
   TASK_DB = 7,
   WRITE_FINISHED_DB = 8,
-  COUNTER_DB = 9
+  COUNTER_DB = 9,
+  STAGING_DB = 10
+};
+enum builder_impl_type
+{
+  DEFAULT_B = 0,
+  AGGREGATING_B = 1
 };
 enum map_impl_type
 {
@@ -137,7 +150,9 @@ enum io_client_type
 {
   STDIO = 0,
   POSIX = 1,
-  MULTI = 2
+  HDF5 = 2,
+  URING = 3,
+  MULTI = 4
 };
 
 enum Distribution

@@ -22,26 +22,37 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DTIO_MAIN_SERIALIZATION_MANAGER_H
-#define DTIO_MAIN_SERIALIZATION_MANAGER_H
+#ifndef DTIO_MAIN_URINGCLIENT_H
+#define DTIO_MAIN_URINGCLIENT_H
 
-#include <cereal/archives/json.hpp>
-#include <cereal/cereal.hpp>
+#include "io_client.h"
+#include "dtio/common/config_manager.h"
+#include <chrono>
 #include <dtio/common/data_structures.h>
-#include <sstream>
+#include <liburing.h>
 
-class serialization_manager {
+using namespace std::chrono;
+
+#define URING_QD 64
+
+class uring_client : public io_client {
+  std::string dir;
+  int temp_fd;
+
 public:
-  // TODO: explore binary with NATS and memcached
-  std::string serialize_file_stat(file_stat stat);
-
-  chunk_meta deserialize_chunk(std::string chunk_str);
-
-  std::string serialize_chunk(chunk_meta meta);
-
-  std::string serialize_task(task *task);
-
-  task *deserialize_task(std::string string);
+  uring_client(int worker_index) : io_client(worker_index) {
+    dir = ConfigManager::get_instance()->WORKER_PATH + "/" +
+          std::to_string(worker_index) + "/";
+    temp_fd = -1;
+  }
+  int dtio_stage (task *tsk[], char *staging_space = NULL) override;
+  int dtio_write(task *tsk[]) override;
+  int dtio_read(task *tsk[], char *staging_space = NULL) override;
+  int dtio_delete_file(task *tsk[]) override;
+  int dtio_flush_file(task *tsk[]) override;
+  ~uring_client() {
+    close(temp_fd);
+  }
 };
 
-#endif // DTIO_MAIN_SERIALIZATION_MANAGER_H
+#endif // DTIO_MAIN_URINGCLIENT_H

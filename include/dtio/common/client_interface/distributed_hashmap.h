@@ -65,6 +65,10 @@ public:
 		   std::string group_key) {
     throw NotImplementedException("put filestat");
   }
+  virtual int put (const table &name, std::string key, file_meta *fm,
+	   std::string group_key) {
+    throw NotImplementedException("put filemeta");
+  }
 
   virtual std::string get(const table &name, std::string key,
                           std::string group_key) {
@@ -73,6 +77,10 @@ public:
   virtual void get(const table &name, std::string key,
 		   std::string group_key, char *result) {
     throw NotImplementedException("get 2");
+  }
+  virtual void get(const table &name, std::string key,
+		   std::string group_key, char *result, int max_size) {
+    throw NotImplementedException("get 3");
   }
 
   virtual bool get (const table &name, std::string key,
@@ -83,6 +91,10 @@ public:
   virtual bool get (const table &name, std::string key,
 		    std::string group_key, file_stat *result) {
     throw NotImplementedException("get filestat");
+  }
+
+  virtual bool get (const table &name, std::string key, std::string group_key, file_meta *result) {
+    throw NotImplementedException("get filemeta");
   }
 
   virtual std::string remove(const table &name, std::string key,

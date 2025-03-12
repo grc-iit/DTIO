@@ -52,6 +52,8 @@ int fsync (int fd);
 int rename (const char *oldpath, const char *newpath);
 int mystat (const char *pathname, struct stat *statbuf);
 int mystat64 (const char *pathname, struct stat64 *statbuf);
+int myfstat (int fd, struct stat *statbuf);
+int myfstat64 (int fd, struct stat64 *statbuf);
 int mknod (const char *pathname, mode_t mode, dev_t dev);
 // int fcntl(int fd, int cmd, ...);
 

@@ -24,5 +24,8 @@
 # * <http://www.gnu.org/licenses/>.
 # *
 
-mpirun -np 4 ./dtio_worker ${HOME}/DTIO/conf/default.yaml : -np 1 ./dtio_worker_manager ${HOME}/DTIO/conf/default.yaml : -np 1 ./dtio_task_scheduler ${HOME}/DTIO/conf/default.yaml : -np 2 ./dtio_hclmap ${HOME}/DTIO/conf/default.yaml
-rm -vf /dev/shm/{dataspace,metadata,taskscheduler+TASK+,worker+[0-9]+}_0
+set -x
+CONF=${HOME}/DTIO/conf/default.yaml
+NUM_WORKERS=`grep NUM_WORKERS  ${CONF} | awk '{print $2}'`
+mpirun -np ${NUM_WORKERS} ./dtio_worker ${CONF} : -np 1 ./dtio_worker_manager ${CONF} : -np 1 ./dtio_task_scheduler ${CONF} : -np 9 ./dtio_hclmanager ${CONF}
+rm -vf /dev/shm/{dataspace,metadata,metadata+*,taskscheduler+TASK+,worker+[0-9]+}_0

@@ -30,7 +30,13 @@
 int
 main (int argc, char **argv)
 {
-  MPI_Init (&argc, &argv);
+  int provided;
+  MPI_Init_thread (&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+  if (provided < MPI_THREAD_MULTIPLE) {
+    printf("Threading wrong\n");
+    exit(EXIT_FAILURE);
+  }
+  // MPI_Init (&argc, &argv);
   ConfigManager::get_instance ()->LoadConfig (argv[1]);
   int rank;
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
@@ -46,6 +52,8 @@ main (int argc, char **argv)
       MPI_Comm_split (MPI_COMM_WORLD, QUEUE_WORKER_NULL_COLOR, 0,
                       &ConfigManager::get_instance ()->QUEUE_WORKER_COMM[i]);
     }
+  MPI_Comm_split (MPI_COMM_WORLD, QUEUE_TS_NULL_COLOR, 0,
+		  &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
   DTIO_LOG_INFO ("[Worker Manager] Creating");
   std::shared_ptr<worker_manager_service> worker_manager_service_i
       = worker_manager_service::getInstance (service::WORKER_MANAGER);

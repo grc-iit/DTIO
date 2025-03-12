@@ -57,6 +57,15 @@ solver_output random_solver::solve(solver_input input) {
         solution.solution[i] = rt->source.worker;
       break;
     }
+    case task_type::STAGING_TASK: {
+      auto *st = input.tasks[i]; //reinterpret_cast<read_task *>()
+      if (st->source.worker == -1)
+        solution.solution[i] =
+            static_cast<int>(dist(generator) % ConfigManager::get_instance()->NUM_WORKERS + 1);
+      else
+        solution.solution[i] = st->source.worker;
+      break;
+    }
     case task_type::DELETE_TASK: {
       auto *dt = input.tasks[i]; //reinterpret_cast<delete_task *>(input.tasks[i]);
       if (dt->source.worker == -1)

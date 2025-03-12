@@ -22,8 +22,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef HERMES_ADAPTER_METADATA_MANAGER_H
-#define HERMES_ADAPTER_METADATA_MANAGER_H
+#ifndef DTIO_ADAPTER_METADATA_MANAGER_H
+#define DTIO_ADAPTER_METADATA_MANAGER_H
 
 #include <cstdio>
 #include <unordered_map>
@@ -31,7 +31,7 @@
 #include "filesystem.h"
 #include "thread_pool.h"
 
-namespace hermes::adapter::fs {
+namespace dtio::adapter::fs {
 
 /**
  * Metadata manager for POSIX adapter
@@ -39,14 +39,14 @@ namespace hermes::adapter::fs {
 class MetadataManager {
  private:
   std::unordered_map<std::string, std::list<File>>
-      path_to_hermes_file_; /**< Map to determine if path is buffered. */
+      path_to_dtio_file_; /**< Map to determine if path is buffered. */
   std::unordered_map<File, std::shared_ptr<AdapterStat>>
-      hermes_file_to_stat_; /**< Map for metadata */
+      dtio_file_to_stat_; /**< Map for metadata */
   RwLock lock_;             /**< Lock to synchronize MD updates*/
 
  public:
-  /** map for Hermes request */
-  std::unordered_map<uint64_t, HermesRequest*> request_map;
+  /** map for Dtio request */
+  std::unordered_map<uint64_t, DtioRequest*> request_map;
   FsIoClientMetadata fs_mdm_; /**< Context needed for I/O clients */
 
   /** Constructor */
@@ -55,19 +55,19 @@ class MetadataManager {
   /** Get the current adapter mode */
   AdapterMode GetBaseAdapterMode() {
     ScopedRwReadLock md_lock(lock_, kFS_GetBaseAdapterMode);
-    return HERMES->client_config_.GetBaseAdapterMode();
+    return DTIO->client_config_.GetBaseAdapterMode();
   }
 
   /** Get the adapter mode for a particular file */
   AdapterMode GetAdapterMode(const std::string &path) {
     ScopedRwReadLock md_lock(lock_, kFS_GetAdapterMode);
-    return HERMES->client_config_.GetAdapterConfig(path).mode_;
+    return DTIO->client_config_.GetAdapterConfig(path).mode_;
   }
 
   /** Get the adapter page size for a particular file */
   size_t GetAdapterPageSize(const std::string &path) {
     ScopedRwReadLock md_lock(lock_, kFS_GetAdapterPageSize);
-    return HERMES->client_config_.GetAdapterConfig(path).page_size_;
+    return DTIO->client_config_.GetAdapterConfig(path).page_size_;
   }
 
   /**
@@ -98,9 +98,9 @@ class MetadataManager {
   bool Delete(const std::string &path, const File& f);
 
   /**
-   * Find the hermes file relating to a path.
+   * Find the dtio file relating to a path.
    * @param path the path being checked
-   * @return The hermes file.
+   * @return The dtio file.
    * */
   std::list<File>* Find(const std::string &path);
 
@@ -112,16 +112,16 @@ class MetadataManager {
    */
   std::shared_ptr<AdapterStat> Find(const File& f);
 };
-}  // namespace hermes::adapter::fs
+}  // namespace dtio::adapter::fs
 
 // Singleton macros
-#include "hermes_shm/util/singleton.h"
+#include "dtio_shm/util/singleton.h"
 
-#define HERMES_FS_METADATA_MANAGER \
-  hshm::Singleton<hermes::adapter::fs::MetadataManager>::GetInstance()
-#define HERMES_FS_METADATA_MANAGER_T hermes::adapter::fs::MetadataManager*
+#define DTIO_FS_METADATA_MANAGER \
+  hshm::Singleton<dtio::adapter::fs::MetadataManager>::GetInstance()
+#define DTIO_FS_METADATA_MANAGER_T dtio::adapter::fs::MetadataManager*
 
-#define HERMES_FS_THREAD_POOL \
-  hshm::EasySingleton<hermes::ThreadPool>::GetInstance()
+#define DTIO_FS_THREAD_POOL \
+  hshm::EasySingleton<dtio::ThreadPool>::GetInstance()
 
-#endif  // HERMES_ADAPTER_METADATA_MANAGER_H
+#endif  // DTIO_ADAPTER_METADATA_MANAGER_H
