@@ -12,6 +12,14 @@ void Run(u32 method, Task *task, RunContext &rctx) override {
       Destroy(reinterpret_cast<DestroyTask *>(task), rctx);
       break;
     }
+    case Method::kWrite: {
+      Write(reinterpret_cast<WriteTask *>(task), rctx);
+      break;
+    }
+    case Method::kRead: {
+      Read(reinterpret_cast<ReadTask *>(task), rctx);
+      break;
+    }
   }
 }
 /** Execute a task */
@@ -25,6 +33,14 @@ void Monitor(MonitorModeId mode, MethodId method, Task *task, RunContext &rctx) 
       MonitorDestroy(mode, reinterpret_cast<DestroyTask *>(task), rctx);
       break;
     }
+    case Method::kWrite: {
+      MonitorWrite(mode, reinterpret_cast<WriteTask *>(task), rctx);
+      break;
+    }
+    case Method::kRead: {
+      MonitorRead(mode, reinterpret_cast<ReadTask *>(task), rctx);
+      break;
+    }
   }
 }
 /** Delete a task */
@@ -36,6 +52,14 @@ void Del(const hipc::MemContext &mctx, u32 method, Task *task) override {
     }
     case Method::kDestroy: {
       CHI_CLIENT->DelTask<DestroyTask>(mctx, reinterpret_cast<DestroyTask *>(task));
+      break;
+    }
+    case Method::kWrite: {
+      CHI_CLIENT->DelTask<WriteTask>(mctx, reinterpret_cast<WriteTask *>(task));
+      break;
+    }
+    case Method::kRead: {
+      CHI_CLIENT->DelTask<ReadTask>(mctx, reinterpret_cast<ReadTask *>(task));
       break;
     }
   }
@@ -55,6 +79,18 @@ void CopyStart(u32 method, const Task *orig_task, Task *dup_task, bool deep) ove
         reinterpret_cast<DestroyTask*>(dup_task), deep);
       break;
     }
+    case Method::kWrite: {
+      chi::CALL_COPY_START(
+        reinterpret_cast<const WriteTask*>(orig_task), 
+        reinterpret_cast<WriteTask*>(dup_task), deep);
+      break;
+    }
+    case Method::kRead: {
+      chi::CALL_COPY_START(
+        reinterpret_cast<const ReadTask*>(orig_task), 
+        reinterpret_cast<ReadTask*>(dup_task), deep);
+      break;
+    }
   }
 }
 /** Duplicate a task */
@@ -66,6 +102,14 @@ void NewCopyStart(u32 method, const Task *orig_task, FullPtr<Task> &dup_task, bo
     }
     case Method::kDestroy: {
       chi::CALL_NEW_COPY_START(reinterpret_cast<const DestroyTask*>(orig_task), dup_task, deep);
+      break;
+    }
+    case Method::kWrite: {
+      chi::CALL_NEW_COPY_START(reinterpret_cast<const WriteTask*>(orig_task), dup_task, deep);
+      break;
+    }
+    case Method::kRead: {
+      chi::CALL_NEW_COPY_START(reinterpret_cast<const ReadTask*>(orig_task), dup_task, deep);
       break;
     }
   }
@@ -81,6 +125,14 @@ void SaveStart(
     }
     case Method::kDestroy: {
       ar << *reinterpret_cast<DestroyTask*>(task);
+      break;
+    }
+    case Method::kWrite: {
+      ar << *reinterpret_cast<WriteTask*>(task);
+      break;
+    }
+    case Method::kRead: {
+      ar << *reinterpret_cast<ReadTask*>(task);
       break;
     }
   }
@@ -101,6 +153,18 @@ TaskPointer LoadStart(    u32 method, BinaryInputArchive<true> &ar) override {
       ar >> *reinterpret_cast<DestroyTask*>(task_ptr.ptr_);
       break;
     }
+    case Method::kWrite: {
+      task_ptr.ptr_ = CHI_CLIENT->NewEmptyTask<WriteTask>(
+             HSHM_DEFAULT_MEM_CTX, task_ptr.shm_);
+      ar >> *reinterpret_cast<WriteTask*>(task_ptr.ptr_);
+      break;
+    }
+    case Method::kRead: {
+      task_ptr.ptr_ = CHI_CLIENT->NewEmptyTask<ReadTask>(
+             HSHM_DEFAULT_MEM_CTX, task_ptr.shm_);
+      ar >> *reinterpret_cast<ReadTask*>(task_ptr.ptr_);
+      break;
+    }
   }
   return task_ptr;
 }
@@ -115,6 +179,14 @@ void SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Task *task) override {
       ar << *reinterpret_cast<DestroyTask*>(task);
       break;
     }
+    case Method::kWrite: {
+      ar << *reinterpret_cast<WriteTask*>(task);
+      break;
+    }
+    case Method::kRead: {
+      ar << *reinterpret_cast<ReadTask*>(task);
+      break;
+    }
   }
 }
 /** Deserialize a task when popping from remote queue */
@@ -126,6 +198,14 @@ void LoadEnd(u32 method, BinaryInputArchive<false> &ar, Task *task) override {
     }
     case Method::kDestroy: {
       ar >> *reinterpret_cast<DestroyTask*>(task);
+      break;
+    }
+    case Method::kWrite: {
+      ar >> *reinterpret_cast<WriteTask*>(task);
+      break;
+    }
+    case Method::kRead: {
+      ar >> *reinterpret_cast<ReadTask*>(task);
       break;
     }
   }

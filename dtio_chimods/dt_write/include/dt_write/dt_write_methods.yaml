@@ -8,6 +8,8 @@ kUpgrade: -1       # 5
 
 # Custom Methods (start from 10)
 # kCustom: 10
+kWrite: 10
+kRead: 11
 
 # NOTE: When you add a new method, 
 # call chi_refresh_mods to update

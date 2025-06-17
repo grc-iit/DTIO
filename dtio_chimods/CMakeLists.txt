@@ -30,7 +30,6 @@ if (NOT CHIMAERA_EXPORTED_TARGETS)
 endif()
 
 # ADD SUBDIRECTORIES
-add_subdirectory(dt_read)
 add_subdirectory(dt_write)
 
 # INSTALL TARGETS

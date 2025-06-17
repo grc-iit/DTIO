@@ -33,9 +33,9 @@ class Client : public ModuleClient {
   HSHM_INLINE_CROSS_FUN
   void Create(const hipc::MemContext &mctx, const DomainQuery &dom_query,
               const DomainQuery &affinity, const chi::string &pool_name,
-              const CreateContext &ctx = CreateContext()) {
+              const CreateContext &ctx = CreateContext(), int dtio_id = 0) {
     FullPtr<CreateTask> task =
-        AsyncCreate(mctx, dom_query, affinity, pool_name, ctx);
+      AsyncCreate(mctx, dom_query, affinity, pool_name, ctx, dtio_id);
     task->Wait();
     Init(task->ctx_.id_);
     CHI_CLIENT->DelTask(mctx, task);
@@ -53,6 +53,30 @@ class Client : public ModuleClient {
   }
   CHI_TASK_METHODS(Destroy)
   CHI_END(Destroy)
+
+  CHI_BEGIN(Write)
+  /** Write task */
+  void Write(const hipc::MemContext &mctx, const DomainQuery &dom_query,
+	     const hipc::Pointer &data, size_t data_size, size_t data_offset, const hipc::Pointer &filename, size_t filenamelen) {
+    FullPtr<WriteTask> task = AsyncWrite(mctx, dom_query, data, data_size, data_offset, filename, filenamelen);
+	task->Wait();
+	CHI_CLIENT->DelTask(mctx, task);
+  }
+  CHI_TASK_METHODS(Write);
+  CHI_END(Write)
+
+CHI_BEGIN(Read)
+  /** Read task */
+  void Read(const hipc::MemContext &mctx,
+	    const DomainQuery &dom_query,
+	    const hipc::Pointer &data, size_t data_size, size_t data_offset) {
+    FullPtr<ReadTask> task =
+      AsyncRead(mctx, dom_query, data, data_size, data_offset);
+    task->Wait();
+    CHI_CLIENT->DelTask(mctx, task);
+  }
+  CHI_TASK_METHODS(Read);
+  CHI_END(Read)
 
   CHI_AUTOGEN_METHODS  // keep at class bottom
 };
