@@ -90,7 +90,33 @@ class Server : public Module {
 CHI_BEGIN(Read)
   /** The Read method */
   void Read(ReadTask *task, RunContext &rctx) {
+    // So, we should have multiple clients and pass to the appropriate one based off of a DTIO configuration.
+    // For now, let's simply assume POSIX. Add more later.
+
+    hipc::FullPtr data_full(task->data_);
+    char *data_ = (char *)(data_full.ptr_);
+
+    hipc::FullPtr filename_full(task->filename_);
+    char *filepath_ = (char *)(filename_full.ptr_);
+
+    char *filepath = (strncmp(filepath_, "dtio://", 7) == 0) ? (filepath_ + 7) : filepath_;
+    int fd;
+    // if (temp_fd == -1) {
+    fd = open64(filepath, O_RDWR | O_CREAT, 0664); // "w+"
+      // temp_fd = fd;
+    // }
+    // else {
+    //   fd = temp_fd;
+    // }
+    if (fd < 0) {
+      std::cerr << "File " << filepath << " didn't open" << std::endl;
+    }
+    lseek64(fd, task->data_offset_, SEEK_SET);
+    auto count = read(fd, data_, task->data_size_);
+    if (count != task->data_size_)
+      std::cerr << "read less" << count << "\n";
   }
+
   void MonitorRead(MonitorModeId mode, ReadTask *task, RunContext &rctx) {
     switch (mode) {
       case MonitorMode::kReplicaAgg: {

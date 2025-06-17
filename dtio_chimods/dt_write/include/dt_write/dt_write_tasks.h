@@ -104,6 +104,8 @@ struct ReadTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN hipc::Pointer data_;
   IN size_t data_offset_;
   IN size_t data_size_;
+  IN hipc::Pointer filename_;
+  IN size_t filenamelen_;
 
   /** SHM default constructor */
   HSHM_INLINE explicit
@@ -115,7 +117,7 @@ struct ReadTask : public Task, TaskFlags<TF_SRL_SYM> {
                 const TaskNode &task_node,
                 const PoolId &pool_id,
 	   const DomainQuery &dom_query,
-	   const hipc::Pointer &data, size_t data_size, size_t data_offset) : Task(alloc) {
+	   const hipc::Pointer &data, size_t data_size, size_t data_offset, const hipc::Pointer &filename, size_t filenamelen) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     prio_ = TaskPrioOpt::kLowLatency;
@@ -128,6 +130,8 @@ struct ReadTask : public Task, TaskFlags<TF_SRL_SYM> {
     data_ = data;
     data_size_ = data_size;
     data_offset_ = data_offset;
+    filename_ = filename;
+    filenamelen_ = filenamelen;
   }
 
   /** Duplicate message */
@@ -135,6 +139,8 @@ struct ReadTask : public Task, TaskFlags<TF_SRL_SYM> {
     data_ = other.data_;
     data_size_ = other.data_size_;
     data_offset_ = other.data_offset_;
+    filename_ = other.filename_;
+    filenamelen_ = other.filenamelen_;
     if (!deep) {
       UnsetDataOwner();
     }
@@ -144,6 +150,7 @@ struct ReadTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     ar.bulk(DT_WRITE, data_, data_size_);
+    ar.bulk(DT_WRITE, filename_, filenamelen_);
     ar(data_size_, data_offset_);
   }
 

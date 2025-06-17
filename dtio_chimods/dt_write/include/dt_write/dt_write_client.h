@@ -69,9 +69,9 @@ CHI_BEGIN(Read)
   /** Read task */
   void Read(const hipc::MemContext &mctx,
 	    const DomainQuery &dom_query,
-	    const hipc::Pointer &data, size_t data_size, size_t data_offset) {
+	    const hipc::Pointer &data, size_t data_size, size_t data_offset, const hipc::Pointer &filename, size_t filenamelen) {
     FullPtr<ReadTask> task =
-      AsyncRead(mctx, dom_query, data, data_size, data_offset);
+      AsyncRead(mctx, dom_query, data, data_size, data_offset, filename, filenamelen);
     task->Wait();
     CHI_CLIENT->DelTask(mctx, task);
   }
