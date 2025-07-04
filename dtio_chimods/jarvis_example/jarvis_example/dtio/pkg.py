@@ -57,7 +57,7 @@ class DtWrite(Application):
 
         :return: None
         """
-        Exec('dt_write_test', LocalExecInfo(env=self.env))
+        Exec('dtio_test', LocalExecInfo(env=self.env))
 
     def stop(self):
         """

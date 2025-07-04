@@ -10,6 +10,9 @@ kUpgrade: -1       # 5
 # kCustom: 10
 kWrite: 10
 kRead: 11
+kPrefetch: 12
+kMetaPut: 13
+kMetaGet: 14
 
 # NOTE: When you add a new method, 
 # call chi_refresh_mods to update

@@ -1,8 +1,8 @@
-#include "dt_write/dt_write_client.h"
+#include "dtio/dtio_client.h"
 
 int main() {
   CHIMAERA_CLIENT_INIT();
-  chi::dt_write::Client client;
+  chi::dtio::Client client;
   client.Create(
 		HSHM_MCTX,
 		chi::DomainQuery::GetDirectHash(chi::SubDomainId::kGlobalContainers, 0),
@@ -16,6 +16,6 @@ int main() {
   char *filename_ptr = filename.ptr_;
   sprintf(filename_ptr, "dtio://test.txt");
   client.Write(HSHM_MCTX, chi::DomainQuery::GetLocalHash(0), orig_data.shm_,
-	       data_size, data_offset, filename.shm_, 15);
+	       data_size, data_offset, filename.shm_, 15, io_client_type::POSIX);
   return 0;
 }

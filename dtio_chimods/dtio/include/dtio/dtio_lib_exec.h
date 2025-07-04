@@ -1,5 +1,5 @@
-#ifndef CHI_DT_WRITE_LIB_EXEC_H_
-#define CHI_DT_WRITE_LIB_EXEC_H_
+#ifndef CHI_DTIO_LIB_EXEC_H_
+#define CHI_DTIO_LIB_EXEC_H_
 
 /** Execute a task */
 void Run(u32 method, Task *task, RunContext &rctx) override {
@@ -18,6 +18,18 @@ void Run(u32 method, Task *task, RunContext &rctx) override {
     }
     case Method::kRead: {
       Read(reinterpret_cast<ReadTask *>(task), rctx);
+      break;
+    }
+    case Method::kPrefetch: {
+      Prefetch(reinterpret_cast<PrefetchTask *>(task), rctx);
+      break;
+    }
+    case Method::kMetaPut: {
+      MetaPut(reinterpret_cast<MetaPutTask *>(task), rctx);
+      break;
+    }
+    case Method::kMetaGet: {
+      MetaGet(reinterpret_cast<MetaGetTask *>(task), rctx);
       break;
     }
   }
@@ -41,6 +53,18 @@ void Monitor(MonitorModeId mode, MethodId method, Task *task, RunContext &rctx) 
       MonitorRead(mode, reinterpret_cast<ReadTask *>(task), rctx);
       break;
     }
+    case Method::kPrefetch: {
+      MonitorPrefetch(mode, reinterpret_cast<PrefetchTask *>(task), rctx);
+      break;
+    }
+    case Method::kMetaPut: {
+      MonitorMetaPut(mode, reinterpret_cast<MetaPutTask *>(task), rctx);
+      break;
+    }
+    case Method::kMetaGet: {
+      MonitorMetaGet(mode, reinterpret_cast<MetaGetTask *>(task), rctx);
+      break;
+    }
   }
 }
 /** Delete a task */
@@ -60,6 +84,18 @@ void Del(const hipc::MemContext &mctx, u32 method, Task *task) override {
     }
     case Method::kRead: {
       CHI_CLIENT->DelTask<ReadTask>(mctx, reinterpret_cast<ReadTask *>(task));
+      break;
+    }
+    case Method::kPrefetch: {
+      CHI_CLIENT->DelTask<PrefetchTask>(mctx, reinterpret_cast<PrefetchTask *>(task));
+      break;
+    }
+    case Method::kMetaPut: {
+      CHI_CLIENT->DelTask<MetaPutTask>(mctx, reinterpret_cast<MetaPutTask *>(task));
+      break;
+    }
+    case Method::kMetaGet: {
+      CHI_CLIENT->DelTask<MetaGetTask>(mctx, reinterpret_cast<MetaGetTask *>(task));
       break;
     }
   }
@@ -91,6 +127,24 @@ void CopyStart(u32 method, const Task *orig_task, Task *dup_task, bool deep) ove
         reinterpret_cast<ReadTask*>(dup_task), deep);
       break;
     }
+    case Method::kPrefetch: {
+      chi::CALL_COPY_START(
+        reinterpret_cast<const PrefetchTask*>(orig_task), 
+        reinterpret_cast<PrefetchTask*>(dup_task), deep);
+      break;
+    }
+    case Method::kMetaPut: {
+      chi::CALL_COPY_START(
+        reinterpret_cast<const MetaPutTask*>(orig_task), 
+        reinterpret_cast<MetaPutTask*>(dup_task), deep);
+      break;
+    }
+    case Method::kMetaGet: {
+      chi::CALL_COPY_START(
+        reinterpret_cast<const MetaGetTask*>(orig_task), 
+        reinterpret_cast<MetaGetTask*>(dup_task), deep);
+      break;
+    }
   }
 }
 /** Duplicate a task */
@@ -110,6 +164,18 @@ void NewCopyStart(u32 method, const Task *orig_task, FullPtr<Task> &dup_task, bo
     }
     case Method::kRead: {
       chi::CALL_NEW_COPY_START(reinterpret_cast<const ReadTask*>(orig_task), dup_task, deep);
+      break;
+    }
+    case Method::kPrefetch: {
+      chi::CALL_NEW_COPY_START(reinterpret_cast<const PrefetchTask*>(orig_task), dup_task, deep);
+      break;
+    }
+    case Method::kMetaPut: {
+      chi::CALL_NEW_COPY_START(reinterpret_cast<const MetaPutTask*>(orig_task), dup_task, deep);
+      break;
+    }
+    case Method::kMetaGet: {
+      chi::CALL_NEW_COPY_START(reinterpret_cast<const MetaGetTask*>(orig_task), dup_task, deep);
       break;
     }
   }
@@ -133,6 +199,18 @@ void SaveStart(
     }
     case Method::kRead: {
       ar << *reinterpret_cast<ReadTask*>(task);
+      break;
+    }
+    case Method::kPrefetch: {
+      ar << *reinterpret_cast<PrefetchTask*>(task);
+      break;
+    }
+    case Method::kMetaPut: {
+      ar << *reinterpret_cast<MetaPutTask*>(task);
+      break;
+    }
+    case Method::kMetaGet: {
+      ar << *reinterpret_cast<MetaGetTask*>(task);
       break;
     }
   }
@@ -165,6 +243,24 @@ TaskPointer LoadStart(    u32 method, BinaryInputArchive<true> &ar) override {
       ar >> *reinterpret_cast<ReadTask*>(task_ptr.ptr_);
       break;
     }
+    case Method::kPrefetch: {
+      task_ptr.ptr_ = CHI_CLIENT->NewEmptyTask<PrefetchTask>(
+             HSHM_DEFAULT_MEM_CTX, task_ptr.shm_);
+      ar >> *reinterpret_cast<PrefetchTask*>(task_ptr.ptr_);
+      break;
+    }
+    case Method::kMetaPut: {
+      task_ptr.ptr_ = CHI_CLIENT->NewEmptyTask<MetaPutTask>(
+             HSHM_DEFAULT_MEM_CTX, task_ptr.shm_);
+      ar >> *reinterpret_cast<MetaPutTask*>(task_ptr.ptr_);
+      break;
+    }
+    case Method::kMetaGet: {
+      task_ptr.ptr_ = CHI_CLIENT->NewEmptyTask<MetaGetTask>(
+             HSHM_DEFAULT_MEM_CTX, task_ptr.shm_);
+      ar >> *reinterpret_cast<MetaGetTask*>(task_ptr.ptr_);
+      break;
+    }
   }
   return task_ptr;
 }
@@ -185,6 +281,18 @@ void SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Task *task) override {
     }
     case Method::kRead: {
       ar << *reinterpret_cast<ReadTask*>(task);
+      break;
+    }
+    case Method::kPrefetch: {
+      ar << *reinterpret_cast<PrefetchTask*>(task);
+      break;
+    }
+    case Method::kMetaPut: {
+      ar << *reinterpret_cast<MetaPutTask*>(task);
+      break;
+    }
+    case Method::kMetaGet: {
+      ar << *reinterpret_cast<MetaGetTask*>(task);
       break;
     }
   }
@@ -208,7 +316,19 @@ void LoadEnd(u32 method, BinaryInputArchive<false> &ar, Task *task) override {
       ar >> *reinterpret_cast<ReadTask*>(task);
       break;
     }
+    case Method::kPrefetch: {
+      ar >> *reinterpret_cast<PrefetchTask*>(task);
+      break;
+    }
+    case Method::kMetaPut: {
+      ar >> *reinterpret_cast<MetaPutTask*>(task);
+      break;
+    }
+    case Method::kMetaGet: {
+      ar >> *reinterpret_cast<MetaGetTask*>(task);
+      break;
+    }
   }
 }
 
-#endif  // CHI_DT_WRITE_LIB_EXEC_H_
+#endif  // CHI_DTIO_LIB_EXEC_H_

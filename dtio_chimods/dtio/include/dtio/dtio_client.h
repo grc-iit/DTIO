@@ -10,14 +10,14 @@
  * have access to the file, you may request a copy from help@hdfgroup.org.   *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef CHI_dt_write_H_
-#define CHI_dt_write_H_
+#ifndef CHI_dtio_H_
+#define CHI_dtio_H_
 
-#include "dt_write_tasks.h"
+#include "dtio_tasks.h"
 
-namespace chi::dt_write {
+namespace chi::dtio {
 
-/** Create dt_write requests */
+/** Create dtio requests */
 class Client : public ModuleClient {
  public:
   /** Default constructor */
@@ -57,8 +57,8 @@ class Client : public ModuleClient {
   CHI_BEGIN(Write)
   /** Write task */
   void Write(const hipc::MemContext &mctx, const DomainQuery &dom_query,
-	     const hipc::Pointer &data, size_t data_size, size_t data_offset, const hipc::Pointer &filename, size_t filenamelen) {
-    FullPtr<WriteTask> task = AsyncWrite(mctx, dom_query, data, data_size, data_offset, filename, filenamelen);
+	     const hipc::Pointer &data, size_t data_size, size_t data_offset, const hipc::Pointer &filename, size_t filenamelen, io_client_type iface) {
+    FullPtr<WriteTask> task = AsyncWrite(mctx, dom_query, data, data_size, data_offset, filename, filenamelen, iface);
 	task->Wait();
 	CHI_CLIENT->DelTask(mctx, task);
   }
@@ -69,18 +69,54 @@ CHI_BEGIN(Read)
   /** Read task */
   void Read(const hipc::MemContext &mctx,
 	    const DomainQuery &dom_query,
-	    const hipc::Pointer &data, size_t data_size, size_t data_offset, const hipc::Pointer &filename, size_t filenamelen) {
+	    const hipc::Pointer &data, size_t data_size, size_t data_offset, const hipc::Pointer &filename, size_t filenamelen, io_client_type iface) {
     FullPtr<ReadTask> task =
-      AsyncRead(mctx, dom_query, data, data_size, data_offset, filename, filenamelen);
+      AsyncRead(mctx, dom_query, data, data_size, data_offset, filename, filenamelen, iface);
     task->Wait();
     CHI_CLIENT->DelTask(mctx, task);
   }
   CHI_TASK_METHODS(Read);
   CHI_END(Read)
 
+CHI_BEGIN(Prefetch)
+  /** Prefetch task */
+  void Prefetch(const hipc::MemContext &mctx,
+                      const DomainQuery &dom_query) {
+    FullPtr<PrefetchTask> task =
+      AsyncPrefetch(mctx, dom_query);
+    task->Wait();
+    CHI_CLIENT->DelTask(mctx, task);
+  }
+  CHI_TASK_METHODS(Prefetch);
+  CHI_END(Prefetch)
+
+CHI_BEGIN(MetaPut)
+  /** MetaPut task */
+  void MetaPut(const hipc::MemContext &mctx,
+                      const DomainQuery &dom_query) {
+    FullPtr<MetaPutTask> task =
+      AsyncMetaPut(mctx, dom_query);
+    task->Wait();
+    CHI_CLIENT->DelTask(mctx, task);
+  }
+  CHI_TASK_METHODS(MetaPut);
+  CHI_END(MetaPut)
+
+CHI_BEGIN(MetaGet)
+  /** MetaGet task */
+  void MetaGet(const hipc::MemContext &mctx,
+                      const DomainQuery &dom_query) {
+    FullPtr<MetaGetTask> task =
+      AsyncMetaGet(mctx, dom_query);
+    task->Wait();
+    CHI_CLIENT->DelTask(mctx, task);
+  }
+  CHI_TASK_METHODS(MetaGet);
+  CHI_END(MetaGet)
+
   CHI_AUTOGEN_METHODS  // keep at class bottom
 };
 
-}  // namespace chi::dt_write
+}  // namespace chi::dtio
 
-#endif  // CHI_dt_write_H_
+#endif  // CHI_dtio_H_

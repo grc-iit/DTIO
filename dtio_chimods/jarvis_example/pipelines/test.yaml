@@ -7,6 +7,6 @@ pkgs:
     do_dbg: false
     dbg_port: 4000
     port: 6000
-    modules: ['dt_write']
-  - pkg_type: dt_write
-    pkg_name: dt_write
+    modules: ['dtio']
+  - pkg_type: dtio
+    pkg_name: dtio

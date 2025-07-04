@@ -1,4 +1,0 @@
-kCreate: {'val': 0, 'compiled': True}
-kDestroy: {'val': 1, 'compiled': True}
-kWrite: {'val': 10, 'compiled': True}
-kRead: {'val': 11, 'compiled': True}
