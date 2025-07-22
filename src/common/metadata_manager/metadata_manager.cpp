@@ -56,7 +56,7 @@ metadata_manager::create (std::string filename, std::string mode, FILE *&fh)
     return MDM__FILENAME_MAX_LENGTH;
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
   fh = fmemopen (nullptr, 1, mode.c_str ());
-  file_stat stat = { fh, -1, 0, 0, 0, 0, mode, true };
+  file_stat stat = file_stat(fh, -1, 0, 0, 0, 0, mode, true);
   // auto iter = file_map.find (filename);
   // if (iter != file_map.end ())
   //   file_map.erase (iter);
@@ -79,7 +79,7 @@ metadata_manager::create (std::string filename, int flags, mode_t mode,
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
 
   *fd = random (); // random number, maybe use an HCL sequencer
-  file_stat stat = { nullptr, *fd, 0, 0, flags, mode, "", true };
+  file_stat stat = file_stat(nullptr, *fd, 0, 0, flags, mode, "", true);
   // auto iter = file_map.find (filename);
   // if (iter != file_map.end ())
   //   file_map.erase (iter);
@@ -98,6 +98,7 @@ metadata_manager::is_opened (std::string filename)
 {
   file_stat fs;
   auto filemap = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
+  printf("is_opened perform get\n");
   return filemap->get(table::FILE_DB, filename, std::to_string (-1), &fs) && fs.is_open;
 
   // auto iter = file_map.find (filename);

@@ -61,10 +61,6 @@ int dtio::DTIO_write (std::string filename, std::string buf, int64_t offset, siz
   else {
     w_task.iface = io_client_type::POSIX;
   }
-#ifdef TIMERTB
-  hcl::Timer t = hcl::Timer ();
-  t.resumeTime ();
-#endif
   auto write_tasks
     = task_m->build_write_task (w_task, buf.data());
 #ifdef TIMERTB
@@ -184,10 +180,6 @@ std::string dtio::DTIO_read(std::string filename, int64_t offset, size_t count)
   else {
     r_task.iface = io_client_type::POSIX;
   }
-#ifdef TIMERTB
-  hcl::Timer t = hcl::Timer ();
-  t.resumeTime ();
-#endif
   auto tasks = task_m->build_read_task (r_task);
   DTIO_LOG_TRACE("Task len " << tasks.size() << std::endl);
 #ifdef TIMERTB
@@ -214,7 +206,6 @@ std::string dtio::DTIO_read(std::string filename, int64_t offset, size_t count)
 	      DTIO_LOG_DEBUG ("in pfs");
 	      if (ConfigManager::get_instance ()->CHECKFS)
 		{
-		  hcl::Timer timer = hcl::Timer ();
 		  client_queue->publish_task (&t);
 
 		  while (!data_m->exists (DATASPACE_DB, t.source.filename,
@@ -242,7 +233,6 @@ std::string dtio::DTIO_read(std::string filename, int64_t offset, size_t count)
 	    break;
 	  case BUFFERS:
 	    {
-	      hcl::Timer timer = hcl::Timer ();
 	      client_queue->publish_task (&t);
 	      while (!data_m->exists (DATASPACE_DB, t.source.filename,
 				      std::to_string (t.destination.server)))
@@ -288,7 +278,6 @@ std::string dtio::DTIO_read(std::string filename, int64_t offset, size_t count)
 	      DTIO_LOG_DEBUG ("in pfs");
 	      if (ConfigManager::get_instance ()->CHECKFS)
 		{
-		  hcl::Timer timer = hcl::Timer ();
 		  client_queue->publish_task (&t);
 
 		  while (!data_m->exists (DATASPACE_DB, t.source.filename,
@@ -318,7 +307,6 @@ std::string dtio::DTIO_read(std::string filename, int64_t offset, size_t count)
 	    break;
 	  case BUFFERS:
 	    {
-	      hcl::Timer timer = hcl::Timer ();
 	      client_queue->publish_task (&t);
 	      while (!data_m->exists (DATASPACE_DB, t.source.filename,
 				      std::to_string (t.destination.server)))

@@ -1,17 +1,15 @@
 """
-This module provides classes and methods to launch the DtWrite application.
-DtWrite is ....
+This module provides classes and methods to inject the Dtio interceptor.
+Dtio is ....
 """
-
-from jarvis_cd.basic.pkg import Application
+from jarvis_cd.basic.pkg import Interceptor
 from jarvis_util import *
 
 
-class DtWrite(Application):
+class Dtio(Interceptor):
     """
-    This class provides methods to launch the DtWrite application.
+    This class provides methods to inject the Dtio interceptor.
     """
-
     def _init(self):
         """
         Initialize paths
@@ -27,17 +25,17 @@ class DtWrite(Application):
         :return: List(dict)
         """
         return [
-            # {
-            #     "name": None,  # The name of the parameter
-            #     "msg": "",  # Describe this parameter
-            #     "type": str,  # What is the parameter type?
-            #     "default": None,  # What is the default value if not required?
-            #     # Does this parameter have specific valid inputs?
-            #     "choices": [],
-            #     # When type is list, what do the entries of the list mean?
-            #     # A list of dicts just like this one.
-            #     "args": [],
-            # },
+            {
+                'name': 'interface_type',  # The name of the parameter
+                'msg': '',  # Describe this parameter
+                'type': str,  # What is the parameter type?
+                'default': 'posix',  # What is the default value if not required?
+                # Does this parameter have specific valid inputs?
+                'choices': ['posix', 'stdio', 'hdf5'],
+                # When type is list, what do the entries of the list mean?
+                # A list of dicts just like this one.
+                'args': []
+            },
         ]
 
     def _configure(self, **kwargs):
@@ -50,37 +48,9 @@ class DtWrite(Application):
         """
         pass
 
-    def start(self):
+    def modify_env(self):
         """
-        Launch an application. E.g., OrangeFS will launch the servers, clients,
-        and metadata services on all necessary pkgs.
-
-        :return: None
-        """
-        Exec('dtio_test', LocalExecInfo(env=self.env))
-
-    def stop(self):
-        """
-        Stop a running application. E.g., OrangeFS will terminate the servers,
-        clients, and metadata services.
-
-        :return: None
-        """
-        pass
-
-    def kill(self):
-        """
-        Forcibly a running application. E.g., OrangeFS will terminate the
-        servers, clients, and metadata services.
-
-        :return: None
-        """
-        pass
-
-    def clean(self):
-        """
-        Destroy all data for an application. E.g., OrangeFS will delete all
-        metadata and data directories in addition to the orangefs.xml file.
+        Modify the jarvis environment.
 
         :return: None
         """

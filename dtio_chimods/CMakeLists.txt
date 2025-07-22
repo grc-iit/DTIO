@@ -30,7 +30,7 @@ if (NOT CHIMAERA_EXPORTED_TARGETS)
 endif()
 
 # ADD SUBDIRECTORIES
-add_subdirectory(dtio)
+add_subdirectory(dtiomod)
 
 # INSTALL TARGETS
 install(EXPORT ${CHIMAERA_EXPORTED_TARGETS}

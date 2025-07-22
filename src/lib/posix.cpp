@@ -26,10 +26,9 @@
 #include "dtio/common/logger.h"
 #include <dtio/common/return_codes.h>
 #include <dtio/common/task_builder/task_builder.h>
-#include <dtio/dtio_client.h> // Make sure this actually gets included
+#include <dtiomod/dtiomod_client.h> // Make sure this actually gets included
 #include <dtio/drivers/posix.h>
 #include <fcntl.h>
-#include <hcl/common/debug.h>
 #include <iomanip>
 #include <sys/stat.h>
 #include <zconf.h>
@@ -44,188 +43,15 @@
 
 int temp_fd = -1;
 
-int dtio_worker_write(task *tsk[]) {
-  int task_idx;
-  for (task_idx = 0; task_idx < BATCH_SIZE; task_idx++) {
-#ifdef TIMERW
-  hcl::Timer t = hcl::Timer();
-  t.resumeTime();
-#endif
-  std::shared_ptr<distributed_hashmap> map_client =
-      dtio_system::getInstance(LIB)->map_client();
-  std::shared_ptr<distributed_hashmap> map_server =
-      dtio_system::getInstance(LIB)->map_server();
-  auto source = tsk[task_idx]->source;
-  size_t chunk_index = (source.offset / MAX_IO_UNIT);
-  size_t base_offset = chunk_index * MAX_IO_UNIT + source.offset % MAX_IO_UNIT;
-  chunk_meta chunk_meta1;
-  bool chunk_avail = !tsk[task_idx]->addDataspace;
-  // map_client->get(
-  //     table::CHUNK_DB,
-  //     tsk[task_idx]->source.filename + std::to_string(chunk_index * MAX_IO_UNIT),
-  //     std::to_string(-1), &chunk_meta1);
-
-#ifdef TIMERDM
-  hcl::Timer t0 = hcl::Timer();
-  t0.resumeTime();
-#endif
-  // FIXME: modify the data to pull from local buffers if there is no dataspace (task is sync)
-#if(STACK_ALLOCATION)
-  {
-    // char *data;
-    // data = (char *)malloc(MAX_IO_UNIT);
-    char data[MAX_IO_UNIT];
-    if (!chunk_avail) {
-      map_client->get(DATASPACE_DB, tsk[task_idx]->destination.filename,
-		      std::to_string(tsk[task_idx]->destination.server), data);
-    }
-    else {
-      // It's a chunk, this should be the filename with chunk id
-      map_client->get(DATASPACE_DB, tsk[task_idx]->source.filename,
-		      std::to_string(tsk[task_idx]->destination.server), data);
-    }
-#ifdef TIMERDM
-    std::stringstream stream;
-    stream << "posix_client::write()::get_data," << std::fixed
-	   << std::setprecision(10) << t0.pauseTime() << "\n";
-    std::cout << stream.str();
-#endif
-    // std::string file_path;
-    char *filepath = (strncmp(tsk[task_idx]->destination.filename, "dtio://", 7) == 0) ? (tsk[task_idx]->destination.filename + 7) : tsk[task_idx]->destination.filename ;
-    int fd;
-    if (temp_fd == -1) {
-      fd = open64(filepath, O_RDWR | O_CREAT, 0664); // "w+"
-      temp_fd = fd;
-    }
-    else {
-      fd = temp_fd;
-    }
-    if (fd < 0) {
-      std::cerr << "File " << filepath << " didn't open" << std::endl;
-    }
-    lseek64(fd, tsk[task_idx]->destination.offset, SEEK_SET);
-    auto count = write(fd, data, tsk[task_idx]->destination.size);
-    if (count != tsk[task_idx]->destination.size)
-      std::cerr << "written less" << count << "\n";
-    // free(data);
-    // close(fd);
-  }
-#else
-  {
-    char *data = (char *)malloc(MAX_IO_UNIT);
-    if (!chunk_avail) {
-      map_client->get(DATASPACE_DB, tsk[task_idx]->destination.filename,
-		      std::to_string(tsk[task_idx]->destination.server), data);
-    }
-    else {
-      // It's a chunk, this should be the filename with chunk id
-      map_client->get(DATASPACE_DB, tsk[task_idx]->source.filename,
-		      std::to_string(tsk[task_idx]->destination.server), data);
-    }
-#ifdef TIMERDM
-    std::stringstream stream;
-    stream << "posix_client::write()::get_data," << std::fixed
-	   << std::setprecision(10) << t0.pauseTime() << "\n";
-    std::cout << stream.str();
-#endif
-    // std::string file_path;
-    char *filepath = (strncmp(tsk[task_idx]->destination.filename, "dtio://", 7) == 0) ? (tsk[task_idx]->destination.filename + 7) : tsk[task_idx]->destination.filename ;
-    int fd;
-    if (temp_fd == -1) {
-      fd = open64(filepath, O_RDWR | O_CREAT, 0664); // "w+"
-      temp_fd = fd;
-    }
-    else {
-      fd = temp_fd;
-    }
-    if (fd < 0) {
-      std::cerr << "File " << filepath << " didn't open" << std::endl;
-    }
-    lseek64(fd, tsk[task_idx]->destination.offset, SEEK_SET);
-    auto count = write(fd, data, tsk[task_idx]->destination.size);
-    if (count != tsk[task_idx]->destination.size)
-      std::cerr << "written less" << count << "\n";
-    free(data);
-    // close(fd);
-  }
-#endif
-//   if (chunk_meta1.destination.location == location_type::CACHE) {
-//     /*
-//      * New I/O
-//      */
-//     auto file_id = static_cast<int64_t>(
-//         std::chrono::duration_cast<std::chrono::microseconds>(
-//             std::chrono::system_clock::now().time_since_epoch())
-//             .count());
-//     file_path = dir + std::to_string(file_id);
-// #ifdef DEBUG
-//     std::cout << strlen(data) << " chunk index:" << chunk_index
-//               << " dataspaceId:" << tsk[task_idx]->destination.filename
-//               << " created filename:" << file_path
-//               << " clientId: " << tsk[task_idx]->destination.server << "\n";
-// #endif
-//     int fd = open64(file_path.c_str(), O_RDWR | O_CREAT); // "w+"
-//     auto count = write(fd, data, tsk[task_idx]->destination.size);
-//     if (count != tsk[task_idx]->destination.size)
-//       std::cerr << "written less" << count << "\n";
-//     close(fd);
-//   } else {
-//     /*cd
-//      * existing I/O
-//      */
-// #ifdef DEBUG
-//     std::cout << "update file  " << strlen(data)
-//               << " chunk index:" << chunk_index
-//               << " dataspaceId:" << tsk[task_idx]->destination.filename
-//               << " clientId: " << tsk[task_idx]->destination.server << "\n";
-// #endif
-
-//     file_path = chunk_meta1.destination.filename;
-//     int fd = open64(chunk_meta1.destination.filename, O_RDWR | O_CREAT); // "r+"
-//     lseek64(fd, tsk[task_idx]->source.offset - base_offset, SEEK_SET);
-//     write(fd, data, tsk[task_idx]->source.size);
-//     close(fd);
-//   }
-// chunk_meta1.actual_user_chunk = tsk[task_idx]->source;
-// chunk_meta1.destination.location = BUFFERS;
-// strncpy(chunk_meta1.destination.filename, file_path.c_str(), DTIO_FILENAME_MAX);
-// chunk_meta1.destination.offset = 0;
-// chunk_meta1.destination.size = tsk[task_idx]->destination.size;
-// chunk_meta1.destination.worker = worker_index;
-// #ifdef TIMERMDM
-//   hcl::Timer t1 = hcl::Timer();
-//   t1.resumeTime();
-// #endif
-// map_client->put(table::CHUNK_DB,
-//                 tsk[task_idx]->source.filename +
-// 		  std::to_string(chunk_index * MAX_IO_UNIT),
-//                 &chunk_meta1, std::to_string(-1));
-
-//    map_client->remove(DATASPACE_DB,task.destination.filename,
-//    std::to_string(task.destination.server));
-// #ifdef TIMERMDM
-//   std::cout << "posix_client::write()::update_meta," << t1.pauseTime() << "\n";
-// #endif
-  // NOTE Removing this makes I/O asynchronous by default
-  map_server->put(table::WRITE_FINISHED_DB, std::to_string(tsk[task_idx]->task_id),
-                  std::to_string(-1), std::to_string(-1));
-#ifdef TIMERW
-  std::stringstream stream1;
-  stream1 << "posix_client::write()," << std::fixed << std::setprecision(10)
-          << t.pauseTime() << "\n";
-  std::cout << stream1.str();
-#endif
-  }
-  return 0;
-}
-
 int
 dtio::posix::open (const char *filename, int flags)
 {
+	printf("dtio posix open\n");
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
   bool file_exists_in_fs = false;
   bool publish_task = false;
+
   if (!mdm->is_created (filename))
     {
       if (!(flags & O_CREAT))
@@ -290,6 +116,7 @@ dtio::posix::open (const char *filename, int flags)
 int
 dtio::posix::open (const char *filename, int flags, mode_t mode)
 {
+	printf("dtio posix open 2\n");
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
   bool file_exists_in_fs = false;
@@ -358,6 +185,7 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
 int
 dtio::posix::open64 (const char *filename, int flags)
 {
+	printf("dtio posix open64\n");
   DTIO_LOG_DEBUG ("[POSIX] Open64 filename " << filename);
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
@@ -417,20 +245,22 @@ dtio::posix::open64 (const char *filename, int flags)
           return -1;
         }
     }
-  if (publish_task && ConfigManager::get_instance()->WORKER_STAGING_SIZE != 0) {
-    // Publish staging task
-    auto f = file (std::string (filename), 0, 0);
-    auto s_task = task (task_type::STAGING_TASK, f);
-    auto client_queue
-      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
-    client_queue->publish_task (&s_task);
-  }
+  // TODO switch with prefetching task
+  // if (publish_task && ConfigManager::get_instance()->WORKER_STAGING_SIZE != 0) {
+  //   // Publish staging task
+  //   auto f = file (std::string (filename), 0, 0);
+  //   auto s_task = task (task_type::STAGING_TASK, f);
+  //   auto client_queue
+  //     = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
+  //   client_queue->publish_task (&s_task);
+  // }
   return fd;
 }
 
 int
 dtio::posix::open64 (const char *filename, int flags, mode_t mode)
 {
+	printf("dtio posix open64 2\n");
   DTIO_LOG_DEBUG ("[POSIX] Open64 filename " << filename);
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
@@ -742,76 +572,10 @@ dtio::posix::lseek64 (int fd, off_t offset, int whence)
                               static_cast<size_t> (whence));
 }
 
-std::size_t
-read_wait (void *ptr, std::vector<task> &tasks, std::string filename)
-{
-  auto mdm = metadata_manager::getInstance (LIB);
-  auto data_m = data_manager::getInstance (LIB);
-  int ptr_pos = 0;
-  std::size_t size_read = 0;
-  for (auto task : tasks)
-    {
-      std::string data;
-      switch (task.source.location)
-        {
-        case PFS:
-          {
-            std::cerr << "wait in pfs\n";
-          }
-        case BUFFERS:
-          {
-            // std::cerr<<"wait in buffers\n";
-            hcl::Timer wait_timer = hcl::Timer ();
-            int count = 0;
-            while (!data_m->exists (DATASPACE_DB, task.destination.filename,
-                                    std::to_string (task.destination.server)))
-              {
-                wait_timer.pauseTime ();
-                if (wait_timer.getElapsedTime () > 5 && count % 1000000 == 0)
-                  {
-                    int rank;
-                    MPI_Comm_rank (MPI_COMM_WORLD, &rank);
-                    std::stringstream stream;
-                    stream << "Waiting for task more than 5 seconds rank:"
-                           << rank
-                           << "dataspace_id:" << task.destination.filename;
-                    count++;
-                  }
-                wait_timer.resumeTime ();
-              }
-            data = data_m->get (DATASPACE_DB, task.destination.filename,
-                                std::to_string (task.destination.server));
-
-            data_m->remove (DATASPACE_DB, task.destination.filename,
-                            std::to_string (task.destination.server));
-            memcpy (ptr + ptr_pos, data.c_str () + task.destination.offset,
-                    task.destination.size);
-            size_read += task.destination.size;
-            break;
-          }
-        case CACHE:
-          {
-            std::cerr << "wait in cache\n";
-            data = data_m->get (DATASPACE_DB, task.source.filename,
-                                std::to_string (task.destination.server));
-            memcpy (ptr + ptr_pos, data.c_str () + task.source.offset,
-                    task.source.size);
-            size_read += task.source.size;
-            break;
-          }
-        }
-      ptr_pos += task.destination.size;
-    }
-  // mdm->update_read_task_info (tasks, filename);
-  return size_read;
-}
-
 ssize_t
 dtio::posix::read (int fd, void *buf, size_t count)
 {
   auto mdm = metadata_manager::getInstance (LIB);
-  auto client_queue
-      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
   auto task_m = dtio_system::getInstance(LIB)->task_composer();
   auto data_m = data_manager::getInstance (LIB);
 
@@ -823,7 +587,7 @@ dtio::posix::read (int fd, void *buf, size_t count)
   task_i = nullptr;
 
   CHIMAERA_CLIENT_INIT();
-  chi::dtio::Client client;
+  chi::dtiomod::Client client;
   client.Create(
 		HSHM_MCTX,
 		chi::DomainQuery::GetDirectHash(chi::SubDomainId::kGlobalContainers, 0),
@@ -835,11 +599,11 @@ dtio::posix::read (int fd, void *buf, size_t count)
     CHI_CLIENT->AllocateBuffer(HSHM_MCTX, data_size);
   hipc::FullPtr<char> filename_fptr =
     CHI_CLIENT->AllocateBuffer(HSHM_MCTX, DTIO_FILENAME_MAX);
-  char *filename_ptr = filename.ptr_;
-  sprintf(filename_ptr, filename);
+  char *filename_ptr = filename_fptr.ptr_;
+  sprintf(filename_ptr, filename.c_str());
   char *data_ptr = orig_data.ptr_;
-  client.Read(HSHM_MCTX, chi::DomainQuery::GetLocalHash(0), orig_data.shm_,
-	       data_size, data_offset, filename_fptr.shm_, DTIO_FILENAME_MAX);
+  client.Read(HSHM_MCTX, orig_data.shm_,
+	      data_size, data_offset, filename_fptr.shm_, DTIO_FILENAME_MAX, io_client_type::POSIX);
 
   memcpy((char *)buf, data_ptr, count);
 
@@ -877,68 +641,33 @@ dtio::posix::read (int fd, void *buf, size_t count)
   return count;
 }
 
-size_t
-dtio::posix::write_wait (std::vector<task *> tasks)
-{
-  size_t total_size_written = 0;
-  auto map_client = dtio_system::getInstance (LIB)->map_client ();
-  auto map_server = dtio_system::getInstance (LIB)->map_server ();
-  for (auto task : tasks)
-    {
-      int count = 0;
-      hcl::Timer wait_timer = hcl::Timer ();
-
-      while (!map_server->exists (table::WRITE_FINISHED_DB,
-                                  task->destination.filename,
-                                  std::to_string (-1)))
-        {
-          wait_timer.pauseTime ();
-          if (wait_timer.getElapsedTime () > 5 && count % 10000 == 0)
-            {
-              int rank;
-              MPI_Comm_rank (MPI_COMM_WORLD, &rank);
-              std::stringstream stream;
-              stream << "Waiting for task more than 5 seconds rank:" << rank
-                     << "dataspace_id:" << task->destination.filename;
-              count++;
-            }
-          wait_timer.resumeTime ();
-        }
-      map_server->remove (table::WRITE_FINISHED_DB, task->destination.filename,
-                          std::to_string (-1));
-      map_client->remove (table::DATASPACE_DB, task->destination.filename,
-                          std::to_string (task->destination.server));
-      total_size_written += task->destination.size;
-      delete (task);
-    }
-  return total_size_written;
-}
-
 ssize_t
 dtio::posix::write (int fd, const void *buf, size_t count)
 {
-  // hcl::Timer t = hcl::Timer ();
-  // t.resumeTime ();
   DTIO_LOG_DEBUG ("[POSIX] Write Entered");
+  printf("DTIO Posix Write entered\n");
   auto mdm = metadata_manager::getInstance (LIB);
-  auto client_queue
-      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
-  auto map_client = dtio_system::getInstance (LIB)->map_client ();
-  auto map_server = dtio_system::getInstance (LIB)->map_server ();
+  printf("Mdm\n");
   auto task_m = dtio_system::getInstance(LIB)->task_composer();
+  printf("task comp\n");
   auto data_m = data_manager::getInstance (LIB);
+  printf("data manager\n");
   auto filename = mdm->get_filename (fd);
+  printf("filename\n");
   if (!mdm->is_opened (filename))
     throw std::runtime_error ("dtio::write() file not opened!");
+  printf("get stat\n");
   file_stat st = mdm->get_stat(filename);
+  printf("fp\n");
   auto offset = st.file_pointer;
   auto source = file();
   source.offset = 0; // buffer offset, NOT file offset
   source.size = count;
+  printf("dest\n");
   auto destination = file(filename, offset, count);
-
+  printf("Doing the write now\n");
   CHIMAERA_CLIENT_INIT();
-  chi::dtio::Client client;
+  chi::dtiomod::Client client;
   client.Create(
 		HSHM_MCTX,
 		chi::DomainQuery::GetDirectHash(chi::SubDomainId::kGlobalContainers, 0),
@@ -950,12 +679,13 @@ dtio::posix::write (int fd, const void *buf, size_t count)
     CHI_CLIENT->AllocateBuffer(HSHM_MCTX, data_size);
   hipc::FullPtr<char> filename_fptr =
     CHI_CLIENT->AllocateBuffer(HSHM_MCTX, DTIO_FILENAME_MAX);
-  char *filename_ptr = filename.ptr_;
-  sprintf(filename_ptr, filename);
+  char *filename_ptr = filename_fptr.ptr_;
+  sprintf(filename_ptr, filename.c_str());
   char *data_ptr = orig_data.ptr_;
   memcpy(data_ptr, (const char *)buf, count);
-  client.Write(HSHM_MCTX, chi::DomainQuery::GetLocalHash(0), orig_data.shm_,
-	       data_size, data_offset, filename_fptr.shm_, DTIO_FILENAME_MAX);
+
+  client.Write(HSHM_MCTX, orig_data.shm_,
+	       data_size, data_offset, filename_fptr.shm_, DTIO_FILENAME_MAX, io_client_type::POSIX);
 
   // auto w_task
   //     = task (task_type::WRITE_TASK, source, destination);

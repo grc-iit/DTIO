@@ -48,8 +48,6 @@ int main(int argc, char **argv) {
   for (i = 0; i < bigger_write; i++) {
     write_buf[i] = (char)(65 + random() % 57); // Just a random char
   }
-  hcl::Timer timer = hcl::Timer();
-  timer.resumeTime();
   std::cerr << "This is a simple WRITE test.\n";
 
   // open/create file
@@ -72,9 +70,6 @@ int main(int argc, char **argv) {
   std::cerr << "Written to: " << argv[1] << "\n";
 
   close(fd);
-  timer.pauseTime();
-  auto time = timer.getElapsedTime();
-  std::cerr << "Time elapsed: " << time << " seconds.\n";
 
   MPI_Finalize();
 }

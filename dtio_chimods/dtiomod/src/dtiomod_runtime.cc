@@ -10,12 +10,12 @@
  * have access to the file, you may request a copy from help@hdfgroup.org.   *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "dtio/dtio_client.h"
+#include "dtiomod/dtiomod_client.h"
 #include "chimaera/api/chimaera_runtime.h"
 #include "chimaera/monitor/monitor.h"
 #include "chimaera_admin/chimaera_admin_client.h"
 
-namespace chi::dtio {
+namespace chi::dtiomod {
 
 class Server : public Module {
  public:
@@ -23,13 +23,15 @@ class Server : public Module {
 
  public:
   std::unordered_map<std::string, std::string> metamap;
+  size_t schedule_num;
 
   Server() = default;
 
   CHI_BEGIN(Create)
-  /** Construct dtio */
+  /** Construct dtiomod */
   void Create(CreateTask *task, RunContext &rctx) {
     // Create a set of lanes for holding tasks
+    schedule_num = 0;
     CreateLaneGroup(kDefaultGroup, 1, QUEUE_LOW_LATENCY);
   }
   void MonitorCreate(MonitorModeId mode, CreateTask *task, RunContext &rctx) {}
@@ -44,7 +46,7 @@ class Server : public Module {
   }
 
   CHI_BEGIN(Destroy)
-  /** Destroy dtio */
+  /** Destroy dtiomod */
   void Destroy(DestroyTask *task, RunContext &rctx) {}
   void MonitorDestroy(MonitorModeId mode, DestroyTask *task, RunContext &rctx) {
   }
@@ -52,7 +54,8 @@ class Server : public Module {
 
   CHI_BEGIN(Write)
   void Write(WriteTask *task, RunContext &rctx) {
-    // So, we should have multiple clients and pass to the appropriate one based off of a DTIO configuration.
+	printf("DTIO chimod write\n");
+    // So, we should have multiple clients and pass to the appropriate one based off of a DTIOMOD configuration.
     // For now, let's simply assume POSIX. Add more later.
 
     hipc::FullPtr data_full(task->data_);
@@ -118,7 +121,7 @@ class Server : public Module {
 CHI_BEGIN(Read)
   /** The Read method */
   void Read(ReadTask *task, RunContext &rctx) {
-    // So, we should have multiple clients and pass to the appropriate one based off of a DTIO configuration.
+    // So, we should have multiple clients and pass to the appropriate one based off of a DTIOMOD configuration.
     // For now, let's simply assume POSIX. Add more later.
 
     hipc::FullPtr data_full(task->data_);
@@ -195,22 +198,37 @@ CHI_BEGIN(Prefetch)
   }
   CHI_END(Prefetch)
 
+template <typename TaskT>
+  void IoRoute(TaskT *task) {
+    // Concretize the domain to map the task
+    task->dom_query_ = chi::DomainQuery::GetDirectHash(
+						       chi::SubDomainId::kGlobalContainers, 0);
+    task->SetDirect();
+    task->UnsetRouted();
+  }
+
 CHI_BEGIN(MetaPut)
   /** The MetaPut method */
   void MetaPut(MetaPutTask *task, RunContext &rctx) {
     hipc::FullPtr key_full(task->key_);
     char *key_ = (char *)(key_full.ptr_);
 
+
     hipc::FullPtr val_full(task->val_);
     char *val_ = (char *)(val_full.ptr_);
 
-    metamap.put(std::string(key_), std::string(val_));
+    metamap[std::string(key_)] = std::string(val_, task->vallen_);
+    printf("Metaput runtime put done\n");
   }
   void MonitorMetaPut(MonitorModeId mode, MetaPutTask *task, RunContext &rctx) {
     switch (mode) {
       case MonitorMode::kReplicaAgg: {
         std::vector<FullPtr<Task>> &replicas = *rctx.replicas_;
       }
+    case MonitorMode::kSchedule: {
+      IoRoute<MetaPutTask>(task);
+      return;
+    }
     }
   }
   CHI_END(MetaPut)
@@ -218,20 +236,54 @@ CHI_BEGIN(MetaPut)
 CHI_BEGIN(MetaGet)
   /** The MetaGet method */
   void MetaGet(MetaGetTask *task, RunContext &rctx) {
+    hipc::FullPtr key_full(task->key_);
+    char *key_ = (char *)(key_full.ptr_);
+
+    hipc::FullPtr val_full(task->val_);
+    char *val_ = (char *)(val_full.ptr_);
+
+    task->presence_ = (metamap.find(std::string(key_)) != metamap.end());
+
+    if (!task->presence_) {
+      std::cout << "DTIOMOD key not found" << std::endl;
+      return;
+    }
+
+    std::cout << "DTIOMOD key found" << std::endl;
+    val_ = strdup(metamap[std::string(key_)].c_str());
+    task->vallen_ = strlen(val_);
   }
   void MonitorMetaGet(MonitorModeId mode, MetaGetTask *task, RunContext &rctx) {
     switch (mode) {
       case MonitorMode::kReplicaAgg: {
         std::vector<FullPtr<Task>> &replicas = *rctx.replicas_;
       }
+    case MonitorMode::kSchedule: {
+      IoRoute<MetaGetTask>(task);
+      return;
+    }
     }
   }
   CHI_END(MetaGet)
+
+CHI_BEGIN(Schedule)
+  /** The Schedule method */
+  void Schedule(ScheduleTask *task, RunContext &rctx) {
+    task->schedule_num_ = schedule_num++;
+  }
+  void MonitorSchedule(MonitorModeId mode, ScheduleTask *task, RunContext &rctx) {
+    switch (mode) {
+      case MonitorMode::kReplicaAgg: {
+        std::vector<FullPtr<Task>> &replicas = *rctx.replicas_;
+      }
+    }
+  }
+  CHI_END(Schedule)
   CHI_AUTOGEN_METHODS  // keep at class bottom
       public:
-#include "dtio/dtio_lib_exec.h"
+#include "dtiomod/dtiomod_lib_exec.h"
 };
 
 }  // namespace chi::dtio
 
-CHI_TASK_CC(chi::dtio::Server, "dtio");
+CHI_TASK_CC(chi::dtiomod::Server, "dtiomod");

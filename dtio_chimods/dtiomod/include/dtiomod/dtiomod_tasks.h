@@ -2,42 +2,42 @@
 // Created by lukemartinlogan on 8/11/23.
 //
 
-#ifndef CHI_TASKS_TASK_TEMPL_INCLUDE_dtio_dtio_TASKS_H_
-#define CHI_TASKS_TASK_TEMPL_INCLUDE_dtio_dtio_TASKS_H_
+#ifndef CHI_TASKS_TASK_TEMPL_INCLUDE_dtiomod_dtiomod_TASKS_H_
+#define CHI_TASKS_TASK_TEMPL_INCLUDE_dtiomod_dtiomod_TASKS_H_
 
 #include "chimaera/chimaera_namespace.h"
 #include "enumerations.h"
 
-namespace chi::dtio {
+namespace chi::dtiomod {
 
-#include "dtio_methods.h"
+#include "dtiomod_methods.h"
 CHI_NAMESPACE_INIT
 
 CHI_BEGIN(Create)
-/** A task to create dtio */
+/** A task to create dtiomod */
 struct CreateTaskParams {
-  CLS_CONST char *lib_name_ = "example_dtio";
-  int dtio_id_;
+  CLS_CONST char *lib_name_ = "example_dtiomod";
+  int dtiomod_id_;
 
   HSHM_INLINE_CROSS_FUN
   CreateTaskParams() = default;
 
   HSHM_INLINE_CROSS_FUN
   CreateTaskParams(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc,
-		  int dtio_id = 0) {
-	  dtio_id_ = dtio_id;
+		  int dtiomod_id = 0) {
+	  dtiomod_id_ = dtiomod_id;
   }
 
   template <typename Ar>
   HSHM_INLINE_CROSS_FUN void serialize(Ar &ar) {
-    ar(dtio_id_);
+    ar(dtiomod_id_);
   }
 };
 typedef chi::Admin::CreatePoolBaseTask<CreateTaskParams> CreateTask;
 CHI_END(Create)
 
 CHI_BEGIN(Destroy)
-/** A task to destroy dtio */
+/** A task to destroy dtiomod */
 typedef chi::Admin::DestroyContainerTask DestroyTask;
 CHI_END(Destroy)
 
@@ -274,6 +274,8 @@ struct MetaGetTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN hipc::Pointer key_;
   IN size_t keylen_;
   OUT hipc::Pointer val_;
+  OUT size_t vallen_;
+  OUT bool presence_;
 
   /** SHM default constructor */
   HSHM_INLINE explicit
@@ -285,8 +287,7 @@ struct MetaGetTask : public Task, TaskFlags<TF_SRL_SYM> {
                 const TaskNode &task_node,
                 const PoolId &pool_id,
 	      const DomainQuery &dom_query,
-	      hipc::Pointer key, size_t keylen,
-	      hipc::Pointer val) : Task(alloc) {
+	      hipc::Pointer key, size_t keylen) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     prio_ = TaskPrioOpt::kLowLatency;
@@ -298,13 +299,13 @@ struct MetaGetTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Custom
     key_ = key;
     keylen_ = keylen;
-    val_ = val;
   }
 
   /** Duplicate message */
   void CopyStart(const MetaGetTask &other, bool deep) {
     key_ = other.key_;
     keylen_ = other.keylen_;
+    presence_ = other.presence_;
     if (!deep) {
       UnsetDataOwner();
     }
@@ -319,12 +320,58 @@ struct MetaGetTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(Ar &ar) {
+    ar.bulk(DT_WRITE, val_, vallen_);
+    ar(presence_);
   }
 };
 CHI_END(MetaGet);
 
+CHI_BEGIN(Schedule)
+/** The ScheduleTask task */
+struct ScheduleTask : public Task, TaskFlags<TF_SRL_SYM> {
+  OUT size_t schedule_num_;
+
+  /** SHM default constructor */
+  HSHM_INLINE explicit
+  ScheduleTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_INLINE explicit
+  ScheduleTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc,
+                const TaskNode &task_node,
+                const PoolId &pool_id,
+	       const DomainQuery &dom_query) : Task(alloc) {
+    // Initialize task
+    task_node_ = task_node;
+    prio_ = TaskPrioOpt::kLowLatency;
+    pool_ = pool_id;
+    method_ = Method::kSchedule;
+    task_flags_.SetBits(0);
+    dom_query_ = dom_query;
+
+    // Custom
+  }
+
+  /** Duplicate message */
+  void CopyStart(const ScheduleTask &other, bool deep) {
+    schedule_num_ = other.schedule_num_;
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(schedule_num_);
+  }
+};
+CHI_END(Schedule);
+
 CHI_AUTOGEN_METHODS  // keep at class bottom
 
-}  // namespace chi::dtio
+}  // namespace chi::dtiomod
 
-#endif  // CHI_TASKS_TASK_TEMPL_INCLUDE_dtio_dtio_TASKS_H_
+#endif  // CHI_TASKS_TASK_TEMPL_INCLUDE_dtiomod_dtiomod_TASKS_H_

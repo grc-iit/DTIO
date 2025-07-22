@@ -25,6 +25,7 @@
 #define DTIO_MAIN_STRUCTURE_H
 
 // #include <hcl/common/macros.h>
+#include <cereal/types/array.hpp>
 #include <cereal/types/common.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/string.hpp>
@@ -39,13 +40,12 @@
 #define HCL_COMMUNICATION_ENABLE_THALLIUM 1
 #endif
 
-#include <hcl.h>
-// #include <hcl/common/data_structures.h>
 // #include <rpc/client.h>
 // #include <rpc/rpc_error.h>
 // #include <rpc/server.h>
 
 #include <string.h>
+#include <regex>
 
 // This exists so that we can make the buffer larger
 typedef struct DTIOCharStruct {
@@ -153,61 +153,6 @@ struct hash<DTIOCharStruct> {
 };
 }  // namespace std
 
-struct HCLKeyType
-{
-  size_t a;
-  HCLKeyType () : a (0) {}
-  HCLKeyType (size_t a_) : a (a_) {}
-  HCLKeyType (std::string a_) : a (std::hash<std::string>()(a_)) {}
-  // MSGPACK_DEFINE (a);
-  bool
-  operator== (const HCLKeyType &o) const
-  {
-    return a == o.a;
-  }
-  HCLKeyType &
-  operator= (const HCLKeyType &other)
-  {
-    a = other.a;
-    return *this;
-  }
-  bool
-  operator< (const HCLKeyType &o) const
-  {
-    return a < o.a;
-  }
-  bool
-  operator> (const HCLKeyType &o) const
-  {
-    return a > o.a;
-  }
-  bool
-  Contains (const HCLKeyType &o) const
-  {
-    return a == o.a;
-  }
-};
-namespace std
-{
-template <> struct hash<HCLKeyType>
-{
-  size_t
-  operator() (const HCLKeyType &k) const
-  {
-    // return 0;
-    return k.a;
-  }
-};
-}
-
-template <typename A>
-void serialize(A &ar, HCLKeyType &a) {
-  ar &a.a;
-}
-
-typedef boost::interprocess::allocator<char, boost::interprocess::managed_mapped_file::segment_manager> CharAllocator;
-typedef bip::basic_string<char, std::char_traits<char>, CharAllocator> MappedUnitString;
-
 // typedef boost::interprocess::allocator<char, boost::interprocess::managed_mapped_file::segment_manager> CharAllocator;
 // typedef bip::basic_string<char, std::char_traits<char>, CharAllocator> MappedUnitString;
 
@@ -257,6 +202,48 @@ struct file
   file () : location (CACHE), filename (""), offset (0), size (0), worker(-1), server(-1) {}
 
   // MSGPACK_DEFINE(location, filename, offset, size, worker, server);
+  // std::ostream& operator<<(std::ostream& os, file const& arg)
+  // {
+  //   os << "location = " << arg.location << ", filename = " <<
+  //   arg.filename << ", offset = " << arg.offset << ", size = " <<
+  //   arg.size << ", worker = " << arg.worker << ", server = " <<
+  //   arg.server;
+  //   return os;
+  // }
+
+  // file from_string(const std::string& str) {
+  //   std::regex pattern(R"(location = (\d+), filename = ([^,]+), )"
+  //                     R"(offset = (-?\d+), size = (\d+), )"
+  //                     R"(worker = (-?\d+), server = (-?\d+))");
+    
+  //   std::smatch matches;
+  //   file result;
+
+  //   if (std::regex_search(str, matches, pattern)) {
+  //       // Parse location
+  //       result.location = static_cast<location_type>(std::stoi(matches[1].str()));
+        
+  //       // Parse filename (with safety check for buffer size)
+  //       std::strncpy(result.filename, matches[2].str().c_str(), 
+  //                   DTIO_FILENAME_MAX - 1);
+  //       result.filename[DTIO_FILENAME_MAX - 1] = '\0';  // Ensure null termination
+        
+  //       // Parse remaining numeric fields
+  //       result.offset = std::stoll(matches[3].str());
+  //       result.size = std::stoull(matches[4].str());
+  //       result.worker = std::stoi(matches[5].str());
+  //       result.server = std::stoi(matches[6].str());
+  //   }
+
+  //   return result;
+  // }
+
+  // std::string to_string(file const& arg)
+  // {
+  //   std::ostringstream ss;
+  //   ss << arg;
+  //   return std::move(ss).str();  // enable efficiencies in c++17
+  // }
 
   ~file () {}
 
@@ -366,7 +353,46 @@ struct chunk_meta
     destination = other.destination;
     return *this;
   }
- 
+
+  // std::ostream& operator<<(std::ostream& os, chunk_meta const& arg)
+  // {
+  //   os << "actual_user_chunk = { " << arg.actual_user_chunk << " }, destination = { " << arg.destination << " }";
+  //   return os;
+  // }
+
+  // chunk_meta from_string(const std::string& str) {
+  //   chunk_meta result;
+    
+  //   // Regex pattern that matches the outer structure and captures the inner contents
+  //   std::regex pattern(R"(actual_user_chunk = \{ (.*?) \}, destination = \{ (.*?) \})");
+    
+  //   std::smatch matches;
+  //   if (std::regex_search(str, matches, pattern)) {
+  //       // Extract the inner strings for each file struct
+  //       std::string actual_user_chunk_str = matches[1].str();
+  //       std::string destination_str = matches[2].str();
+        
+  //       // Use the previously defined parse_file_regex function to parse each file struct
+  //       result.actual_user_chunk = result.actual_user_chunk.from_string(actual_user_chunk_str);
+  //       result.destination = result.destination.from_string(destination_str);
+  //   } else {
+  //       throw std::invalid_argument("Invalid chunk_meta string format");
+  //   }
+    
+  //   return result;
+  // }
+
+  // chunk_meta(const std::string& str) {
+  //   *this = from_string(str);
+  // }
+
+  // std::string to_string(chunk_meta const& arg)
+  // {
+  //   std::ostringstream ss;
+  //   ss << arg;
+  //   return std::move(ss).str();  // enable efficiencies in c++17
+  // }
+
   // serialization
   template <class Archive>
   void
@@ -477,6 +503,69 @@ struct file_meta
     return *this;
   }
 
+  // std::ostream& operator<<(std::ostream& os, file_meta const& arg)
+  // {
+  //   os << "file_struct = { " << arg.file_struct << " }, chunks = [ ";
+  //   for (int i = 0; i < CHUNK_LIMIT; i++) {
+  //     os << "{ " << arg.chunks[i] << " }, ";
+  //   }
+  //   os << " ], current_chunk_index = " << arg.current_chunk_index << ", num_chunks = " << arg.num_chunks;
+  //   return os;
+  // }
+
+  // file_meta from_string(const std::string& str) {
+  //     file_meta result;
+    
+  //     // First, match the overall structure
+  //     std::regex main_pattern(R"(file_struct = \{ (.*?) \}, chunks = \[ (.*?) \], )"
+  // 			      R"(current_chunk_index = (-?\d+), num_chunks = (-?\d+))");
+    
+  //     std::smatch main_matches;
+  //     if (!std::regex_search(str, main_matches, pattern)) {
+  //       throw std::invalid_argument("Invalid file_meta format");
+  //     }
+
+  //     try {
+  //       // Parse file_struct
+  //       result.file_struct = result.file_struct.from_string(main_matches[1].str());
+        
+  //       // Parse chunks array
+  //       std::string chunks_str = main_matches[2].str();
+        
+  //       // Pattern for individual chunk entries
+  //       std::regex chunk_pattern(R"(\{ (.*?) \})");
+        
+  //       // Iterator for finding all chunks
+  //       std::string::const_iterator searchStart(chunks_str.cbegin());
+  //       std::string::const_iterator searchEnd(chunks_str.cend());
+  //       std::smatch chunk_matches;
+        
+  //       int chunk_index = 0;
+  //       while (std::regex_search(searchStart, searchEnd, chunk_matches, chunk_pattern) 
+  //              && chunk_index < CHUNK_LIMIT) {
+  //           // Parse each chunk_meta
+  //           result.chunks[chunk_index] = result.chunks[0].from_string(chunk_matches[1].str());
+  //           chunk_index++;
+            
+  //           // Move to next chunk
+  //           searchStart = chunk_matches.suffix().first;
+  //       }
+        
+  //       // Parse the remaining simple integers
+  //       result.current_chunk_index = std::stoi(main_matches[3].str());
+  //       result.num_chunks = std::stoi(main_matches[4].str());
+        
+  //     } catch (const std::exception& e) {
+  //       throw std::invalid_argument(std::string("Failed to parse file_meta: ") + e.what());
+  //     }
+    
+  //     return result;
+  // }
+
+  // file_meta(const std::string& str) {
+  //   *this = from_string(str);
+  // }
+
   // serialization
   template <class Archive>
   void
@@ -507,6 +596,50 @@ struct file_stat
   std::string mode;
   bool is_open;
 
+    // Default constructor (required for serialization)
+    file_stat() 
+        : fh(nullptr)
+        , fd(-1)
+        , file_pointer(0)
+        , file_size(0)
+        , flags(0)
+        , posix_mode(0)
+        , mode("")
+        , is_open(false) {}
+
+  file_stat(FILE *fh_, int fd_, std::size_t file_pointer_, std::size_t file_size_,
+	    int flags_, mode_t posix_mode_, std::string mode_, bool is_open_) 
+        : fh(fh_)
+        , fd(fd_)
+        , file_pointer(file_pointer_)
+        , file_size(file_size_)
+        , flags(flags_)
+        , posix_mode(posix_mode_)
+        , mode(mode_)
+        , is_open(is_open_) {}
+
+    // Copy constructor
+    file_stat(const file_stat& other)
+        : fh(other.fh)
+        , fd(other.fd)
+        , file_pointer(other.file_pointer)
+        , file_size(other.file_size)
+        , flags(other.flags)
+        , posix_mode(other.posix_mode)
+        , mode(other.mode)
+        , is_open(other.is_open) {}
+
+    // Move constructor
+    file_stat(file_stat&& other) noexcept
+        : fh(std::exchange(other.fh, nullptr))
+        , fd(std::exchange(other.fd, -1))
+        , file_pointer(std::exchange(other.file_pointer, 0))
+        , file_size(std::exchange(other.file_size, 0))
+        , flags(std::exchange(other.flags, 0))
+        , posix_mode(std::exchange(other.posix_mode, 0))
+        , mode(std::move(other.mode))
+        , is_open(std::exchange(other.is_open, false)) {}
+
   file_stat &
   operator= (const file_stat &other)
   {
@@ -521,6 +654,46 @@ struct file_stat
     return *this;
   }
 
+  // std::ostream& operator<<(std::ostream& os, file_stat const& arg)
+  // {
+  //   os << "fh = " << arg.fh << ", fd = " << arg.fd << ", file_pointer = " << arg.file_pointer <<
+  //     ", file_size = " << arg.file_size << ", flags = " << arg.flags << ", arg.posix_mode = " << arg.posix_mode <<
+  //     ", is_open = " << arg.is_open;
+  //   return os;
+  // }
+
+  // file_stat from_string(const std::string& str) {
+  //   std::regex pattern(R"(fh = (.*?), fd = (\d+), file_pointer = (\d+), )"
+  // 		       R"(file_size = (\d+), flags = (\d+), )"
+  // 		       R"(arg\.posix_mode = (\d+), is_open = (\d+))");
+  //   std::smatch matches;
+  //   if (std::regex_search(str, matches, pattern)) {
+  //     // Convert hex string to pointer for fh
+  //     std::istringstream ss(matches[1].str());
+  //     ss >> std::hex >> result.fh;
+
+  //     result.fd = std::stoi(matches[2].str());
+  //     result.file_pointer = std::stoull(matches[3].str());
+  //     result.file_size = std::stoull(matches[4].str());
+  //     result.flags = std::stoi(matches[5].str());
+  //     result.posix_mode = std::stoi(matches[6].str());
+  //     result.is_open = std::stoi(matches[7].str()) != 0;
+  //   }
+    
+  //   return result;
+  // }
+
+  // file_stat(const std::string& str) {
+  //   *this = from_string(str);
+  // }
+
+  // std::string to_string(file_stat const& arg)
+  // {
+  //   std::ostringstream ss;
+  //   ss << arg;
+  //   return std::move(ss).str();  // enable efficiencies in c++17
+  // }
+
   // MSGPACK_DEFINE(fd, file_pointer, file_size, flags, posix_mode, mode, is_open);
 
   // Serialization
@@ -528,7 +701,9 @@ struct file_stat
   void
   serialize (Archive &archive)
   {
-    archive (this->fd, this->file_pointer, this->file_size, this->flags, this->posix_mode, this->mode, this->is_open);
+    auto fh_ = reinterpret_cast<size_t>(this->fh);
+    archive (fh_, this->fd, this->file_pointer, this->file_size, this->flags, this->posix_mode, this->mode, this->is_open);
+    fh = reinterpret_cast<FILE *>(fh_);
   }
 };
 

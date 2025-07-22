@@ -31,8 +31,8 @@
 #include <dtio/common/config_manager.h>
 #include <dtio/common/constants.h>
 #include <dtio/common/enumerations.h>
-#include <dtio/common/external_clients/hcl_map_impl.h>
-#include <dtio/common/external_clients/hcl_queue_impl.h>
+#include <dtio/common/external_clients/iowarp_map_impl.h>
+// #include <dtio/common/external_clients/hcl_queue_impl.h>
 // #include <dtio/common/external_clients/memcached_impl.h>
 // #include <dtio/common/external_clients/nats_impl.h>
 // #include <dtio/common/external_clients/rocksdb_impl.h>
@@ -56,8 +56,6 @@ private:
       : service_i (service), application_id (), client_comm (), client_rank (),
         rank ()
   {
-    hcl_init = nullptr;
-
     worker_queues = (std::shared_ptr<distributed_queue> *)calloc (
         ConfigManager::get_instance ()->NUM_WORKERS,
         sizeof (std::shared_ptr<distributed_queue>));
@@ -83,7 +81,6 @@ private:
   std::shared_ptr<task_builder> task_builder_;
 
 public:
-  std::shared_ptr<hcl::HCL> hcl_init;
   std::shared_ptr<solver> solver_i;
 
   std::shared_ptr<task_builder>
@@ -175,53 +172,19 @@ public:
   inline std::shared_ptr<distributed_queue>
   get_client_queue (const std::string &subject)
   {
-    DTIO_LOG_INFO ("[DTIO] Getting client queue");
-    if (client_queue == nullptr)
-      {
-        if (service_i == LIB)
-          {
-            // client_queue = std::make_shared<NatsImpl> (
-            //     service_i, ConfigManager::get_instance ()->NATS_URL_CLIENT,
-            //     CLIENT_TASK_SUBJECT, std::to_string (service_i), false);
-            client_queue = std::make_shared<HCLQueueImpl> (
-							   service_i, CLIENT_TASK_SUBJECT, 0, 1, false, hcl_init);
-          }
-        else
-          {
-            // client_queue = std::make_shared<NatsImpl> (
-            //     service_i, ConfigManager::get_instance ()->NATS_URL_CLIENT,
-            //     CLIENT_TASK_SUBJECT, std::to_string (service_i), true);
-            client_queue = std::make_shared<HCLQueueImpl> (
-							   service_i, CLIENT_TASK_SUBJECT, 0, 1, true, hcl_init);
-          }
-      }
-      DTIO_LOG_INFO("[DTIO] RETURNING CLIENT QUEUE");
-    return client_queue;
+    return nullptr; // Currently placeholder, shouldn't be called
   }
   inline std::shared_ptr<distributed_queue>
   get_worker_queue (const int &worker_index)
   {
-    DTIO_LOG_INFO ("[DTIO] Getting worker queue");
-    if (worker_queues[worker_index] == nullptr)
-      {
-        DTIO_LOG_INFO ("[DTIO] ===> Init worker queue");
-        worker_queues[worker_index] = std::make_shared<HCLQueueImpl> (
-								      service_i, std::to_string (worker_index), 0, 1, true, hcl_init);
-        DTIO_LOG_INFO ("[DTIO] ===> DONE Init worker queue");
-      }
-    // worker_queues[worker_index] = std::make_shared<NatsImpl> (
-    //     service_i, ConfigManager::get_instance ()->NATS_URL_SERVER,
-    //     std::to_string (worker_index),
-    //     std::to_string (service_i) + "_" + std::to_string (worker_index),
-    //     true);
-    DTIO_LOG_INFO ("[DTIO] ---> Passing worker queue");
-    return worker_queues[worker_index];
+    return nullptr; // Currently placeholder, shouldn't be called
   }
+
   int build_message_key (MPI_Datatype &message);
   int build_message_file (MPI_Datatype &message_file);
   int build_message_chunk (MPI_Datatype &message_chunk);
 
-  virtual ~dtio_system () { free (worker_queues); hcl_init->Finalize(); };
+  virtual ~dtio_system () { free (worker_queues); };
 };
 
 #endif // DTIO_MAIN_SYSTEM_H

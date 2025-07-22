@@ -48,6 +48,7 @@ dtio::MPI_Init (int *argc, char ***argv)
   /* NOTE: If we're intercepting MPI_Init, we can't assume that
      argv[1] is the DTIO conf path
    */
+  printf("Load config\n");
   ConfigManager::get_instance ()->LoadConfig (); //(*argv)[1]
   std::stringstream ss;
 
@@ -79,7 +80,9 @@ dtio::MPI_Init (int *argc, char ***argv)
   // PMPI_Comm_split (MPI_COMM_WORLD, QUEUE_TASKSCHED_COLOR, rank - 1,
   //                 &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
   // DTIO_LOG_DEBUG ("[MPI] Comm: Queue Taskscheduler");
+  printf("DTIO system get instance\n");
   dtio_system::getInstance (service::LIB);
+  printf("Instance gotten\n");
   DTIO_LOG_DEBUG ("[MPI] Comm: Complete");
   return 0;
 }

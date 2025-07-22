@@ -1,16 +1,16 @@
 # ------------------------------------------------------------------------------
 # Set variables
 # ------------------------------------------------------------------------------
-set(MOD_EXPORTS ${REPO_NAMESPACE}_dtio_exports)
+set(MOD_EXPORTS ${REPO_NAMESPACE}_dtiomod_exports)
 
 # ------------------------------------------------------------------------------
-# Build dtio Task Library
+# Build dtiomod Task Library
 # ------------------------------------------------------------------------------
-add_chimod_runtime_lib(${REPO_NAMESPACE} dtio dtio_runtime.cc)
-add_chimod_client_lib(${REPO_NAMESPACE} dtio dtio_client.cc)
+add_chimod_runtime_lib(${REPO_NAMESPACE} dtiomod dtiomod_runtime.cc)
+add_chimod_client_lib(${REPO_NAMESPACE} dtiomod dtiomod_client.cc)
 
 # ------------------------------------------------------------------------------
-# Install dtio Task Library
+# Install dtiomod Task Library
 # ------------------------------------------------------------------------------
 install(
         TARGETS
@@ -21,12 +21,12 @@ install(
         ARCHIVE DESTINATION ${CHIMAERA_INSTALL_LIB_DIR}
         RUNTIME DESTINATION ${CHIMAERA_INSTALL_BIN_DIR}
 )
-install(FILES dtio_monitor.py
+install(FILES dtiomod_monitor.py
         DESTINATION ${CHIMAERA_INSTALL_LIB_DIR})
 
 # ------------------------------------------------------------------------------
 # Coverage
 # ------------------------------------------------------------------------------
 if(CHIMAERA_ENABLE_COVERAGE)
-        set_coverage_flags(dtio)
+        set_coverage_flags(dtiomod)
 endif()

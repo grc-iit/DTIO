@@ -27,7 +27,6 @@
 
 #include "dtio/common/return_codes.h"
 #include "dtio/common/threadPool.h"
-#include <hcl/common/debug.h>
 #include "dtio/common/utilities.h"
 #include "dtio/drivers/stdio.h"
 #include "dtio/drivers/posix.h"

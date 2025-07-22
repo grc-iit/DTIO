@@ -128,7 +128,7 @@ enum map_impl_type
 {
   ROCKS_DB = 0,
   MEMCACHE_D = 1,
-  HCLMAP = 2
+  IOWARP = 2
 };
 enum queue_impl_type
 {

@@ -13,6 +13,7 @@ kRead: 11
 kPrefetch: 12
 kMetaPut: 13
 kMetaGet: 14
+kSchedule: 15
 
 # NOTE: When you add a new method, 
 # call chi_refresh_mods to update

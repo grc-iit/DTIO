@@ -1,5 +1,5 @@
-#ifndef CHI_DTIO_LIB_EXEC_H_
-#define CHI_DTIO_LIB_EXEC_H_
+#ifndef CHI_DTIOMOD_LIB_EXEC_H_
+#define CHI_DTIOMOD_LIB_EXEC_H_
 
 /** Execute a task */
 void Run(u32 method, Task *task, RunContext &rctx) override {
@@ -30,6 +30,10 @@ void Run(u32 method, Task *task, RunContext &rctx) override {
     }
     case Method::kMetaGet: {
       MetaGet(reinterpret_cast<MetaGetTask *>(task), rctx);
+      break;
+    }
+    case Method::kSchedule: {
+      Schedule(reinterpret_cast<ScheduleTask *>(task), rctx);
       break;
     }
   }
@@ -65,6 +69,10 @@ void Monitor(MonitorModeId mode, MethodId method, Task *task, RunContext &rctx) 
       MonitorMetaGet(mode, reinterpret_cast<MetaGetTask *>(task), rctx);
       break;
     }
+    case Method::kSchedule: {
+      MonitorSchedule(mode, reinterpret_cast<ScheduleTask *>(task), rctx);
+      break;
+    }
   }
 }
 /** Delete a task */
@@ -96,6 +104,10 @@ void Del(const hipc::MemContext &mctx, u32 method, Task *task) override {
     }
     case Method::kMetaGet: {
       CHI_CLIENT->DelTask<MetaGetTask>(mctx, reinterpret_cast<MetaGetTask *>(task));
+      break;
+    }
+    case Method::kSchedule: {
+      CHI_CLIENT->DelTask<ScheduleTask>(mctx, reinterpret_cast<ScheduleTask *>(task));
       break;
     }
   }
@@ -145,6 +157,12 @@ void CopyStart(u32 method, const Task *orig_task, Task *dup_task, bool deep) ove
         reinterpret_cast<MetaGetTask*>(dup_task), deep);
       break;
     }
+    case Method::kSchedule: {
+      chi::CALL_COPY_START(
+        reinterpret_cast<const ScheduleTask*>(orig_task), 
+        reinterpret_cast<ScheduleTask*>(dup_task), deep);
+      break;
+    }
   }
 }
 /** Duplicate a task */
@@ -176,6 +194,10 @@ void NewCopyStart(u32 method, const Task *orig_task, FullPtr<Task> &dup_task, bo
     }
     case Method::kMetaGet: {
       chi::CALL_NEW_COPY_START(reinterpret_cast<const MetaGetTask*>(orig_task), dup_task, deep);
+      break;
+    }
+    case Method::kSchedule: {
+      chi::CALL_NEW_COPY_START(reinterpret_cast<const ScheduleTask*>(orig_task), dup_task, deep);
       break;
     }
   }
@@ -211,6 +233,10 @@ void SaveStart(
     }
     case Method::kMetaGet: {
       ar << *reinterpret_cast<MetaGetTask*>(task);
+      break;
+    }
+    case Method::kSchedule: {
+      ar << *reinterpret_cast<ScheduleTask*>(task);
       break;
     }
   }
@@ -261,6 +287,12 @@ TaskPointer LoadStart(    u32 method, BinaryInputArchive<true> &ar) override {
       ar >> *reinterpret_cast<MetaGetTask*>(task_ptr.ptr_);
       break;
     }
+    case Method::kSchedule: {
+      task_ptr.ptr_ = CHI_CLIENT->NewEmptyTask<ScheduleTask>(
+             HSHM_DEFAULT_MEM_CTX, task_ptr.shm_);
+      ar >> *reinterpret_cast<ScheduleTask*>(task_ptr.ptr_);
+      break;
+    }
   }
   return task_ptr;
 }
@@ -293,6 +325,10 @@ void SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Task *task) override {
     }
     case Method::kMetaGet: {
       ar << *reinterpret_cast<MetaGetTask*>(task);
+      break;
+    }
+    case Method::kSchedule: {
+      ar << *reinterpret_cast<ScheduleTask*>(task);
       break;
     }
   }
@@ -328,7 +364,11 @@ void LoadEnd(u32 method, BinaryInputArchive<false> &ar, Task *task) override {
       ar >> *reinterpret_cast<MetaGetTask*>(task);
       break;
     }
+    case Method::kSchedule: {
+      ar >> *reinterpret_cast<ScheduleTask*>(task);
+      break;
+    }
   }
 }
 
-#endif  // CHI_DTIO_LIB_EXEC_H_
+#endif  // CHI_DTIOMOD_LIB_EXEC_H_

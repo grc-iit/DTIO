@@ -28,8 +28,8 @@ int main(int argc, char **argv) {
   std::cout << "Init" << std::endl;
   dtio::MPI_Init(&argc, &argv);
   std::cout << "Init done" << std::endl;
-  if (argc != 3) {
-    printf("USAGE: ./simple_write [dtio_conf] [filename]\n");
+  if (argc != 2) {
+    printf("USAGE: ./simple_write [filename]\n");
     exit(1);
   }
 
@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
 
   // open/create file
   std::cout << "Open" << std::endl;
-  fd = dtio::posix::open(argv[2], O_RDWR | O_CREAT | O_TRUNC);
+  fd = dtio::posix::open(argv[1], O_RDWR | O_CREAT | O_TRUNC);
   std::cout << "Open done" << std::endl;
   if (fd < 0) {
     std::cerr << "Failed to open/create file. Aborting...\n";
