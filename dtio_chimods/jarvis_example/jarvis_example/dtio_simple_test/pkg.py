@@ -57,7 +57,7 @@ class DtioSimpleTest(Application):
 
         :return: None
         """
-        Exec('LD_PRELOAD=/home/kbateman/DTIO/build/libdtio_posix_interception.so /home/kbateman/DTIO/build/benchmark/dtio_simple_write_posix dtio:///home/kbateman/DTIO/test.txt', LocalExecInfo(env=self.env))
+        Exec('LD_PRELOAD=libdtio_posix_interception.so dtio_simple_write_posix dtio://${HOME}/DTIO/test.txt', LocalExecInfo(env=self.env))
 
     def stop(self):
         """
