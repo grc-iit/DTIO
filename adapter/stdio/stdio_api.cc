@@ -35,7 +35,6 @@ bool stdio_intercepted = true;
 // #include "hermes_types.h"
 #include "interceptor.h"
 #include <dtio/drivers/stdio.h>
-#include <dtio/singleton.h>
 // #include <dtio/drivers/mpi.h>
 
 #include "stdio_api.h"

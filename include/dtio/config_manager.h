@@ -28,7 +28,7 @@
  ******************************************************************************/
 #include <dtio/enumerations.h>
 #include <dtio/logger.h>
-#include <dtio/path_parser.h>
+#include <hermes_shm/util/config_parse.h>
 #include <iostream>
 #include <memory>
 #include <mpi.h>
@@ -136,8 +136,10 @@ public:
     char **words = path_traverse.we_wordv;
     wordfree (&path_traverse);
     ASSIGNMENT_POLICY = config_["ASSIGNMENT_POLICY"].as<std::string> ();
-    WORKER_PATH = scs::path_parser (config_["WORKER_PATH"].as<std::string> ());
-    PFS_PATH = scs::path_parser (config_["PFS_PATH"].as<std::string> ());
+    WORKER_PATH = hshm::ConfigParse::ExpandPath (
+        config_["WORKER_PATH"].as<std::string> ());
+    PFS_PATH = hshm::ConfigParse::ExpandPath (
+        config_["PFS_PATH"].as<std::string> ());
     TS_NUM_WORKER_THREADS = config_["TS_NUM_WORKER_THREADS"].as<int> ();
     NUM_WORKERS = config_["NUM_WORKERS"].as<int> ();
     NUM_SCHEDULERS = config_["NUM_SCHEDULERS"].as<int> ();

@@ -321,7 +321,6 @@ public:
 
 // Singleton macros
 // #include "hermes_shm/util/singleton.h"
-#include <dtio/singleton.h>
 
 #define HERMES_POSIX_API dtio::posix::PosixApi::getInstance ()
 #define HERMES_POSIX_API_T std::shared_ptr<dtio::posix::PosixApi>

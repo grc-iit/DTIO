@@ -169,8 +169,7 @@ public:
 } // namespace dtio::stdio
 
 // Singleton macros
-// #include "hermes_shm/util/singleton.h"
-#include <dtio/singleton.h>
+#include "hermes_shm/util/singleton.h"
 
 #define HERMES_STDIO_API dtio::stdio::StdioApi::getInstance ()
 #define HERMES_STDIO_API_T std::shared_ptr<dtio::stdio::StdioApi>

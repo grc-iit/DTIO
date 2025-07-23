@@ -34,7 +34,6 @@ bool posix_intercepted = true;
 // #include "hermes_types.h"
 #include "interceptor.h"
 #include <dtio/drivers/posix.h>
-#include <dtio/singleton.h>
 // #include <dtio/drivers/mpi.h>
 
 #include "posix_api.h"
