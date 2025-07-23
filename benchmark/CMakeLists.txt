@@ -3,7 +3,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 function(add_bench target)
     add_executable(dtio_${target} src/${target}.cpp)
-    target_link_libraries(dtio_${target} dtio)
+    target_link_libraries(dtio_${target} dtio dtio_posix_interception)
     add_dependencies(dtio_${target} dtio)
     install(TARGETS dtio_${target} DESTINATION ${CMAKE_INSTALL_BINDIR})
 endfunction()

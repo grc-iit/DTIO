@@ -57,7 +57,10 @@ class DtioSimpleTest(Application):
 
         :return: None
         """
-        Exec('dtio_simple_write_posix dtio://${HOME}/DTIO/test.txt', LocalExecInfo(env=self.mod_env))
+        Exec('dtio_simple_write_posix dtio://${HOME}/DTIO/test.txt', 
+             LocalExecInfo(env=self.mod_env,
+                            do_dbg=self.config['do_dbg'],
+                            dbg_port=self.config['dbg_port'],))
 
     def stop(self):
         """

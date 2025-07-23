@@ -5,11 +5,13 @@ pkgs:
     pkg_name: chimaera_run
     sleep: 5
     do_dbg: false
-    dbg_port: 4000
-    port: 6000
+    dbg_port: 4000 
     modules: ['example_dtiomod']
-  - pkg_type: dtio_adapter
-    pkg_name: dtio_adapter
-    posix: true
+    do_dbg: true
+  # - pkg_type: dtio_adapter
+  #   pkg_name: dtio_adapter
+  #   posix: true
   - pkg_type: dtio_simple_test
     pkg_name: dtio_simple_test
+    dbg_port: 4001
+    do_dbg: true
