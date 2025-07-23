@@ -50,6 +50,17 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message("IN DEBUG MODE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0")
+    add_compile_definitions(HERMES_LOG_VERBOSITY=10)
+else()
+    message("IN RELEASE MODE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O3")
+    add_compile_definitions(HERMES_LOG_VERBOSITY=1)
+endif()
 
 # -----------------------------------------------------------------------------
 # Find Packages
