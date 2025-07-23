@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -24,11 +24,6 @@
 
 #ifndef HERMES_ADAPTER_UTILS_H_
 #define HERMES_ADAPTER_UTILS_H_
-
-// #include "dtio.h"
-// #include "adapter/filesystem/filesystem_mdm.h"
-
-// namespace stdfs = std::filesystem;
 
 namespace dtio::adapter
 {

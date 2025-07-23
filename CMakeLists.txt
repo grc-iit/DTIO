@@ -77,16 +77,14 @@ pkg_check_modules(URING REQUIRED liburing)
 include_directories(${URING_INCLUDE_DIRS})
 link_directories(${URING_LIBRARY_DIRS})
 
-if(DEFINED MPI)
+if(DTIO_ENABLE_MPI)
   find_package(MPI REQUIRED)
 endif()
 
-# find_package(brahma REQUIRED)
-# if (${BRAHMA_FOUND})
-#     message(STATUS "[DTIO_INTERCEPTOR] found brahma headers at ${BRAHMA_INCLUDE_DIRS}")
-# else ()
-#     message(FATAL_ERROR "-- [DTIO_INTERCEPTOR] brahma is needed for dtio build")
-# endif ()
+execute_process(
+  COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+  OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_ROOT)
+find_package(nanobind CONFIG REQUIRED)
 
 # ------------------------------------------------------------------------------
 # DTIO Library Functions
@@ -157,23 +155,19 @@ set(LOG_LEVEL 1 CACHE STRING "Set the log level")
 add_compile_definitions(LOG_LEVEL=${LOG_LEVEL})
 
 add_library(dtio SHARED ${DTIO_LIB_SRC}  ${COMMON_SRC})
-
 dtio_set_libs(dtio)
 
+add_subdirectory(benchmark)
+add_subdirectory(adapter/py-bindings)
+add_subdirectory(adapter/stdio)
+add_subdirectory(adapter/vol)
 
-set_target_properties(
-  dtio
-  PROPERTIES VERSION ${PROJECT_VERSION}
-             SOVERSION 1
-             PUBLIC_HEADER include/dtio.h)
+nanobind_add_module(dtiopy src/lib/dtio.cpp ${DTIO_LIB_SRC})
+dtio_set_libs(dtiopy)
 
-set_target_properties(dtio PROPERTIES LINKER_LANGUAGE CXX)
-
-
-target_include_directories(dtio PRIVATE .)
-
-target_link_libraries(dtio PUBLIC ${CMAKE_CXX_LINK_FLAGS})
-
+# ------------------------------------------------------------------------------
+# Install DTIO Library
+# ------------------------------------------------------------------------------
 
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(TARGETS dtio DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -181,32 +175,3 @@ install(
   TARGETS dtio
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-add_subdirectory(benchmark)
-add_subdirectory(adapter/py-bindings)
-add_subdirectory(adapter/stdio)
-#add_subdirectory(adapter)
-# add_subdirectory(hermes_shm)
-
-# Set the DTIO VOL connector name
-set (TVC_NAME dtio_vol_connector)
-
-# Build the template VOL
-add_library (${TVC_NAME} SHARED adapter/vol/H5VLDTIO.cc ${DTIO_LIB_SRC})
-dtio_set_libs(${TVC_NAME})
-add_dependencies(${TVC_NAME} dtio)
-target_link_libraries(${TVC_NAME} PUBLIC dtio)
-set_target_properties(${TVC_NAME} PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(${TVC_NAME} PUBLIC ${CMAKE_CXX_LINK_FLAGS})
-set_target_properties (${TVC_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-set_target_properties (${TVC_NAME} PROPERTIES SOVERSION 1)
-set_target_properties (${TVC_NAME} PROPERTIES PUBLIC_HEADER "${TVC_NAME}.h")
-# add_subdirectory (adapter/vol)
-
-execute_process(
-  COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
-  OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_ROOT)
-find_package(nanobind CONFIG REQUIRED)
-
-nanobind_add_module(dtiopy src/lib/dtio.cpp ${DTIO_LIB_SRC})
-dtio_set_libs(dtiopy)

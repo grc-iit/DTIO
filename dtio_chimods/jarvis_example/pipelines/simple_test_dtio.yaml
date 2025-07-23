@@ -8,5 +8,8 @@ pkgs:
     dbg_port: 4000
     port: 6000
     modules: ['example_dtiomod']
+  - pkg_type: dtio_adapter
+    pkg_name: dtio_adapter
+    posix: true
   - pkg_type: dtio_simple_test
     pkg_name: dtio_simple_test
