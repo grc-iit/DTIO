@@ -1,5 +1,5 @@
 name: simple_test_dtio_pipeline
-env: chimaera
+env: dtio
 pkgs:
   - pkg_type: chimaera_run
     pkg_name: chimaera_run

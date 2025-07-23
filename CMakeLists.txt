@@ -160,6 +160,7 @@ dtio_set_libs(dtio)
 add_subdirectory(benchmark)
 add_subdirectory(adapter/py-bindings)
 add_subdirectory(adapter/stdio)
+add_subdirectory(adapter/posix)
 add_subdirectory(adapter/vol)
 
 nanobind_add_module(dtiopy src/lib/dtio.cpp ${DTIO_LIB_SRC})

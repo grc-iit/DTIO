@@ -6,7 +6,7 @@ from jarvis_cd.basic.pkg import Interceptor
 from jarvis_util import *
 
 
-class DtioApi(Interceptor):
+class DtioAdapter(Interceptor):
     """
     This class provides methods to inject the DTIO interceptors.
     """

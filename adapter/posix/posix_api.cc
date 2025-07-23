@@ -25,9 +25,18 @@
 // Dynamically checked to see which are the real APIs and which are intercepted
 bool posix_intercepted = true;
 
+// Prevent conflicts with system 64-bit function definitions
+#ifndef _LARGEFILE64_SOURCE
+#define _LARGEFILE64_SOURCE 1
+#endif
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include <fcntl.h>
 #include <stdarg.h>
 #include <sys/stat.h>
+#include <unistd.h>
 // #include "hermes_shm/util/logging.h"
 // #include <filesystem>
 
@@ -128,12 +137,6 @@ extern "C"
     *provided = MPI_THREAD_MULTIPLE;
     return dtio::MPI_Init (argc, argv);
   }
-  // void HERMES_DECL(MPI_Finalize)() {
-  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  //   // You shouldn't ever be calling the real version
-
-  //   return dtio::MPI_Finalize();
-  // }
 
   /**
    * POSIX
@@ -294,15 +297,21 @@ extern "C"
   {
     DTIO_LOG_DEBUG_RANKLESS ("Intercepted " << __func__)
     // dtio::posix::creat(path, mode);
+    auto real_api = HERMES_POSIX_API;
+    return real_api->creat (path, mode);
   }
 
   int
-  HERMES_DECL (creat64) (const char *path, mode_t mode){
+  HERMES_DECL (creat64) (const char *path, mode_t mode)
+  {
     DTIO_LOG_DEBUG_RANKLESS ("Intercepted " << __func__)
     // dtio::posix::creat64(path, mode);
+    auto real_api = HERMES_POSIX_API;
+    return real_api->creat64 (path, mode);
   }
 
-  ssize_t HERMES_DECL (read) (int fd, void *buf, size_t count)
+  ssize_t
+  HERMES_DECL (read) (int fd, void *buf, size_t count)
   {
     DTIO_LOG_DEBUG_RANKLESS ("Intercepted " << __func__);
     auto real_api = HERMES_POSIX_API;
@@ -365,35 +374,6 @@ extern "C"
         return real_api->write (fd, buf, count);
       }
   }
-
-  // NOTE: not in DTIO
-  // ssize_t HERMES_DECL(pread)(int fd, void *buf, size_t count, off_t offset)
-  // {
-  //   printf("pread called\n");
-  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-  //   // dtio::posix::pread(fd, buf, count, offset);
-  // }
-
-  // ssize_t HERMES_DECL(pwrite)(int fd, const void *buf, size_t count,
-  // 			    off_t offset) {
-  //   printf("pwrite called\n");
-  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-  //   // dtio::posix::pwrite(fd, buf, count, offset);
-  // }
-
-  // ssize_t HERMES_DECL(pread64)(int fd, void *buf, size_t count, off64_t
-  // offset) {
-  //   printf("pread64 called\n");
-  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-  //   // dtio::posix::pread64(fd, buf, count, offset);
-  // }
-
-  // ssize_t HERMES_DECL(pwrite64)(int fd, const void *buf, size_t count,
-  // 			      off64_t offset) {
-  //   printf("pwrite64 called\n");
-  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-  //   // dtio::posix::pwrite64(fd, buf, count, offset);
-  // }
 
   off_t
   HERMES_DECL (lseek) (int fd, off_t offset, int whence)
@@ -575,33 +555,9 @@ extern "C"
   HERMES_DECL (__lxstat) (int __ver, const char *__filename,
                           struct stat *__stat_buf)
   {
+    auto real_api = HERMES_POSIX_API;
+    return real_api->__lxstat (__ver, __filename, __stat_buf);
   }
-  // NOTE:not in DTIO
-  // int HERMES_DECL(fstat)(int fd, struct stat *buf) {
-  //   printf("fstat called\n");
-  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-  //   auto real_api = HERMES_POSIX_API;
-
-  //   std::string caller_name = "";
-
-  //   if (real_api->fd_whitelistedp(fd)) {
-  //     return dtio::posix::myfstat(fd, buf);
-  //   }
-  //   else if (ConfigManager::get_instance()->NEVER_TRACE) {
-  //     return real_api->fstat(fd, buf);
-  //   }
-
-  //   if (boost::stacktrace::stacktrace().size() > 1) {
-  //     caller_name =
-  //     boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  //   }
-  //   if (real_api->interceptp(caller_name)) {
-  //     return dtio::posix::myfstat(fd, buf);
-  //   }
-  //   else {
-  //     return real_api->fstat(fd, buf);
-  //   }
-  // }
 
   int
   HERMES_DECL (stat) (const char *pathname, struct stat *buf)
@@ -767,33 +723,6 @@ extern "C"
       }
   }
 
-  // NOTE: not in DTIO
-  // int HERMES_DECL(fstat64)(int fd, struct stat64 *buf) {
-  //   printf("fstat64 called\n");
-  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-  //   auto real_api = HERMES_POSIX_API;
-
-  //   std::string caller_name = "";
-
-  //   if (real_api->fd_whitelistedp(fd)) {
-  //     return dtio::posix::myfstat64(fd, buf);
-  //   }
-  //   else if (ConfigManager::get_instance()->NEVER_TRACE) {
-  //     return real_api->fstat64(fd, buf);
-  //   }
-
-  //   if (boost::stacktrace::stacktrace().size() > 1) {
-  //     caller_name =
-  //     boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  //   }
-  //   if (real_api->interceptp(caller_name)) {
-  //     return dtio::posix::myfstat64(fd, buf);
-  //   }
-  //   else {
-  //     return real_api->fstat64(fd, buf);
-  //   }
-  // }
-
   int
   HERMES_DECL (stat64) (const char *pathname, struct stat64 *buf)
   {
@@ -887,22 +816,6 @@ extern "C"
       }
   }
 
-  // int HERMES_DECL(flock)(int fd, int operation) {
-  //   printf("flock called\n");
-  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-  //   // FIXME For now, we're ignoring this call and hoping it doesnt impact
-  //   program logic
-  //   // dtio::posix::flock(fd, operation);
-  // }
-
-  // int HERMES_DECL(remove)(const char *pathname) {
-  //   printf("remove called\n");
-  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-  //   // FIXME For now, we're ignoring this call and hoping it doesnt impact
-  //   program logic
-  //   // dtio::posix::remove(pathname);
-  // }
-
   int
   HERMES_DECL (unlink) (const char *pathname)
   {
@@ -934,5 +847,104 @@ extern "C"
         return real_api->unlink (pathname);
       }
   }
+
+  // NOTE: not in DTIO
+  // ssize_t HERMES_DECL(pread)(int fd, void *buf, size_t count, off_t offset)
+  // {
+  //   printf("pread called\n");
+  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
+  //   // dtio::posix::pread(fd, buf, count, offset);
+  // }
+
+  // ssize_t HERMES_DECL(pwrite)(int fd, const void *buf, size_t count,
+  // 			    off_t offset) {
+  //   printf("pwrite called\n");
+  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
+  //   // dtio::posix::pwrite(fd, buf, count, offset);
+  // }
+
+  // ssize_t HERMES_DECL(pread64)(int fd, void *buf, size_t count, off64_t
+  // offset) {
+  //   printf("pread64 called\n");
+  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
+  //   // dtio::posix::pread64(fd, buf, count, offset);
+  // }
+
+  // ssize_t HERMES_DECL(pwrite64)(int fd, const void *buf, size_t count,
+  // 			      off64_t offset) {
+  //   printf("pwrite64 called\n");
+  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
+  //   // dtio::posix::pwrite64(fd, buf, count, offset);
+  // }
+
+  // NOTE:not in DTIO
+  // int HERMES_DECL(fstat)(int fd, struct stat *buf) {
+  //   printf("fstat called\n");
+  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
+  //   auto real_api = HERMES_POSIX_API;
+
+  //   std::string caller_name = "";
+
+  //   if (real_api->fd_whitelistedp(fd)) {
+  //     return dtio::posix::myfstat(fd, buf);
+  //   }
+  //   else if (ConfigManager::get_instance()->NEVER_TRACE) {
+  //     return real_api->fstat(fd, buf);
+  //   }
+
+  //   if (boost::stacktrace::stacktrace().size() > 1) {
+  //     caller_name =
+  //     boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
+  //   }
+  //   if (real_api->interceptp(caller_name)) {
+  //     return dtio::posix::myfstat(fd, buf);
+  //   }
+  //   else {
+  //     return real_api->fstat(fd, buf);
+  //   }
+  // }
+
+  // NOTE: not in DTIO
+  // int HERMES_DECL(fstat64)(int fd, struct stat64 *buf) {
+  //   printf("fstat64 called\n");
+  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
+  //   auto real_api = HERMES_POSIX_API;
+
+  //   std::string caller_name = "";
+
+  //   if (real_api->fd_whitelistedp(fd)) {
+  //     return dtio::posix::myfstat64(fd, buf);
+  //   }
+  //   else if (ConfigManager::get_instance()->NEVER_TRACE) {
+  //     return real_api->fstat64(fd, buf);
+  //   }
+
+  //   if (boost::stacktrace::stacktrace().size() > 1) {
+  //     caller_name =
+  //     boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
+  //   }
+  //   if (real_api->interceptp(caller_name)) {
+  //     return dtio::posix::myfstat64(fd, buf);
+  //   }
+  //   else {
+  //     return real_api->fstat64(fd, buf);
+  //   }
+  // }
+
+  // int HERMES_DECL(flock)(int fd, int operation) {
+  //   printf("flock called\n");
+  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
+  //   // FIXME For now, we're ignoring this call and hoping it doesnt impact
+  //   program logic
+  //   // dtio::posix::flock(fd, operation);
+  // }
+
+  // int HERMES_DECL(remove)(const char *pathname) {
+  //   printf("remove called\n");
+  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
+  //   // FIXME For now, we're ignoring this call and hoping it doesnt impact
+  //   program logic
+  //   // dtio::posix::remove(pathname);
+  // }
 
 } // extern C
