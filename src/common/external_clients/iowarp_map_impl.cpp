@@ -275,7 +275,7 @@ IOWARPMapImpl::get (const table &name, std::string key, std::string group_key, c
   auto val = client.MetaGet(HSHM_MCTX, chi::DomainQuery::GetDirectHash(chi::SubDomain::kGlobalContainers, 0), mykey.shm_, keysize);
   if (std::get<0>(val)) {
     hipc::FullPtr val_full(std::get<1>(val));
-    strcpy(result, val_full.ptr_);
+    strncpy(result, val_full.ptr_, std::get<2>(val));
   }
 }
 
@@ -303,7 +303,10 @@ IOWARPMapImpl::get (const table &name, std::string key, std::string group_key, c
   auto val = client.MetaGet(HSHM_MCTX, chi::DomainQuery::GetDirectHash(chi::SubDomain::kGlobalContainers, 0), mykey.shm_, keysize);
   if (std::get<0>(val)) {
     hipc::FullPtr val_full(std::get<1>(val));
-    std::stringstream ss(val_full.ptr_);
+    const char *data = static_cast<const char *>(val_full.ptr_);
+    size_t data_size = std::get<2>(val);
+    std::stringstream ss;
+    ss.write(data, data_size);
     cereal::BinaryInputArchive ar(ss);
     ar(*result);
   }
@@ -334,7 +337,10 @@ IOWARPMapImpl::get (const table &name, std::string key, std::string group_key, f
   auto val = client.MetaGet(HSHM_MCTX, chi::DomainQuery::GetDirectHash(chi::SubDomain::kGlobalContainers, 0), mykey.shm_, keysize);
   if (std::get<0>(val)) {
     hipc::FullPtr val_full(std::get<1>(val));
-    std::stringstream ss(val_full.ptr_);
+    const char *data = static_cast<const char *>(val_full.ptr_);
+    size_t data_size = std::get<2>(val);
+    std::stringstream ss;
+    ss.write(data, data_size);
     cereal::BinaryInputArchive ar(ss);
     ar(*result);
   }
@@ -382,17 +388,8 @@ IOWARPMapImpl::get (const table &name, std::string key, std::string group_key, f
     std::stringstream ss;
     ss.write(data, data_size);
     cereal::BinaryInputArchive ar(ss);
-    printf("Success?\n");
-    try {
-      ar(*result);
-    } catch (const std::exception& ex) {
-      std::cout << "Exception " << ex.what() << std::endl;
-    } catch (const std::string& ex) {
-      std::cout << "String exception " << ex << std::endl;
-    } catch (...) {
-      std::cout << "Unknown exception" << std::endl;
-    }
-    printf("Success 2?\n");
+    ar(*result);
+    std::cout << "Post-archive" << std::endl;
   }
   return std::get<0>(val);
 }
