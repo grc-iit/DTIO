@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -26,13 +26,13 @@
 #include "dtio/common/logger.h"
 #include <dtio/common/return_codes.h>
 #include <dtio/common/task_builder/task_builder.h>
-#include <dtiomod/dtiomod_client.h> // Make sure this actually gets included
 #include <dtio/drivers/posix.h>
+#include <dtiomod/dtiomod_client.h> // Make sure this actually gets included
 #include <fcntl.h>
 #include <iomanip>
+#include <string>
 #include <sys/stat.h>
 #include <zconf.h>
-#include <string>
 // #include <adapter/posix/posix_api.h>
 
 // #include <filesystem>
@@ -46,7 +46,7 @@ int temp_fd = -1;
 int
 dtio::posix::open (const char *filename, int flags)
 {
-	printf("dtio posix open\n");
+  printf ("dtio posix open\n");
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
   bool file_exists_in_fs = false;
@@ -56,14 +56,18 @@ dtio::posix::open (const char *filename, int flags)
     {
       if (!(flags & O_CREAT))
         {
-	  int existing_size = 0;
+          int existing_size = 0;
           if (ConfigManager::get_instance ()->CHECKFS)
             {
               struct stat st;
-              if (stat ((strncmp(filename, "dtio://", 7) == 0) ? (filename + 7) : filename, &st) == 0)
+              if (stat ((strncmp (filename, "dtio://", 7) == 0)
+                            ? (filename + 7)
+                            : filename,
+                        &st)
+                  == 0)
                 {
                   file_exists_in_fs = true;
-		  existing_size = st.st_size;
+                  existing_size = st.st_size;
                 }
             }
           if (!file_exists_in_fs)
@@ -72,12 +76,13 @@ dtio::posix::open (const char *filename, int flags)
             }
           else
             {
-              if (mdm->update_on_open (filename, flags, 0, &fd, existing_size) != SUCCESS)
+              if (mdm->update_on_open (filename, flags, 0, &fd, existing_size)
+                  != SUCCESS)
                 {
                   throw std::runtime_error (
                       "dtio::posix::open() update failed!");
                 }
-	      publish_task = true;
+              publish_task = true;
             }
         }
       else
@@ -86,7 +91,7 @@ dtio::posix::open (const char *filename, int flags)
             {
               throw std::runtime_error ("dtio::posix::open() create failed!");
             }
-	  publish_task = true;
+          publish_task = true;
         }
     }
   else
@@ -97,26 +102,18 @@ dtio::posix::open (const char *filename, int flags)
             {
               throw std::runtime_error ("dtio::posix::open() update failed!");
             }
-	  publish_task = true;
+          publish_task = true;
         }
       else
         return -1;
     }
-  if (publish_task && ConfigManager::get_instance()->WORKER_STAGING_SIZE != 0) {
-    // Publish staging task
-    auto f = file (std::string (filename), 0, 0);
-    auto s_task = task (task_type::STAGING_TASK, f);
-    auto client_queue
-      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
-    client_queue->publish_task (&s_task);
-  }
   return fd;
 }
 
 int
 dtio::posix::open (const char *filename, int flags, mode_t mode)
 {
-	printf("dtio posix open 2\n");
+  printf ("dtio posix open 2\n");
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
   bool file_exists_in_fs = false;
@@ -125,14 +122,18 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
     {
       if (!(flags & O_CREAT))
         {
-	  int existing_size = 0;
+          int existing_size = 0;
           if (ConfigManager::get_instance ()->CHECKFS)
             {
               struct stat st;
-              if (stat ((strncmp(filename, "dtio://", 7) == 0) ? (filename + 7) : filename, &st) == 0)
+              if (stat ((strncmp (filename, "dtio://", 7) == 0)
+                            ? (filename + 7)
+                            : filename,
+                        &st)
+                  == 0)
                 {
                   file_exists_in_fs = true;
-		  existing_size = st.st_size;
+                  existing_size = st.st_size;
                 }
             }
           if (!file_exists_in_fs)
@@ -141,12 +142,14 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
             }
           else
             {
-              if (mdm->update_on_open (filename, flags, mode, &fd, existing_size) != SUCCESS)
+              if (mdm->update_on_open (filename, flags, mode, &fd,
+                                       existing_size)
+                  != SUCCESS)
                 {
                   throw std::runtime_error (
                       "dtio::posix::open() update failed!");
                 }
-	      publish_task = true;
+              publish_task = true;
             }
         }
       else
@@ -155,7 +158,7 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
             {
               throw std::runtime_error ("dtio::posix::open() create failed!");
             }
-	  publish_task = true;
+          publish_task = true;
         }
     }
   else
@@ -166,26 +169,18 @@ dtio::posix::open (const char *filename, int flags, mode_t mode)
             {
               throw std::runtime_error ("dtio::posix::open() update failed!");
             }
-	  publish_task = true;
+          publish_task = true;
         }
       else
         return -1;
     }
-  if (publish_task && ConfigManager::get_instance()->WORKER_STAGING_SIZE != 0) {
-    // Publish staging task
-    auto f = file (std::string (filename), 0, 0);
-    auto s_task = task (task_type::STAGING_TASK, f);
-    auto client_queue
-      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
-    client_queue->publish_task (&s_task);
-  }
   return fd;
 }
 
 int
 dtio::posix::open64 (const char *filename, int flags)
 {
-	printf("dtio posix open64\n");
+  printf ("dtio posix open64\n");
   DTIO_LOG_DEBUG ("[POSIX] Open64 filename " << filename);
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
@@ -196,14 +191,18 @@ dtio::posix::open64 (const char *filename, int flags)
       if (!(flags & O_CREAT))
         {
           DTIO_LOG_TRACE ("[POSIX] Open64 file not marked created");
-	  int existing_size = 0;
+          int existing_size = 0;
           if (ConfigManager::get_instance ()->CHECKFS)
             {
               struct stat st;
-              if (stat ((strncmp(filename, "dtio://", 7) == 0) ? (filename + 7) : filename, &st) == 0)
+              if (stat ((strncmp (filename, "dtio://", 7) == 0)
+                            ? (filename + 7)
+                            : filename,
+                        &st)
+                  == 0)
                 {
                   file_exists_in_fs = true;
-		  existing_size = st.st_size;
+                  existing_size = st.st_size;
                 }
             }
           if (!file_exists_in_fs)
@@ -212,12 +211,13 @@ dtio::posix::open64 (const char *filename, int flags)
             }
           else
             {
-              if (mdm->update_on_open (filename, flags, 0, &fd, existing_size) != SUCCESS)
+              if (mdm->update_on_open (filename, flags, 0, &fd, existing_size)
+                  != SUCCESS)
                 {
                   throw std::runtime_error (
                       "dtio::posix::open() update failed!");
                 }
-	      publish_task = true;
+              publish_task = true;
             }
         }
       else
@@ -226,7 +226,7 @@ dtio::posix::open64 (const char *filename, int flags)
             {
               throw std::runtime_error ("dtio::posix::open() create failed!");
             }
-	  publish_task = true;
+          publish_task = true;
         }
     }
   else
@@ -237,7 +237,7 @@ dtio::posix::open64 (const char *filename, int flags)
             {
               throw std::runtime_error ("dtio::posix::open() update failed!");
             }
-	  publish_task = true;
+          publish_task = true;
         }
       else
         {
@@ -246,13 +246,15 @@ dtio::posix::open64 (const char *filename, int flags)
         }
     }
   // TODO switch with prefetching task
-  // if (publish_task && ConfigManager::get_instance()->WORKER_STAGING_SIZE != 0) {
+  // if (publish_task && ConfigManager::get_instance()->WORKER_STAGING_SIZE !=
+  // 0) {
   //   // Publish staging task
   //   auto f = file (std::string (filename), 0, 0);
   //   auto s_task = task (task_type::STAGING_TASK, f);
   //   auto client_queue
-  //     = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
-  //   client_queue->publish_task (&s_task);
+  //     = dtio_system::getInstance (LIB)->get_client_queue
+  //     (CLIENT_TASK_SUBJECT);
+  //   // client_queue->publish_task (&s_task);
   // }
   return fd;
 }
@@ -260,7 +262,7 @@ dtio::posix::open64 (const char *filename, int flags)
 int
 dtio::posix::open64 (const char *filename, int flags, mode_t mode)
 {
-	printf("dtio posix open64 2\n");
+  printf ("dtio posix open64 2\n");
   DTIO_LOG_DEBUG ("[POSIX] Open64 filename " << filename);
   auto mdm = metadata_manager::getInstance (LIB);
   int fd;
@@ -271,14 +273,18 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
       if (!(flags & O_CREAT))
         {
           DTIO_LOG_TRACE ("[POSIX] Open64 file not marked created");
-	  int existing_size = 0;
+          int existing_size = 0;
           if (ConfigManager::get_instance ()->CHECKFS)
             {
               struct stat st;
-              if (stat ((strncmp(filename, "dtio://", 7) == 0) ? (filename + 7) : filename, &st) == 0)
+              if (stat ((strncmp (filename, "dtio://", 7) == 0)
+                            ? (filename + 7)
+                            : filename,
+                        &st)
+                  == 0)
                 {
                   file_exists_in_fs = true;
-		  existing_size = st.st_size;
+                  existing_size = st.st_size;
                 }
             }
           if (!file_exists_in_fs)
@@ -287,12 +293,14 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
             }
           else
             {
-              if (mdm->update_on_open (filename, flags, mode, &fd, existing_size) != SUCCESS)
+              if (mdm->update_on_open (filename, flags, mode, &fd,
+                                       existing_size)
+                  != SUCCESS)
                 {
                   throw std::runtime_error (
                       "dtio::posix::open() update failed!");
                 }
-	      publish_task = true;
+              publish_task = true;
             }
         }
       else
@@ -301,7 +309,7 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
             {
               throw std::runtime_error ("dtio::posix::open() create failed!");
             }
-	  publish_task = true;
+          publish_task = true;
         }
     }
   else
@@ -312,7 +320,7 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
             {
               throw std::runtime_error ("dtio::posix::open() update failed!");
             }
-	  publish_task = true;
+          publish_task = true;
         }
       else
         {
@@ -320,14 +328,6 @@ dtio::posix::open64 (const char *filename, int flags, mode_t mode)
           return -1;
         }
     }
-  if (publish_task && ConfigManager::get_instance()->WORKER_STAGING_SIZE != 0) {
-    // Publish staging task
-    auto f = file (std::string (filename), 0, 0);
-    auto s_task = task (task_type::STAGING_TASK, f);
-    auto client_queue
-      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
-    client_queue->publish_task (&s_task);
-  }
   return fd;
 }
 
@@ -336,13 +336,11 @@ dtio::posix::unlink (const char *pathname)
 {
   DTIO_LOG_DEBUG ("[POSIX] unlinking " << pathname);
   auto mdm = metadata_manager::getInstance (LIB);
-  auto client_queue
-      = dtio_system::getInstance (LIB)->get_client_queue (CLIENT_TASK_SUBJECT);
   auto map_client = dtio_system::getInstance (LIB)->map_client ();
   auto map_server = dtio_system::getInstance (LIB)->map_server ();
-  auto task_m = dtio_system::getInstance(LIB)->task_composer();
+  auto task_m = dtio_system::getInstance (LIB)->task_composer ();
   auto data_m = data_manager::getInstance (LIB);
-  file_stat st = mdm->get_stat(pathname);
+  file_stat st = mdm->get_stat (pathname);
   auto offset = st.file_pointer;
   if (!mdm->is_created (pathname))
     {
@@ -350,12 +348,14 @@ dtio::posix::unlink (const char *pathname)
     }
   auto f = file (std::string (pathname), offset, 0);
   auto d_task = task (task_type::DELETE_TASK, f);
-  if (ConfigManager::get_instance()->USE_URING) {
-    d_task.iface = io_client_type::URING;
-  }
-  else {
-    d_task.iface = io_client_type::POSIX;
-  }
+  if (ConfigManager::get_instance ()->USE_URING)
+    {
+      d_task.iface = io_client_type::URING;
+    }
+  else
+    {
+      d_task.iface = io_client_type::POSIX;
+    }
   auto delete_tasks = task_m->build_delete_task (d_task);
   int index = 0;
   std::vector<std::pair<std::string, std::string> > task_ids
@@ -365,7 +365,6 @@ dtio::posix::unlink (const char *pathname)
       if (task.publish)
         {
           mdm->update_delete_task_info (task, pathname);
-          client_queue->publish_task (&task);
           task_ids.emplace_back (std::make_pair (
               task.source.filename, std::to_string (task.source.server)));
         }
@@ -403,10 +402,10 @@ dtio::posix::mystat (const char *pathname, struct stat *statbuf)
     {
       return -1;
     }
-  file_stat st = mdm->get_stat(pathname);
+  file_stat st = mdm->get_stat (pathname);
   statbuf->st_size = st.file_size;
   DTIO_LOG_TRACE ("[DTIO][POSIX][STAT] " << pathname << " "
-                                        << statbuf->st_size);
+                                         << statbuf->st_size);
   return 0;
 }
 
@@ -417,15 +416,15 @@ dtio::posix::myfstat (int fd, struct stat *statbuf)
   // checks
   // FIXME right now we just grab file size, which is ok for IOR but also bad
   auto mdm = metadata_manager::getInstance (LIB);
-  auto pathname = mdm->get_filename(fd);
+  auto pathname = mdm->get_filename (fd);
   if (!mdm->is_created (pathname))
     {
       return -1;
     }
-  file_stat st = mdm->get_stat(pathname);
+  file_stat st = mdm->get_stat (pathname);
   statbuf->st_size = st.file_size;
   DTIO_LOG_TRACE ("[DTIO][POSIX][STAT] " << pathname << " "
-                                        << statbuf->st_size);
+                                         << statbuf->st_size);
   return 0;
 }
 
@@ -436,15 +435,15 @@ dtio::posix::myfstat64 (int fd, struct stat64 *statbuf)
   // checks
   // FIXME right now we just grab file size, which is ok for IOR but also bad
   auto mdm = metadata_manager::getInstance (LIB);
-  auto pathname = mdm->get_filename(fd);
+  auto pathname = mdm->get_filename (fd);
   if (!mdm->is_created (pathname))
     {
       return -1;
     }
-  file_stat st = mdm->get_stat(pathname);
+  file_stat st = mdm->get_stat (pathname);
   statbuf->st_size = st.file_size;
   DTIO_LOG_TRACE ("[DTIO][POSIX][STAT] " << pathname << " "
-                                        << statbuf->st_size);
+                                         << statbuf->st_size);
   return 0;
 }
 
@@ -457,10 +456,10 @@ dtio::posix::mystat64 (const char *pathname, struct stat64 *statbuf)
     {
       return -1;
     }
-  file_stat st = mdm->get_stat(pathname);
+  file_stat st = mdm->get_stat (pathname);
   statbuf->st_size = st.file_size;
   DTIO_LOG_TRACE ("[DTIO][POSIX][STAT] " << pathname << " "
-                                        << statbuf->st_size);
+                                         << statbuf->st_size);
   return 0;
 }
 
@@ -490,11 +489,12 @@ off_t
 dtio::posix::lseek (int fd, off_t offset, int whence)
 {
   auto mdm = metadata_manager::getInstance (LIB);
-  if (!mdm->is_opened(fd)) {
-    return EBADF;
-  }
+  if (!mdm->is_opened (fd))
+    {
+      return EBADF;
+    }
   auto filename = mdm->get_filename (fd);
-  file_stat st = mdm->get_stat(filename);
+  file_stat st = mdm->get_stat (filename);
   if (st.flags & O_APPEND)
     return 0;
   auto size = st.file_size;
@@ -528,11 +528,12 @@ off_t
 dtio::posix::lseek64 (int fd, off_t offset, int whence)
 {
   auto mdm = metadata_manager::getInstance (LIB);
-  if (!mdm->is_opened(fd)) {
-    return EBADF;
-  }
+  if (!mdm->is_opened (fd))
+    {
+      return EBADF;
+    }
   auto filename = mdm->get_filename (fd);
-  file_stat st = mdm->get_stat(filename);
+  file_stat st = mdm->get_stat (filename);
   if (st.flags & O_APPEND)
     return 0;
 
@@ -576,36 +577,37 @@ ssize_t
 dtio::posix::read (int fd, void *buf, size_t count)
 {
   auto mdm = metadata_manager::getInstance (LIB);
-  auto task_m = dtio_system::getInstance(LIB)->task_composer();
+  auto task_m = dtio_system::getInstance (LIB)->task_composer ();
   auto data_m = data_manager::getInstance (LIB);
 
   auto filename = mdm->get_filename (fd);
-  file_stat st = mdm->get_stat(filename);
+  file_stat st = mdm->get_stat (filename);
   auto offset = st.file_pointer;
   bool check_fs = false;
   task *task_i;
   task_i = nullptr;
 
-  CHIMAERA_CLIENT_INIT();
+  CHIMAERA_CLIENT_INIT ();
   chi::dtiomod::Client client;
-  client.Create(
-		HSHM_MCTX,
-		chi::DomainQuery::GetDirectHash(chi::SubDomainId::kGlobalContainers, 0),
-		chi::DomainQuery::GetGlobalBcast(), "ipc_test");
-  
-  size_t data_size = hshm::Unit<size_t>::Megabytes((size_t)ceil((double)count / 1024.0));
-  size_t data_offset = offset;
-  hipc::FullPtr<char> orig_data =
-    CHI_CLIENT->AllocateBuffer(HSHM_MCTX, data_size);
-  hipc::FullPtr<char> filename_fptr =
-    CHI_CLIENT->AllocateBuffer(HSHM_MCTX, DTIO_FILENAME_MAX);
-  char *filename_ptr = filename_fptr.ptr_;
-  sprintf(filename_ptr, filename.c_str());
-  char *data_ptr = orig_data.ptr_;
-  client.Read(HSHM_MCTX, orig_data.shm_,
-	      data_size, data_offset, filename_fptr.shm_, DTIO_FILENAME_MAX, io_client_type::POSIX);
+  client.Create (
+      HSHM_MCTX,
+      chi::DomainQuery::GetDirectHash (chi::SubDomainId::kGlobalContainers, 0),
+      chi::DomainQuery::GetGlobalBcast (), "ipc_test");
 
-  memcpy((char *)buf, data_ptr, count);
+  size_t data_size
+      = hshm::Unit<size_t>::Megabytes ((size_t)ceil ((double)count / 1024.0));
+  size_t data_offset = offset;
+  hipc::FullPtr<char> orig_data
+      = CHI_CLIENT->AllocateBuffer (HSHM_MCTX, data_size);
+  hipc::FullPtr<char> filename_fptr
+      = CHI_CLIENT->AllocateBuffer (HSHM_MCTX, DTIO_FILENAME_MAX);
+  char *filename_ptr = filename_fptr.ptr_;
+  sprintf (filename_ptr, "%s", filename.c_str ());
+  char *data_ptr = orig_data.ptr_;
+  client.Read (HSHM_MCTX, orig_data.shm_, data_size, data_offset,
+               filename_fptr.shm_, DTIO_FILENAME_MAX, io_client_type::POSIX);
+
+  memcpy ((char *)buf, data_ptr, count);
 
   // if (!mdm->is_opened (filename))
   //   {
@@ -620,10 +622,11 @@ dtio::posix::read (int fd, void *buf, size_t count)
   //       }
   //   }
   // auto r_task
-  //     = task (task_type::READ_TASK, file (filename, offset, count), file ());
-  // DTIO_LOG_INFO("Numbers from read task " << r_task.source.size << " " << r_task.destination.size << " " << count);
-  // r_task.check_fs = check_fs;
-  // if (ConfigManager::get_instance()->USE_CACHE) {
+  //     = task (task_type::READ_TASK, file (filename, offset, count), file
+  //     ());
+  // DTIO_LOG_INFO("Numbers from read task " << r_task.source.size << " " <<
+  // r_task.destination.size << " " << count); r_task.check_fs = check_fs; if
+  // (ConfigManager::get_instance()->USE_CACHE) {
   //   r_task.source.location = BUFFERS;
   // }
   // else {
@@ -645,47 +648,48 @@ ssize_t
 dtio::posix::write (int fd, const void *buf, size_t count)
 {
   DTIO_LOG_DEBUG ("[POSIX] Write Entered");
-  printf("DTIO Posix Write entered\n");
+  printf ("DTIO Posix Write entered\n");
   auto mdm = metadata_manager::getInstance (LIB);
-  printf("Mdm\n");
-  auto task_m = dtio_system::getInstance(LIB)->task_composer();
-  printf("task comp\n");
+  printf ("Mdm\n");
+  auto task_m = dtio_system::getInstance (LIB)->task_composer ();
+  printf ("task comp\n");
   auto data_m = data_manager::getInstance (LIB);
-  printf("data manager\n");
+  printf ("data manager\n");
   auto filename = mdm->get_filename (fd);
-  printf("filename\n");
+  printf ("filename\n");
   if (!mdm->is_opened (filename))
     throw std::runtime_error ("dtio::write() file not opened!");
-  printf("get stat\n");
-  file_stat st = mdm->get_stat(filename);
-  printf("fp\n");
+  printf ("get stat\n");
+  file_stat st = mdm->get_stat (filename);
+  printf ("fp\n");
   auto offset = st.file_pointer;
-  auto source = file();
+  auto source = file ();
   source.offset = 0; // buffer offset, NOT file offset
   source.size = count;
-  printf("dest\n");
-  auto destination = file(filename, offset, count);
-  printf("Doing the write now\n");
-  CHIMAERA_CLIENT_INIT();
+  printf ("dest\n");
+  auto destination = file (filename, offset, count);
+  printf ("Doing the write now\n");
+  CHIMAERA_CLIENT_INIT ();
   chi::dtiomod::Client client;
-  client.Create(
-		HSHM_MCTX,
-		chi::DomainQuery::GetDirectHash(chi::SubDomainId::kGlobalContainers, 0),
-		chi::DomainQuery::GetGlobalBcast(), "ipc_test");
-  
-  size_t data_size = hshm::Unit<size_t>::Megabytes((size_t)ceil((double)count / 1024.0));
-  size_t data_offset = offset;
-  hipc::FullPtr<char> orig_data =
-    CHI_CLIENT->AllocateBuffer(HSHM_MCTX, data_size);
-  hipc::FullPtr<char> filename_fptr =
-    CHI_CLIENT->AllocateBuffer(HSHM_MCTX, DTIO_FILENAME_MAX);
-  char *filename_ptr = filename_fptr.ptr_;
-  sprintf(filename_ptr, filename.c_str());
-  char *data_ptr = orig_data.ptr_;
-  memcpy(data_ptr, (const char *)buf, count);
+  client.Create (
+      HSHM_MCTX,
+      chi::DomainQuery::GetDirectHash (chi::SubDomainId::kGlobalContainers, 0),
+      chi::DomainQuery::GetGlobalBcast (), "ipc_test");
 
-  client.Write(HSHM_MCTX, orig_data.shm_,
-	       data_size, data_offset, filename_fptr.shm_, DTIO_FILENAME_MAX, io_client_type::POSIX);
+  size_t data_size
+      = hshm::Unit<size_t>::Megabytes ((size_t)ceil ((double)count / 1024.0));
+  size_t data_offset = offset;
+  hipc::FullPtr<char> orig_data
+      = CHI_CLIENT->AllocateBuffer (HSHM_MCTX, data_size);
+  hipc::FullPtr<char> filename_fptr
+      = CHI_CLIENT->AllocateBuffer (HSHM_MCTX, DTIO_FILENAME_MAX);
+  char *filename_ptr = filename_fptr.ptr_;
+  sprintf (filename_ptr, "%s", filename.c_str ());
+  char *data_ptr = orig_data.ptr_;
+  memcpy (data_ptr, (const char *)buf, count);
+
+  client.Write (HSHM_MCTX, orig_data.shm_, data_size, data_offset,
+                filename_fptr.shm_, DTIO_FILENAME_MAX, io_client_type::POSIX);
 
   // auto w_task
   //     = task (task_type::WRITE_TASK, source, destination);
@@ -705,20 +709,20 @@ dtio::posix::write (int fd, const void *buf, size_t count)
 int
 dtio::posix::__fxstat64 (int __ver, int fd, struct stat64 *buf)
 { // TODO: implement
-  myfstat64(fd, buf);
+  myfstat64 (fd, buf);
   return 0;
 }
 
 int
 dtio::posix::__open_2 (const char *path, int oflag)
 {
-  return open(path, oflag);
+  return open (path, oflag);
 }
 
 int
 dtio::posix::__fxstat (int __ver, int fd, struct stat *buf)
 { // TODO: implement
-  myfstat(fd, buf);
+  myfstat (fd, buf);
   return 0;
 }
 

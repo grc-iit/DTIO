@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -24,9 +24,9 @@
 #ifndef DTIO_MAIN_CONSTANTS_H
 #define DTIO_MAIN_CONSTANTS_H
 
-#include <dtio/common/enumerations.h>
 #include <climits>
 #include <cstddef>
+#include <dtio/common/enumerations.h>
 #include <string>
 
 // DTIO parameters
@@ -34,7 +34,7 @@ const int BATCH_SIZE = 1;
 const std::string DTIO_CLIENT_PORT = "9999";
 const size_t KEY_SIZE = 256;
 const size_t FILE_SIZE = 256;
-const long long MAX_DATA_SIZE = 2 * 1024 * 1024 * 1024;
+const long long MAX_DATA_SIZE = 2ul * 1024ul * 1024ul * 1024ul;
 const size_t CHUNK_SIZE = 2 * 1024 * 1024;
 const size_t CHUNK_LIMIT = 1050;
 const long long MAX_MESSAGE_SIZE = LLONG_MAX;
@@ -42,8 +42,13 @@ const std::string ALL_KEYS = "ALL";
 const std::string kDBPath_client = "/tmp/rocksdb";
 const std::string kDBPath_server = "/tmp/rocksdb";
 const std::size_t MIN_IO_UNIT = 8 * 1024;
-const std::size_t MAX_IO_UNIT = 32 * 1024 * 1024; // Recommendation: Do not set above 2 MB with stack allocation, switch to heap allocation if your program is memory-intensive. Never set above 64 MB, that's as far as strings go
-// TODO investigate why 64 MB is the limit. Should be allowed to go up to 128 MB but we're not. Why?
+const std::size_t MAX_IO_UNIT
+    = 32 * 1024
+      * 1024; // Recommendation: Do not set above 2 MB with stack allocation,
+              // switch to heap allocation if your program is memory-intensive.
+              // Never set above 64 MB, that's as far as strings go
+// TODO investigate why 64 MB is the limit. Should be allowed to go up to 128
+// MB but we're not. Why?
 #define STACK_ALLOCATION false
 const std::string CLIENT_TASK_SUBJECT = "TASK";
 #define DTIO_FILENAME_MAX 75
@@ -54,7 +59,7 @@ const map_impl_type map_impl_type_t = map_impl_type::IOWARP;
 const builder_impl_type builder_impl_type_t = builder_impl_type::DEFAULT_B;
 const solver_impl_type solver_impl_type_t = solver_impl_type::ROUND_ROBIN;
 // const queue_impl_type queue_impl_type_t = queue_impl_type::HCLQUEUE;
-const io_client_type io_client_type_t = io_client_type::POSIX; //HDF5
+const io_client_type io_client_type_t = io_client_type::POSIX; // HDF5
 const std::string DATASPACE_ID = "DATASPACE_ID";
 const std::string ROUND_ROBIN_INDEX = "ROUND_ROBIN_INDEX";
 const std::string KEY_SEPARATOR = "#";

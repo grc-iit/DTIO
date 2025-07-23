@@ -9,6 +9,10 @@ set(MOD_EXPORTS ${REPO_NAMESPACE}_dtiomod_exports)
 add_chimod_runtime_lib(${REPO_NAMESPACE} dtiomod dtiomod_runtime.cc)
 add_chimod_client_lib(${REPO_NAMESPACE} dtiomod dtiomod_client.cc)
 
+# Link external dependencies
+dtio_set_core_libs(${REPO_NAMESPACE}_dtiomod)
+dtio_set_core_libs(${REPO_NAMESPACE}_dtiomod_client)
+
 # ------------------------------------------------------------------------------
 # Install dtiomod Task Library
 # ------------------------------------------------------------------------------

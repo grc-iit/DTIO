@@ -17,6 +17,12 @@ Debugging DTIO is a complicated task, please read
 DTIO/docs/debugging.md if you're interested in contributing to this
 project.
 
+# Dependencies
+
+```
+spack install cityhash liburing fmt spdlog py-nanobind
+```
+
 # TODO LIST
 
 - [ ] Task dependencies (don't care)

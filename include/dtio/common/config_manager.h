@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -80,14 +80,15 @@ public:
   int TS_NUM_WORKER_THREADS;
   std::size_t NUM_WORKERS;    // FIXME: make private
   std::size_t NUM_SCHEDULERS; // FIXME: make private
-  bool CHECKFS; // Check filesystem for file existence, slower but allows
-                // convenient data import
+  bool CHECKFS;     // Check filesystem for file existence, slower but allows
+                    // convenient data import
   bool NEVER_TRACE; // Never perform stacktracing, if the path is not
-		    // a dtio:// path then send directly to real api
-  bool ASYNC; // Replace synchronous calls with asynchronous equivalents
-  bool USE_URING; // Use io_uring client or posix calls
+                    // a dtio:// path then send directly to real api
+  bool ASYNC;       // Replace synchronous calls with asynchronous equivalents
+  bool USE_URING;   // Use io_uring client or posix calls
   bool USE_CACHE;
-  size_t WORKER_STAGING_SIZE; // Amount of local space to reserve in a worker for file staging
+  size_t WORKER_STAGING_SIZE; // Amount of local space to reserve in a worker
+                              // for file staging
 
   static std::shared_ptr<ConfigManager>
   get_instance ()
@@ -133,12 +134,7 @@ public:
       }
     DTIO_LOG_TRACE ("[ConfigManager] Parsed HCL_SERVER_LIST_PATH");
     char **words = path_traverse.we_wordv;
-    HCL_SERVER_LIST_PATH += words[0];
     wordfree (&path_traverse);
-    NATS_URL_CLIENT = config_["NATS_URL_CLIENT"].as<std::string> ();
-    NATS_URL_SERVER = config_["NATS_URL_SERVER"].as<std::string> ();
-    MEMCACHED_URL_CLIENT = config_["MEMCACHED_URL_CLIENT"].as<std::string> ();
-    MEMCACHED_URL_SERVER = config_["MEMCACHED_URL_SERVER"].as<std::string> ();
     ASSIGNMENT_POLICY = config_["ASSIGNMENT_POLICY"].as<std::string> ();
     WORKER_PATH = scs::path_parser (config_["WORKER_PATH"].as<std::string> ());
     PFS_PATH = scs::path_parser (config_["PFS_PATH"].as<std::string> ());
@@ -153,7 +149,7 @@ public:
     WORKER_STAGING_SIZE = config_["WORKER_STAGING_SIZE"].as<size_t> ();
     QUEUE_WORKER_COMM = (MPI_Comm *)calloc (NUM_WORKERS, sizeof (MPI_Comm));
     DTIO_LOG_TRACE ("[ConfigManager] Parsed Config: " << CHECKFS << " "
-                                                     << QUEUE_WORKER_COMM);
+                                                      << QUEUE_WORKER_COMM);
   }
   /******************************************************************************
    *Destructor

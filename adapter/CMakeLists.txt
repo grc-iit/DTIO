@@ -12,7 +12,6 @@ include_directories(
         ${DTIO_IO_CLIENT_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_subdirectory(filesystem)
 # if(DTIO_ENABLE_POSIX_ADAPTER)
 add_subdirectory(posix)
 # endif()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -40,10 +40,11 @@ std::shared_ptr<metadata_manager> metadata_manager::instance = nullptr;
 bool
 metadata_manager::is_created (std::string filename)
 {
-  auto filemap = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
+  auto filemap
+      = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
 
   file_stat fs;
-  return (filemap->get(table::FILE_DB, filename, std::to_string (-1), &fs));
+  return (filemap->get (table::FILE_DB, filename, std::to_string (-1), &fs));
   // auto iter = file_map.find (filename);
   // return iter != file_map.end ();
 }
@@ -55,7 +56,7 @@ metadata_manager::create (std::string filename, std::string mode, FILE *&fh)
     return MDM__FILENAME_MAX_LENGTH;
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
   fh = fmemopen (nullptr, 1, mode.c_str ());
-  file_stat stat = file_stat(fh, -1, 0, 0, 0, 0, mode, true);
+  file_stat stat = file_stat (fh, -1, 0, 0, 0, 0, mode, true);
   // auto iter = file_map.find (filename);
   // if (iter != file_map.end ())
   //   file_map.erase (iter);
@@ -78,7 +79,7 @@ metadata_manager::create (std::string filename, int flags, mode_t mode,
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
 
   *fd = random (); // random number, maybe use an HCL sequencer
-  file_stat stat = file_stat(nullptr, *fd, 0, 0, flags, mode, "", true);
+  file_stat stat = file_stat (nullptr, *fd, 0, 0, flags, mode, "", true);
   // auto iter = file_map.find (filename);
   // if (iter != file_map.end ())
   //   file_map.erase (iter);
@@ -96,9 +97,11 @@ bool
 metadata_manager::is_opened (std::string filename)
 {
   file_stat fs;
-  auto filemap = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
-  printf("is_opened perform get\n");
-  return filemap->get(table::FILE_DB, filename, std::to_string (-1), &fs) && fs.is_open;
+  auto filemap
+      = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
+  printf ("is_opened perform get\n");
+  return filemap->get (table::FILE_DB, filename, std::to_string (-1), &fs)
+         && fs.is_open;
 
   // auto iter = file_map.find (filename);
   // return iter != file_map.end () && iter->second.is_open;
@@ -113,20 +116,23 @@ metadata_manager::update_on_open (std::string filename, std::string mode,
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
   file_stat fs;
   bool file_found = false;
-  if (map->get(table::FILE_DB, filename, std::to_string (-1), &fs)) {
-    file_found = true;
-  }
+  if (map->get (table::FILE_DB, filename, std::to_string (-1), &fs))
+    {
+      file_found = true;
+    }
 
   // auto iter = file_map.find (filename);
   file_stat stat;
 
   fh = fmemopen (nullptr, 1, mode.c_str ());
-  if (file_found && fs.is_open) {
-    stat.file_size = fs.file_size;
-  }
-  else {
-    stat.file_size = existing_size;
-  }
+  if (file_found && fs.is_open)
+    {
+      stat.file_size = fs.file_size;
+    }
+  else
+    {
+      stat.file_size = existing_size;
+    }
   stat.fh = fh;
   stat.is_open = true;
   if (mode == "r" || mode == "r+")
@@ -151,7 +157,8 @@ metadata_manager::update_on_open (std::string filename, std::string mode,
   // file_map.emplace (filename, stat);
   map->put (table::FILE_DB, filename, &stat, std::to_string (-1));
 #ifdef TIMERMDM
-  DTIO_LOG_TRACE("metadata_manager::update_on_open()," << t.pauseTime () << "\n");
+  DTIO_LOG_TRACE ("metadata_manager::update_on_open()," << t.pauseTime ()
+                                                        << "\n");
 #endif
   return SUCCESS;
 }
@@ -165,19 +172,22 @@ metadata_manager::update_on_open (std::string filename, int flags, mode_t mode,
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
   file_stat fs;
   bool file_found = false;
-  if (map->get(table::FILE_DB, filename, std::to_string (-1), &fs)) {
-    file_found = true;
-  }
+  if (map->get (table::FILE_DB, filename, std::to_string (-1), &fs))
+    {
+      file_found = true;
+    }
   // auto iter = file_map.find (filename);
   file_stat stat;
 
   *fd = random ();
-  if (file_found && fs.is_open) {
-    stat.file_size = fs.file_size;
-  }
-  else {
-    stat.file_size = existing_size;
-  }
+  if (file_found && fs.is_open)
+    {
+      stat.file_size = fs.file_size;
+    }
+  else
+    {
+      stat.file_size = existing_size;
+    }
   stat.fd = *fd;
   stat.is_open = true;
   if (flags & O_RDONLY)
@@ -202,17 +212,19 @@ metadata_manager::update_on_open (std::string filename, int flags, mode_t mode,
     {
       stat.file_pointer = stat.file_size;
     }
-  
+
   // iter = file_map.find (filename);
   // if (iter != file_map.end ()) {
   //   file_map.erase (iter);
-  //   DTIO_LOG_TRACE ("[DTIO][MDMAN][UPDATE_ON_OPEN] " << iter->second.file_size << " " << stat.file_size);
+  //   DTIO_LOG_TRACE ("[DTIO][MDMAN][UPDATE_ON_OPEN] " <<
+  //   iter->second.file_size << " " << stat.file_size);
   // }
   fd_map.emplace (*fd, filename);
   // file_map.emplace (filename, stat);
   map->put (table::FILE_DB, filename, &stat, std::to_string (-1));
 #ifdef TIMERMDM
-  DTIO_LOG_TRACE("metadata_manager::update_on_open()," << t.pauseTime () << "\n");
+  DTIO_LOG_TRACE ("metadata_manager::update_on_open()," << t.pauseTime ()
+                                                        << "\n");
 #endif
   return SUCCESS;
 }
@@ -235,9 +247,12 @@ metadata_manager::is_opened (int fd)
   auto iter1 = fd_map.find (fd);
   if (iter1 != fd_map.end ())
     {
-        file_stat fs;
-	auto filemap = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
-	return filemap->get(table::FILE_DB, iter1->second, std::to_string (-1), &fs) && fs.is_open;
+      file_stat fs;
+      auto filemap
+          = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
+      return filemap->get (table::FILE_DB, iter1->second, std::to_string (-1),
+                           &fs)
+             && fs.is_open;
 
       // auto iter = file_map.find (iter1->second);
       // return iter != file_map.end () && iter->second.is_open;
@@ -248,9 +263,10 @@ metadata_manager::is_opened (int fd)
 int
 metadata_manager::remove_chunks (std::string &filename)
 {
-  auto map = dtio_system::getInstance (service_i)->map_client ("metadata+filemeta");
+  auto map
+      = dtio_system::getInstance (service_i)->map_client ("metadata+filemeta");
   std::string chunks_str
-    = map->remove (table::FILE_CHUNK_DB, filename, std::to_string (-1));
+      = map->remove (table::FILE_CHUNK_DB, filename, std::to_string (-1));
   // std::vector<std::string> chunks = string_split (chunks_str);
   // for (const auto &chunk : chunks)
   //   {
@@ -265,12 +281,16 @@ metadata_manager::update_on_close (FILE *&fh)
   auto iter = fh_map.find (fh);
   if (iter != fh_map.end ())
     {
-        file_stat fs;
-	auto filemap = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
-	if (filemap->get(table::FILE_DB, iter->second, std::to_string (-1), &fs)) {
-	  fs.is_open = false;
-	  filemap->put(table::FILE_DB, iter->second, &fs, std::to_string (-1));
-	}
+      file_stat fs;
+      auto filemap
+          = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
+      if (filemap->get (table::FILE_DB, iter->second, std::to_string (-1),
+                        &fs))
+        {
+          fs.is_open = false;
+          filemap->put (table::FILE_DB, iter->second, &fs,
+                        std::to_string (-1));
+        }
       // auto iter2 = file_map.find (iter->second);
       // if (iter2 != file_map.end ())
       //   {
@@ -289,11 +309,15 @@ metadata_manager::update_on_close (int fd)
   if (iter != fd_map.end ())
     {
       file_stat fs;
-      auto filemap = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
-      if (filemap->get(table::FILE_DB, iter->second, std::to_string (-1), &fs)) {
-	fs.is_open = false;
-	filemap->put(table::FILE_DB, iter->second, &fs, std::to_string (-1));
-      }
+      auto filemap
+          = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
+      if (filemap->get (table::FILE_DB, iter->second, std::to_string (-1),
+                        &fs))
+        {
+          fs.is_open = false;
+          filemap->put (table::FILE_DB, iter->second, &fs,
+                        std::to_string (-1));
+        }
       // auto iter2 = file_map.find (iter->second);
       // if (iter2 != file_map.end ())
       //   {
@@ -324,26 +348,31 @@ metadata_manager::get_filename (int fd)
 }
 
 file_stat
-metadata_manager::get_stat(std::string filename) {
+metadata_manager::get_stat (std::string filename)
+{
   file_stat fs;
-  auto filemap = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
-  if (filemap->get(table::FILE_DB, filename, std::to_string (-1), &fs)) {
-    return fs;
-  }
-  else {
-    DTIO_LOG_ERROR("file " << filename << " stat unsuccessful");
-  }
+  auto filemap
+      = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
+  if (filemap->get (table::FILE_DB, filename, std::to_string (-1), &fs))
+    {
+      return fs;
+    }
+  else
+    {
+      DTIO_LOG_ERROR ("file " << filename << " stat unsuccessful");
+      return file_stat{}; // Return empty file_stat on error
+    }
 }
 
 int
-metadata_manager::update_read_task_info (task *task_ks[],
-                                         std::string filename)
+metadata_manager::update_read_task_info (task *task_ks[], std::string filename)
 {
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
   file_stat fs;
-  if (!map->get(table::FILE_DB, filename, std::to_string (-1), &fs)) {
-    DTIO_LOG_ERROR("Update on read file not found " << filename);
-  }
+  if (!map->get (table::FILE_DB, filename, std::to_string (-1), &fs))
+    {
+      DTIO_LOG_ERROR ("Update on read file not found " << filename);
+    }
   int total_size = 0;
   for (int i = 0; i < BATCH_SIZE; ++i)
     {
@@ -355,8 +384,8 @@ metadata_manager::update_read_task_info (task *task_ks[],
   fs.file_pointer += total_size;
   map->put (table::FILE_DB, filename, &fs, std::to_string (-1));
 #ifdef TIMERMDM
-  DTIO_LOG_TRACE("metadata_manager::update_read_task_info()," << t.pauseTime ()
-		 << "\n");
+  DTIO_LOG_TRACE ("metadata_manager::update_read_task_info(),"
+                  << t.pauseTime () << "\n");
 #endif
   return 0;
 }
@@ -365,13 +394,17 @@ int
 metadata_manager::update_write_task_info (task *task_ks[],
                                           std::string filename)
 {
-  auto filemap = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
-  // auto cmmap = dtio_system::getInstance (service_i)->map_client ("metadata+chunkmeta");
-  auto fmmap = dtio_system::getInstance (service_i)->map_client ("metadata+filemeta");
+  auto filemap
+      = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
+  // auto cmmap = dtio_system::getInstance (service_i)->map_client
+  // ("metadata+chunkmeta");
+  auto fmmap
+      = dtio_system::getInstance (service_i)->map_client ("metadata+filemeta");
   file_stat fs;
-  if (!filemap->get(table::FILE_DB, filename, std::to_string (-1), &fs)) {
-    DTIO_LOG_ERROR("Update on write file not found " << filename);
-  }
+  if (!filemap->get (table::FILE_DB, filename, std::to_string (-1), &fs))
+    {
+      DTIO_LOG_ERROR ("Update on write file not found " << filename);
+    }
   // auto iter = file_map.find (filename);
   // if (iter != file_map.end ())
   //   fs = iter->second;
@@ -383,34 +416,37 @@ metadata_manager::update_write_task_info (task *task_ks[],
     {
       auto task_k = task_ks[i];
 
-      if (task_k->destination.offset + task_k->destination.size > largest_offset + largest_size) {
-	largest_offset = task_k->destination.offset;
-	largest_size = task_k->destination.size;
-      }
+      if (task_k->destination.offset + task_k->destination.size
+          > largest_offset + largest_size)
+        {
+          largest_offset = task_k->destination.offset;
+          largest_size = task_k->destination.size;
+        }
       // if (!task_k.meta_updated)
       //   {
       auto base_offset
-	= (task_k->destination.offset / MAX_IO_UNIT) * MAX_IO_UNIT;
+          = (task_k->destination.offset / MAX_IO_UNIT) * MAX_IO_UNIT;
       cms[i].actual_user_chunk = task_k->destination;
       cms[i].destination = task_k->destination;
       // cmmap->put (table::CHUNK_DB, filename + std::to_string (base_offset),
       //           &cm, std::to_string (-1));
       // std::cout << "Updating filemeta for file " << filename << std::endl;
 
-        // }
+      // }
     }
-  // auto filemap = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
-  // if (!filemap->get(table::FILE_DB, filename, std::to_string (-1), &fs)) {
+  // auto filemap = dtio_system::getInstance (service_i)->map_client
+  // ("metadata+fs"); if (!filemap->get(table::FILE_DB, filename,
+  // std::to_string (-1), &fs)) {
   //   DTIO_LOG_ERROR("Update on write file not found " << filename);
   // }
-  update_on_write (filename, largest_size,
-		   largest_offset, &fs);
-  fmmap->get(table::FILE_CHUNK_DB, filename, std::to_string (-1), &fm);
-  for (int i = 0; i < BATCH_SIZE; i++) {
-    fm.append(&cms[i]);
-  }
+  update_on_write (filename, largest_size, largest_offset, &fs);
+  fmmap->get (table::FILE_CHUNK_DB, filename, std::to_string (-1), &fm);
+  for (int i = 0; i < BATCH_SIZE; i++)
+    {
+      fm.append (&cms[i]);
+    }
   fmmap->put (table::FILE_CHUNK_DB, filename, &fm, std::to_string (-1));
-  
+
   // filemap->put (table::FILE_DB, filename, &fs, std::to_string (-1));
   return 0;
 }
@@ -421,7 +457,7 @@ metadata_manager::update_on_seek (std::string filename, size_t offset,
 {
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
   file_stat fs;
-  if (map->get(table::FILE_DB, filename, std::to_string (-1), &fs))
+  if (map->get (table::FILE_DB, filename, std::to_string (-1), &fs))
     {
       switch (origin)
         {
@@ -464,7 +500,7 @@ metadata_manager::update_on_read (std::string filename, size_t size)
   std::shared_ptr<distributed_hashmap> map
       = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
   file_stat fs;
-  if (map->get(table::FILE_DB, filename, std::to_string (-1), &fs))
+  if (map->get (table::FILE_DB, filename, std::to_string (-1), &fs))
     {
       fs.file_pointer += size;
       map->put (table::FILE_DB, filename, &fs, std::to_string (-1));
@@ -475,7 +511,7 @@ void
 metadata_manager::update_on_write (std::string filename, size_t size,
                                    size_t offset, file_stat *fs)
 {
-  DTIO_LOG_TRACE("Update on write" << std::endl);
+  DTIO_LOG_TRACE ("Update on write" << std::endl);
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
   // if (iter != file_map.end ())
   //   {
@@ -487,11 +523,12 @@ metadata_manager::update_on_write (std::string filename, size_t size,
   fs->file_pointer = offset + size;
   // file_map[filename] = fs;
   map->put (table::FILE_DB, filename, fs, std::to_string (-1));
-// }
+  // }
   // else {
   //   DTIO_LOG_ERROR("Update on write file not found " << filename);
   // }
-  DTIO_LOG_TRACE("[DTIO][UPDATE_ON_WRITE] " << filename << " " << offset << " " << size << " ");
+  DTIO_LOG_TRACE ("[DTIO][UPDATE_ON_WRITE] " << filename << " " << offset
+                                             << " " << size << " ");
 }
 
 void
@@ -512,7 +549,8 @@ metadata_manager::fetch_chunks (task task)
 {
 
   assert (task.t_type == task_type::READ_TASK);
-  auto map = dtio_system::getInstance (service_i)->map_client ("metadata+chunkmeta");
+  auto map = dtio_system::getInstance (service_i)->map_client (
+      "metadata+chunkmeta");
 
   auto remaining_data = task.source.size;
   auto chunks = std::vector<chunk_meta> ();
@@ -563,7 +601,8 @@ metadata_manager::fetch_chunks (task task)
       source_offset += size_to_read;
     }
 #ifdef TIMERMDM
-  DTIO_LOG_INFO("metadata_manager::fetch_chunks()," << t.pauseTime () << "\n");
+  DTIO_LOG_INFO ("metadata_manager::fetch_chunks()," << t.pauseTime ()
+                                                     << "\n");
 #endif
   return chunks;
 }
@@ -588,7 +627,8 @@ metadata_manager::update_delete_task_info (task task_k, std::string filename)
   // }
   map->remove (table::FILE_DB, filename, std::to_string (-1));
 #ifdef TIMERMDM
-  DTIO_LOG_INFO("metadata_manager::update_delete_task_info()," << t.pauseTime () << "\n");
+  DTIO_LOG_INFO ("metadata_manager::update_delete_task_info(),"
+                 << t.pauseTime () << "\n");
 #endif
   return 0;
 }
@@ -597,19 +637,21 @@ int
 metadata_manager::update_write_task_info (task task_k, std::string filename,
                                           std::size_t io_size)
 {
-  auto fmmap = dtio_system::getInstance (service_i)->map_client ("metadata+filemeta");
-  auto filemap = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
+  auto fmmap
+      = dtio_system::getInstance (service_i)->map_client ("metadata+filemeta");
+  auto filemap
+      = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
   file_stat fs;
-  if (!filemap->get(table::FILE_DB, filename, std::to_string (-1), &fs)) {
-    DTIO_LOG_ERROR("Update on write file not found " << filename);
-  }
+  if (!filemap->get (table::FILE_DB, filename, std::to_string (-1), &fs))
+    {
+      DTIO_LOG_ERROR ("Update on write file not found " << filename);
+    }
 
   update_on_write (filename, io_size, task_k.destination.offset, &fs);
-      // if (!task_k.meta_updated)
-      //   {
+  // if (!task_k.meta_updated)
+  //   {
 
-  auto base_offset
-    = (task_k.destination.offset / MAX_IO_UNIT) * MAX_IO_UNIT;
+  auto base_offset = (task_k.destination.offset / MAX_IO_UNIT) * MAX_IO_UNIT;
   chunk_meta cm;
   cm.actual_user_chunk = task_k.destination;
   cm.destination = task_k.destination;
@@ -618,11 +660,13 @@ metadata_manager::update_write_task_info (task task_k, std::string filename,
   // std::cout << "Updating filemeta for file " << filename << std::endl;
 
   file_meta fm;
-  fmmap->get(table::FILE_CHUNK_DB, filename, std::to_string (-1), &fm);
-  fm.append(&cm);
-  // std::cout << fm.chunks[fm.current_chunk_index - 1].actual_user_chunk.size << std::endl;
+  fmmap->get (table::FILE_CHUNK_DB, filename, std::to_string (-1), &fm);
+  fm.append (&cm);
+  // std::cout << fm.chunks[fm.current_chunk_index - 1].actual_user_chunk.size
+  // << std::endl;
   fmmap->put (table::FILE_CHUNK_DB, filename, &fm, std::to_string (-1));
-  // std::cout << fm.chunks[fm.current_chunk_index - 1].actual_user_chunk.size << std::endl;
+  // std::cout << fm.chunks[fm.current_chunk_index - 1].actual_user_chunk.size
+  // << std::endl;
   // }
 
   // if (!task_k.meta_updated)
@@ -637,7 +681,8 @@ metadata_manager::update_write_task_info (task task_k, std::string filename,
   //   }
   // map->put (table::FILE_DB, filename, &fs, std::to_string (-1));
 #ifdef TIMERMDM
-  DTIO_LOG_INFO("metadata_manager::update_write_task_info()," << t.pauseTime () << "\n");
+  DTIO_LOG_INFO ("metadata_manager::update_write_task_info(),"
+                 << t.pauseTime () << "\n");
 #endif
   return 0;
 }
