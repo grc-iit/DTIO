@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -27,29 +27,32 @@
  *include files
  ******************************************************************************/
 #include <cstring>
-#include <dtio/common/data_manager/data_manager.h>
-#include <dtio/common/metadata_manager/metadata_manager.h>
+#include <dtio/data_manager/data_manager.h>
 #include <dtio/drivers/mpi.h>
 #include <dtio/dtio_system.h>
+#include <dtio/metadata_manager/metadata_manager.h>
 /******************************************************************************
  *DTIO Namespace
  ******************************************************************************/
-namespace dtio {
-namespace stdio {
+namespace dtio
+{
+namespace stdio
+{
 /******************************************************************************
  *Interface
  ******************************************************************************/
-FILE *fopen(const char *filename, const char *mode);
-int fclose(FILE *stream);
-int fseek(FILE *stream, long int offset, int origin);
-size_t fread(void *ptr, size_t size, size_t count, FILE *stream, bool special_type = false);
-std::vector<task> fread_async(size_t size, size_t count, FILE *stream);
-std::size_t fread_wait(void *ptr, std::vector<task> &tasks,
-                       std::string filename);
-std::vector<task *> fwrite_async(void *ptr, size_t size, size_t count,
-				 FILE *stream);
-size_t fwrite_wait(std::vector<task *> tasks);
-size_t fwrite(const void *ptr, size_t size, size_t count, FILE *stream);
+FILE *fopen (const char *filename, const char *mode);
+int fclose (FILE *stream);
+int fseek (FILE *stream, long int offset, int origin);
+size_t fread (void *ptr, size_t size, size_t count, FILE *stream,
+              bool special_type = false);
+std::vector<task> fread_async (size_t size, size_t count, FILE *stream);
+std::size_t fread_wait (void *ptr, std::vector<task> &tasks,
+                        std::string filename);
+std::vector<task *> fwrite_async (void *ptr, size_t size, size_t count,
+                                  FILE *stream);
+size_t fwrite_wait (std::vector<task *> tasks);
+size_t fwrite (const void *ptr, size_t size, size_t count, FILE *stream);
 } // namespace stdio
 } // namespace dtio
 

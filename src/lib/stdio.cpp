@@ -24,10 +24,10 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
-#include "dtio/common/logger.h"
-#include <dtio/common/return_codes.h>
-#include <dtio/common/task_builder/task_builder.h>
+#include "dtio/logger.h"
 #include <dtio/drivers/stdio.h>
+#include <dtio/return_codes.h>
+#include <dtio/task_builder/task_builder.h>
 #include <dtiomod/dtiomod_client.h> // Make sure this actually gets included
 #include <iomanip>
 #include <zconf.h>

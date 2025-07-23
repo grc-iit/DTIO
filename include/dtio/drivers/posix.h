@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -26,10 +26,10 @@
 
 #include <cstdio>
 #include <cstring>
-#include <dtio/common/data_manager/data_manager.h>
-#include <dtio/common/metadata_manager/metadata_manager.h>
+#include <dtio/data_manager/data_manager.h>
 #include <dtio/drivers/mpi.h>
 #include <dtio/dtio_system.h>
+#include <dtio/metadata_manager/metadata_manager.h>
 
 // DTIO Namespace
 namespace dtio
@@ -47,7 +47,7 @@ int open64 (const char *filename, int flags, mode_t mode);
 // FIXME:
 // POSIX unlink is currently commented to avoid problems in HCL
 
-int unlink(const char *pathname);
+int unlink (const char *pathname);
 int fsync (int fd);
 int rename (const char *oldpath, const char *newpath);
 int mystat (const char *pathname, struct stat *statbuf);
@@ -58,18 +58,16 @@ int mknod (const char *pathname, mode_t mode, dev_t dev);
 // int fcntl(int fd, int cmd, ...);
 
 int __fxstat64 (int __ver, int fd, struct stat64 *buf);
-int __fxstatat64(int __ver, int __fildes,
-                 const char *__filename,
-                 struct stat64 *__stat_buf, int __flag);
-int __xstat64(int __ver, const char *__filename,
-              struct stat64 *__stat_buf);
+int __fxstatat64 (int __ver, int __fildes, const char *__filename,
+                  struct stat64 *__stat_buf, int __flag);
+int __xstat64 (int __ver, const char *__filename, struct stat64 *__stat_buf);
 int __open_2 (const char *path, int oflag);
 int __fxstat (int __ver, int fd, struct stat *buf);
 int __fxstatat (int __ver, int __fildes, const char *__filename,
                 struct stat *__stat_buf, int __flag);
 int __xstat (int __ver, const char *__filename, struct stat *__stat_buf);
 
- int __lxstat (int __ver, const char *__filename, struct stat *__stat_buf);
+int __lxstat (int __ver, const char *__filename, struct stat *__stat_buf);
 
 int __fxstatat64 (int __ver, int __fildes, const char *__filename,
                   struct stat64 *__stat_buf, int __flag);

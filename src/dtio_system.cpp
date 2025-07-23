@@ -22,12 +22,9 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include "dtio/common/config_manager.h"
-#include "dtio/common/constants.h"
-#include "dtio/common/enumerations.h"
-#include <dtio/common/solver/default_solver.h>
-#include <dtio/common/solver/dp_solver.h>
-#include <dtio/common/solver/random_solver.h>
+#include "dtio/config_manager.h"
+#include "dtio/constants.h"
+#include "dtio/enumerations.h"
 #include <dtio/dtio_system.h>
 
 std::shared_ptr<dtio_system> dtio_system::instance = nullptr;

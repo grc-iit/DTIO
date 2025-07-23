@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -25,14 +25,15 @@
 #ifndef DTIO_MAIN_MPI_H
 #define DTIO_MAIN_MPI_H
 
-#include <dtio/common/enumerations.h>
 #include <dtio/dtio_system.h>
+#include <dtio/enumerations.h>
 #include <mpi.h>
 
-namespace dtio {
-int MPI_Init(int *argc, char ***argv);
+namespace dtio
+{
+int MPI_Init (int *argc, char ***argv);
 
-void MPI_Finalize();
+void MPI_Finalize ();
 } // namespace dtio
 
 #endif // DTIO_MAIN_MPI_H

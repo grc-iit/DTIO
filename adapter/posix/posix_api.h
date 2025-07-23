@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -25,11 +25,11 @@
 #ifndef HERMES_ADAPTER_POSIX_H
 #define HERMES_ADAPTER_POSIX_H
 #include "real_api.h"
+#include <boost/stacktrace.hpp>
 #include <fcntl.h>
 #include <iostream>
-#include <string>
 #include <set>
-#include <boost/stacktrace.hpp>
+#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -121,8 +121,8 @@ private:
   static std::shared_ptr<dtio::posix::PosixApi> instance;
 
 public:
-  std::shared_ptr<std::set<std::string>> interception_whitelist = nullptr;
-  std::shared_ptr<std::set<int>> fd_interception_whitelist = nullptr;
+  std::shared_ptr<std::set<std::string> > interception_whitelist = nullptr;
+  std::shared_ptr<std::set<int> > fd_interception_whitelist = nullptr;
 
   /** open */
   open_t open = nullptr;
@@ -190,8 +190,8 @@ public:
 
   PosixApi () : dtio::adapter::RealApi ("open", "posix_intercepted")
   {
-    interception_whitelist = std::make_shared<std::set<std::string>>();
-    fd_interception_whitelist = std::make_shared<std::set<int>>();
+    interception_whitelist = std::make_shared<std::set<std::string> > ();
+    fd_interception_whitelist = std::make_shared<std::set<int> > ();
 
     open = (open_t)dlsym (real_lib_, "open");
     REQUIRE_API (open)
@@ -259,40 +259,61 @@ public:
   PosixApi &operator= (const PosixApi &) = default;
   PosixApi &operator= (PosixApi &&) = default;
 
-  bool fd_whitelistedp(int fd) {
-    if (interception_whitelist == nullptr) {
-      return false;
-    }
-    else {
-      return fd_interception_whitelist->find(fd) != fd_interception_whitelist->end();
-    }
+  bool
+  fd_whitelistedp (int fd)
+  {
+    if (interception_whitelist == nullptr)
+      {
+        return false;
+      }
+    else
+      {
+        return fd_interception_whitelist->find (fd)
+               != fd_interception_whitelist->end ();
+      }
   }
 
-  void whitelist_fd(int fd) {
-    fd_interception_whitelist->insert(fd);
-  }
-  
-  bool interceptp(std::string sourcename) {
-    if (interception_whitelist == nullptr) {
-      return false;
-    }
-    else {
-      return interception_whitelist->find(sourcename) != interception_whitelist->end();
-    }
+  void
+  whitelist_fd (int fd)
+  {
+    fd_interception_whitelist->insert (fd);
   }
 
-  bool check_path(const char *path) {
-    return (strlen(path) >= 7) && (path[0] == 'd' && path[1] == 't' && path[2] == 'i' && path[3] == 'o' && path[4] == ':' && path[5] == '/' && path[6] == '/');
+  bool
+  interceptp (std::string sourcename)
+  {
+    if (interception_whitelist == nullptr)
+      {
+        return false;
+      }
+    else
+      {
+        return interception_whitelist->find (sourcename)
+               != interception_whitelist->end ();
+      }
   }
 
-  void add_to_whitelist(std::string execname) {
-    interception_whitelist->insert(execname);
+  bool
+  check_path (const char *path)
+  {
+    return (strlen (path) >= 7)
+           && (path[0] == 'd' && path[1] == 't' && path[2] == 'i'
+               && path[3] == 'o' && path[4] == ':' && path[5] == '/'
+               && path[6] == '/');
+  }
+
+  void
+  add_to_whitelist (std::string execname)
+  {
+    interception_whitelist->insert (execname);
   }
 
   inline static std::shared_ptr<dtio::posix::PosixApi>
-  getInstance() {
-    return instance == nullptr ?
-      instance = std::make_shared<dtio::posix::PosixApi>() : instance;
+  getInstance ()
+  {
+    return instance == nullptr
+               ? instance = std::make_shared<dtio::posix::PosixApi> ()
+               : instance;
   }
 };
 
@@ -300,10 +321,9 @@ public:
 
 // Singleton macros
 // #include "hermes_shm/util/singleton.h"
-#include <dtio/common/singleton.h>
+#include <dtio/singleton.h>
 
-#define HERMES_POSIX_API                                                      \
-  dtio::posix::PosixApi::getInstance ()
+#define HERMES_POSIX_API dtio::posix::PosixApi::getInstance ()
 #define HERMES_POSIX_API_T std::shared_ptr<dtio::posix::PosixApi>
 
 namespace dtio::posix

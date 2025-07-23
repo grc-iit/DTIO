@@ -24,22 +24,21 @@
 #ifndef DTIO_MAIN_SYSTEM_H
 #define DTIO_MAIN_SYSTEM_H
 
-#include "dtio/common/logger.h"
+#include "dtio/logger.h"
 #include <climits>
-#include <dtio/common/client_interface/distributed_hashmap.h>
-#include <dtio/common/client_interface/distributed_queue.h>
-#include <dtio/common/config_manager.h>
-#include <dtio/common/constants.h>
-#include <dtio/common/enumerations.h>
-#include <dtio/common/external_clients/iowarp_map_impl.h>
-// #include <dtio/common/external_clients/hcl_queue_impl.h>
-// #include <dtio/common/external_clients/memcached_impl.h>
-// #include <dtio/common/external_clients/nats_impl.h>
-// #include <dtio/common/external_clients/rocksdb_impl.h>
-// #include <dtio/common/task_builder/task_builder.h>
-#include <dtio/common/solver/solver.h>
-#include <dtio/common/task_builder/aggregating_builder.h>
-#include <dtio/common/task_builder/default_builder.h>
+#include <dtio/client_interface/distributed_hashmap.h>
+#include <dtio/client_interface/distributed_queue.h>
+#include <dtio/config_manager.h>
+#include <dtio/constants.h>
+#include <dtio/enumerations.h>
+#include <dtio/external_clients/iowarp_map_impl.h>
+// #include <dtio/external_clients/hcl_queue_impl.h>
+// #include <dtio/external_clients/memcached_impl.h>
+// #include <dtio/external_clients/nats_impl.h>
+// #include <dtio/external_clients/rocksdb_impl.h>
+// #include <dtio/task_builder/task_builder.h>
+#include <dtio/task_builder/aggregating_builder.h>
+#include <dtio/task_builder/default_builder.h>
 #include <memory>
 #include <mpi.h>
 #include <string>

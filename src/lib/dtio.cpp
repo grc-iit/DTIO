@@ -1,8 +1,8 @@
-#include "dtio/common/config_manager.h"
-#include "dtio/common/enumerations.h"
-#include "dtio/common/logger.h"
-#include <dtio/common/utilities.h>
+#include "dtio/config_manager.h"
+#include "dtio/enumerations.h"
+#include "dtio/logger.h"
 #include <dtio/drivers/dtio.h>
+#include <dtio/utilities.h>
 #include <iostream>
 #include <nanobind/nanobind.h>
 // #include <nanobind/ndarray.h>

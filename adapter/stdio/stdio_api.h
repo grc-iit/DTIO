@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -26,10 +26,10 @@
 #define HERMES_ADAPTER_STDIO_H
 #include "real_api.h"
 // #include <fcntl.h>
-#include <iostream>
-#include <string>
-#include <set>
 #include <boost/stacktrace.hpp>
+#include <iostream>
+#include <set>
+#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 // #include <unistd.h>
@@ -45,10 +45,12 @@
 
 extern "C"
 {
-  typedef FILE * (*fopen_t) (const char *filename, const char *mode);
-  typedef size_t (*fread_t) (void *ptr, size_t size, size_t count, FILE *stream);
-  typedef char * (*fgets_t) (char *ptr, int count, FILE *stream);
-  typedef size_t (*fwrite_t) (const void *ptr, size_t size, size_t count, FILE *stream);
+  typedef FILE *(*fopen_t) (const char *filename, const char *mode);
+  typedef size_t (*fread_t) (void *ptr, size_t size, size_t count,
+                             FILE *stream);
+  typedef char *(*fgets_t) (char *ptr, int count, FILE *stream);
+  typedef size_t (*fwrite_t) (const void *ptr, size_t size, size_t count,
+                              FILE *stream);
   typedef int (*fseek_t) (FILE *stream, long int offset, int origin);
   typedef int (*fclose_t) (FILE *stream);
 }
@@ -66,8 +68,8 @@ private:
   static std::shared_ptr<dtio::stdio::StdioApi> instance;
 
 public:
-  std::shared_ptr<std::set<std::string>> interception_whitelist = nullptr;
-  std::shared_ptr<std::set<FILE *>> fp_interception_whitelist = nullptr;
+  std::shared_ptr<std::set<std::string> > interception_whitelist = nullptr;
+  std::shared_ptr<std::set<FILE *> > fp_interception_whitelist = nullptr;
 
   /** fopen */
   fopen_t fopen = nullptr;
@@ -84,8 +86,8 @@ public:
 
   StdioApi () : dtio::adapter::RealApi ("open", "stdio_intercepted")
   {
-    interception_whitelist = std::make_shared<std::set<std::string>>();
-    fp_interception_whitelist = std::make_shared<std::set<FILE *>>();
+    interception_whitelist = std::make_shared<std::set<std::string> > ();
+    fp_interception_whitelist = std::make_shared<std::set<FILE *> > ();
 
     fopen = (fopen_t)dlsym (real_lib_, "fopen");
     REQUIRE_API (fopen)
@@ -106,40 +108,61 @@ public:
   StdioApi &operator= (const StdioApi &) = default;
   StdioApi &operator= (StdioApi &&) = default;
 
-  bool fp_whitelistedp(FILE *fp) {
-    if (interception_whitelist == nullptr) {
-      return false;
-    }
-    else {
-      return fp_interception_whitelist->find(fp) != fp_interception_whitelist->end();
-    }
+  bool
+  fp_whitelistedp (FILE *fp)
+  {
+    if (interception_whitelist == nullptr)
+      {
+        return false;
+      }
+    else
+      {
+        return fp_interception_whitelist->find (fp)
+               != fp_interception_whitelist->end ();
+      }
   }
 
-  void whitelist_fp(FILE *fp) {
-    fp_interception_whitelist->insert(fp);
-  }
-  
-  bool interceptp(std::string sourcename) {
-    if (interception_whitelist == nullptr) {
-      return false;
-    }
-    else {
-      return interception_whitelist->find(sourcename) != interception_whitelist->end();
-    }
+  void
+  whitelist_fp (FILE *fp)
+  {
+    fp_interception_whitelist->insert (fp);
   }
 
-  bool check_path(const char *path) {
-    return (strlen(path) < 7) || (path[0] == 'd' && path[1] == 't' && path[2] == 'i' && path[3] == 'o' && path[4] == ':' && path[5] == '/' && path[6] == '/');
+  bool
+  interceptp (std::string sourcename)
+  {
+    if (interception_whitelist == nullptr)
+      {
+        return false;
+      }
+    else
+      {
+        return interception_whitelist->find (sourcename)
+               != interception_whitelist->end ();
+      }
   }
 
-  void add_to_whitelist(std::string execname) {
-    interception_whitelist->insert(execname);
+  bool
+  check_path (const char *path)
+  {
+    return (strlen (path) < 7)
+           || (path[0] == 'd' && path[1] == 't' && path[2] == 'i'
+               && path[3] == 'o' && path[4] == ':' && path[5] == '/'
+               && path[6] == '/');
+  }
+
+  void
+  add_to_whitelist (std::string execname)
+  {
+    interception_whitelist->insert (execname);
   }
 
   inline static std::shared_ptr<dtio::stdio::StdioApi>
-  getInstance() {
-    return instance == nullptr ?
-      instance = std::make_shared<dtio::stdio::StdioApi>() : instance;
+  getInstance ()
+  {
+    return instance == nullptr
+               ? instance = std::make_shared<dtio::stdio::StdioApi> ()
+               : instance;
   }
 };
 
@@ -147,10 +170,9 @@ public:
 
 // Singleton macros
 // #include "hermes_shm/util/singleton.h"
-#include <dtio/common/singleton.h>
+#include <dtio/singleton.h>
 
-#define HERMES_STDIO_API                                                      \
-  dtio::stdio::StdioApi::getInstance ()
+#define HERMES_STDIO_API dtio::stdio::StdioApi::getInstance ()
 #define HERMES_STDIO_API_T std::shared_ptr<dtio::stdio::StdioApi>
 
 #endif // HERMES_ADAPTER_STDIO

@@ -142,10 +142,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # ------------------------------------------------------------------------------
 
 set(COMMON_SRC
-    src/common/config_manager.cpp
-    src/common/data_manager/data_manager.cpp
-    src/common/metadata_manager/metadata_manager.cpp
-    src/common/external_clients/iowarp_map_impl.cpp
+    src/config_manager.cpp
+    src/data_manager/data_manager.cpp
+    src/metadata_manager/metadata_manager.cpp
+    src/external_clients/iowarp_map_impl.cpp
     src/dtio_system.cpp
 
     # INTERCEPTORS

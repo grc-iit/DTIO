@@ -3,17 +3,19 @@
 
 #include <cstdio>
 #include <cstring>
-#include <dtio/common/data_manager/data_manager.h>
-#include <dtio/common/metadata_manager/metadata_manager.h>
+#include <dtio/data_manager/data_manager.h>
 #include <dtio/drivers/mpi.h>
 #include <dtio/dtio_system.h>
+#include <dtio/metadata_manager/metadata_manager.h>
 
 // DTIO Namespace
-namespace dtio {
+namespace dtio
+{
 
 int DTIO_Init ();
-  int DTIO_write (std::string filename, std::string buf, int64_t offset, size_t count);
-  std::string DTIO_read(std::string filename, int64_t offset, size_t count);
+int DTIO_write (std::string filename, std::string buf, int64_t offset,
+                size_t count);
+std::string DTIO_read (std::string filename, int64_t offset, size_t count);
 
 }
 

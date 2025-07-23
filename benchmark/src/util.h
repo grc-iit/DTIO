@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -25,11 +25,10 @@
 #ifndef DTIO_BENCH_UTIL_H
 #define DTIO_BENCH_UTIL_H
 
-#include "dtio/common/return_codes.h"
-#include "dtio/common/threadPool.h"
-#include "dtio/common/utilities.h"
-#include "dtio/drivers/stdio.h"
 #include "dtio/drivers/posix.h"
+#include "dtio/drivers/stdio.h"
+#include "dtio/return_codes.h"
+#include "dtio/utilities.h"
 #include <fcntl.h>
 /* #include <fstream> */
 #include <iomanip>
