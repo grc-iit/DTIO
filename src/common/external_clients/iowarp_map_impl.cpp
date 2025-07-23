@@ -129,6 +129,7 @@ IOWARPMapImpl::put (const table &name, std::string key, file_stat *fs,
   size_t keysize = hshm::Unit<size_t>::Bytes(new_key.length());
   auto valstring = ss.str();
   size_t valsize = hshm::Unit<size_t>::Bytes(valstring.length());
+  std::cout << "Filestat valsize " << valstring.length() << std::endl;
   hipc::FullPtr<char> mykey =
     CHI_CLIENT->AllocateBuffer(HSHM_MCTX, keysize);
   hipc::FullPtr<char> myval =
@@ -371,9 +372,12 @@ IOWARPMapImpl::get (const table &name, std::string key, std::string group_key, f
     auto retval = std::get<1>(val);
     hipc::FullPtr val_full(retval);
     const char* data = static_cast<const char*>(val_full.ptr_);
-    size_t data_size = strlen(data);
+    size_t data_size = std::get<2>(val);
     if (data_size == 0) {
       std::cout << "Empty data received" << std::endl;
+    }
+    else {
+      std::cout << "Data not empty" << std::endl;
     }
     std::stringstream ss;
     ss.write(data, data_size);
@@ -381,7 +385,6 @@ IOWARPMapImpl::get (const table &name, std::string key, std::string group_key, f
     printf("Success?\n");
     try {
       ar(*result);
-
     } catch (const std::exception& ex) {
       std::cout << "Exception " << ex.what() << std::endl;
     } catch (const std::string& ex) {

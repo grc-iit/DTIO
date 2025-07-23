@@ -107,16 +107,17 @@ CHI_BEGIN(MetaPut)
 
 CHI_BEGIN(MetaGet)
   /** MetaGet task */
-  std::tuple<bool, hipc::Pointer> MetaGet(const hipc::MemContext &mctx,
-					  const DomainQuery &dom_query,
-					  hipc::Pointer key, size_t keylen) {
+  std::tuple<bool, hipc::Pointer, size_t> MetaGet(const hipc::MemContext &mctx,
+						  const DomainQuery &dom_query,
+						  hipc::Pointer key, size_t keylen) {
     FullPtr<MetaGetTask> task =
       AsyncMetaGet(mctx, dom_query, key, keylen);
     task->Wait();
     hipc::Pointer val = task->val_;
+    size_t vallen = task->vallen_;
     bool presence = task->presence_;
     CHI_CLIENT->DelTask(mctx, task);
-    auto ret = std::tuple<bool, hipc::Pointer>(presence, val);
+    auto ret = std::tuple<bool, hipc::Pointer, size_t>(presence, val, vallen);
     return ret;
   }
   CHI_TASK_METHODS(MetaGet);

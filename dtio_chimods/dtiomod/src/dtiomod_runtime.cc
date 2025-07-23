@@ -22,7 +22,7 @@ class Server : public Module {
   CLS_CONST LaneGroupId kDefaultGroup = 0;
 
  public:
-  std::unordered_map<std::string, std::string> metamap;
+  std::unordered_map<std::string, std::tuple<std::string, size_t>> metamap;
   size_t schedule_num;
 
   Server() = default;
@@ -217,7 +217,7 @@ CHI_BEGIN(MetaPut)
     hipc::FullPtr val_full(task->val_);
     char *val_ = (char *)(val_full.ptr_);
 
-    metamap[std::string(key_)] = std::string(val_, task->vallen_);
+    metamap[std::string(key_, task->keylen_)] = std::tuple<std::string, size_t>(std::string(val_, task->vallen_), task->vallen_);
     printf("Metaput runtime put done\n");
   }
   void MonitorMetaPut(MonitorModeId mode, MetaPutTask *task, RunContext &rctx) {
@@ -242,7 +242,7 @@ CHI_BEGIN(MetaGet)
     hipc::FullPtr val_full(task->val_);
     char *val_ = (char *)(val_full.ptr_);
 
-    task->presence_ = (metamap.find(std::string(key_)) != metamap.end());
+    task->presence_ = (metamap.find(std::string(key_, task->keylen_)) != metamap.end());
 
     if (!task->presence_) {
       std::cout << "DTIOMOD key not found" << std::endl;
@@ -250,8 +250,10 @@ CHI_BEGIN(MetaGet)
     }
 
     std::cout << "DTIOMOD key found" << std::endl;
-    val_ = strdup(metamap[std::string(key_)].c_str());
-    task->vallen_ = strlen(val_);
+    auto ref = metamap[std::string(key_, task->keylen_)];
+    val_ = strndup(std::get<0>(ref).c_str(), std::get<1>(ref));
+    std::cout << "DTIOMOD strlen val " << std::get<1>(ref) << std::endl;
+    task->vallen_ = std::get<1>(ref);
   }
   void MonitorMetaGet(MonitorModeId mode, MetaGetTask *task, RunContext &rctx) {
     switch (mode) {

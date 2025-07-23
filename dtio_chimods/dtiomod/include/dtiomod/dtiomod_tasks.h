@@ -259,6 +259,7 @@ struct MetaPutTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeStart(Ar &ar) {
     ar.bulk(DT_WRITE, key_, keylen_);
     ar.bulk(DT_WRITE, val_, vallen_);
+    ar(keylen_, vallen_);
   }
 
   /** (De)serialize message return */
@@ -299,12 +300,15 @@ struct MetaGetTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Custom
     key_ = key;
     keylen_ = keylen;
+    presence_ = false;
   }
 
   /** Duplicate message */
   void CopyStart(const MetaGetTask &other, bool deep) {
     key_ = other.key_;
     keylen_ = other.keylen_;
+    val_ = other.val_;
+    vallen_ = other.vallen_;
     presence_ = other.presence_;
     if (!deep) {
       UnsetDataOwner();
@@ -321,7 +325,7 @@ struct MetaGetTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeEnd(Ar &ar) {
     ar.bulk(DT_WRITE, val_, vallen_);
-    ar(presence_);
+    ar(vallen_, presence_);
   }
 };
 CHI_END(MetaGet);

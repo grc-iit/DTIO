@@ -30,7 +30,6 @@
 #include <dtio/common/metadata_manager/metadata_manager.h>
 #include <dtio/common/return_codes.h>
 #include <dtio/common/utilities.h>
-#include <hcl/common/debug.h>
 #include <mpi.h>
 #include <random>
 
@@ -109,10 +108,6 @@ int
 metadata_manager::update_on_open (std::string filename, std::string mode,
                                   FILE *&fh, int existing_size)
 {
-#ifdef TIMERMDM
-  hcl::Timer t = hcl::Timer ();
-  t.resumeTime ();
-#endif
   if (filename.length () > FILENAME_MAX)
     return MDM__FILENAME_MAX_LENGTH;
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
@@ -165,10 +160,6 @@ int
 metadata_manager::update_on_open (std::string filename, int flags, mode_t mode,
                                   int *fd, int existing_size)
 {
-#ifdef TIMERMDM
-  hcl::Timer t = hcl::Timer ();
-  t.resumeTime ();
-#endif
   if (filename.length () > FILENAME_MAX)
     return MDM__FILENAME_MAX_LENGTH;
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
@@ -348,10 +339,6 @@ int
 metadata_manager::update_read_task_info (task *task_ks[],
                                          std::string filename)
 {
-#ifdef TIMERMDM
-  hcl::Timer t = hcl::Timer ();
-  t.resumeTime ();
-#endif
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
   file_stat fs;
   if (!map->get(table::FILE_DB, filename, std::to_string (-1), &fs)) {
@@ -523,10 +510,6 @@ metadata_manager::update_on_delete (std::string filename)
 std::vector<chunk_meta>
 metadata_manager::fetch_chunks (task task)
 {
-#ifdef TIMERMDM
-  hcl::Timer t = hcl::Timer ();
-  t.resumeTime ();
-#endif
 
   assert (task.t_type == task_type::READ_TASK);
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+chunkmeta");
@@ -588,10 +571,6 @@ metadata_manager::fetch_chunks (task task)
 int
 metadata_manager::update_delete_task_info (task task_k, std::string filename)
 {
-#ifdef TIMERMDM
-  hcl::Timer t = hcl::Timer ();
-  t.resumeTime ();
-#endif
   auto map = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
   file_stat fs;
   auto iter = file_map.find (filename);
@@ -619,10 +598,6 @@ metadata_manager::update_write_task_info (task task_k, std::string filename,
                                           std::size_t io_size)
 {
   auto fmmap = dtio_system::getInstance (service_i)->map_client ("metadata+filemeta");
-#ifdef TIMERMDM
-  hcl::Timer t = hcl::Timer ();
-  t.resumeTime ();
-#endif
   auto filemap = dtio_system::getInstance (service_i)->map_client ("metadata+fs");
   file_stat fs;
   if (!filemap->get(table::FILE_DB, filename, std::to_string (-1), &fs)) {
