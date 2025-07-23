@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -28,11 +28,11 @@
 #include <stdexcept>
 
 class NotImplementedException : public std::logic_error {
-public:
+ public:
   NotImplementedException(const std::string &__arg) : logic_error(__arg) {}
 
   virtual char const *what() const noexcept override {
     return "Function not yet implemented.";
   }
 };
-#endif // DTIO_MAIN_EXCEPTION_H
+#endif  // DTIO_MAIN_EXCEPTION_H

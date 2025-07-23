@@ -23,51 +23,41 @@
  */
 
 #include <dtio/timer.h>
+
 #include <iomanip>
 #include <iostream>
 
-void
-dtio::Timer::startTime ()
-{
-  t1 = std::chrono::high_resolution_clock::now ();
+void dtio::Timer::startTime() {
+  t1 = std::chrono::high_resolution_clock::now();
 }
 
-double
-dtio::Timer::endTimeWithPrint (std::string fnName)
-{
-  auto t2 = std::chrono::high_resolution_clock::now ();
-  auto t
-      = std::chrono::duration_cast<std::chrono::nanoseconds> (t2 - t1).count ()
-        / 1000000000.0;
-  if (t > 0.001)
-    {
-      printf ("%s : %lf\n", fnName.c_str (), t);
-    }
+double dtio::Timer::endTimeWithPrint(std::string fnName) {
+  auto t2 = std::chrono::high_resolution_clock::now();
+  auto t =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() /
+      1000000000.0;
+  if (t > 0.001) {
+    printf("%s : %lf\n", fnName.c_str(), t);
+  }
   return t;
 }
 
-double
-dtio::Timer::stopTime ()
-{
-  return std::chrono::duration_cast<std::chrono::nanoseconds> (
-             std::chrono::high_resolution_clock::now () - t1)
-             .count ()
-         / 1000000000.0;
+double dtio::Timer::stopTime() {
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(
+             std::chrono::high_resolution_clock::now() - t1)
+             .count() /
+         1000000000.0;
 }
 
-double
-dtio::Timer::pauseTime ()
-{
-  elapsed_time += std::chrono::duration_cast<std::chrono::nanoseconds> (
-                      std::chrono::high_resolution_clock::now () - t1)
-                      .count ()
-                  / 1000000000.0;
+double dtio::Timer::pauseTime() {
+  elapsed_time += std::chrono::duration_cast<std::chrono::nanoseconds>(
+                      std::chrono::high_resolution_clock::now() - t1)
+                      .count() /
+                  1000000000.0;
   return elapsed_time;
 }
 
-int
-dtio::Timer::resumeTime ()
-{
-  t1 = std::chrono::high_resolution_clock::now ();
+int dtio::Timer::resumeTime() {
+  t1 = std::chrono::high_resolution_clock::now();
   return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -83,7 +83,8 @@ int main(int argc, char **argv) {
   global_timer.pauseTime();
   auto time = global_timer.getElapsedTime();
   double sum;
-  MPI_Allreduce(&time, &sum, 1, MPI_DOUBLE, MPI_SUM, ConfigManager::get_instance()->PROCESS_COMM);
+  MPI_Allreduce(&time, &sum, 1, MPI_DOUBLE, MPI_SUM,
+                ConfigManager::get_instance()->PROCESS_COMM);
   double mean = sum / comm_size;
   if (rank == 0) {
     stream << "cm1_base," << std::fixed << std::setprecision(6) << mean << "\n";

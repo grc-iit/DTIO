@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -34,8 +34,7 @@ int main(int argc, char **argv) {
   int rank, comm_size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
-  if (rank == 0)
-    std::cerr << "Stress test\n";
+  if (rank == 0) std::cerr << "Stress test\n";
   const int io_size = 1024 * 1024;
   int num_iterations = 128;
   Timer global_timer = Timer();
@@ -43,7 +42,7 @@ int main(int argc, char **argv) {
   FILE *fh = dtio::fopen("file.test", "w+");
   global_timer.pauseTime();
   std::vector<std::pair<size_t, std::vector<task *>>> operations =
-    std::vector<std::pair<size_t, std::vector<task *>>>();
+      std::vector<std::pair<size_t, std::vector<task *>>>();
   char write_buf[io_size];
   gen_random(write_buf, io_size);
   for (int i = 0; i < num_iterations; ++i) {
@@ -52,14 +51,12 @@ int main(int argc, char **argv) {
         io_size, dtio::fwrite_async(write_buf, sizeof(char), io_size, fh)));
     global_timer.pauseTime();
     if (i != 0 && i % 32 == 0) {
-      if (rank == 0)
-        std::cerr << "Waiting..." << i << "\n";
+      if (rank == 0) std::cerr << "Waiting..." << i << "\n";
       for (int task = 0; task < 32; ++task) {
         auto operation = operations[task];
         global_timer.resumeTime();
         auto bytes = dtio::fwrite_wait(operation.second);
-        if (bytes != operation.first)
-          std::cerr << "Write failed\n";
+        if (bytes != operation.first) std::cerr << "Write failed\n";
         global_timer.pauseTime();
       }
       operations.erase(operations.begin(), operations.begin() + 32);
@@ -69,15 +66,13 @@ int main(int argc, char **argv) {
   global_timer.resumeTime();
   for (auto operation : operations) {
     auto bytes = dtio::fwrite_wait(operation.second);
-    if (bytes != operation.first)
-      std::cerr << "Write failed\n";
+    if (bytes != operation.first) std::cerr << "Write failed\n";
   }
   global_timer.pauseTime();
   global_timer.resumeTime();
   dtio::fclose(fh);
   global_timer.pauseTime();
-  if (rank == 0)
-    std::cerr << "Done writing. Now reducing\n";
+  if (rank == 0) std::cerr << "Done writing. Now reducing\n";
   auto time = global_timer.getElapsedTime();
   double sum, max, min;
   MPI_Allreduce(&time, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);

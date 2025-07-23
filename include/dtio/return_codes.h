@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -50,4 +50,4 @@ typedef enum return_codes {
   NO_CACHED_DATA_FOUND = 7950
 } returncode;
 
-#endif // DTIO_RETURN_CODES_H
+#endif  // DTIO_RETURN_CODES_H

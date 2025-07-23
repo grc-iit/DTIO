@@ -29,11 +29,10 @@
 #include <dtio/enumerations.h>
 #include <mpi.h>
 
-namespace dtio
-{
-int MPI_Init (int *argc, char ***argv);
+namespace dtio {
+int MPI_Init(int *argc, char ***argv);
 
-void MPI_Finalize ();
-} // namespace dtio
+void MPI_Finalize();
+}  // namespace dtio
 
-#endif // DTIO_MAIN_MPI_H
+#endif  // DTIO_MAIN_MPI_H

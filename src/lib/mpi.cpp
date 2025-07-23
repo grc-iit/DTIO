@@ -21,35 +21,33 @@
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
+#include <dtio/drivers/mpi.h>
+#include <dtio/utilities.h>
+
+#include <iostream>
+
 #include "dtio/config_manager.h"
 #include "dtio/enumerations.h"
 #include "dtio/logger.h"
-#include <dtio/drivers/mpi.h>
-#include <dtio/utilities.h>
-#include <iostream>
 
-int
-dtio::MPI_Init (int *argc, char ***argv)
-{
+int dtio::MPI_Init(int *argc, char ***argv) {
   int provided;
-  PMPI_Init_thread (argc, argv, MPI_THREAD_MULTIPLE, &provided);
-  if (provided < MPI_THREAD_MULTIPLE)
-    {
-      std::cerr << "Didn't receive appropriate thread specification"
-                << std::endl;
-    }
+  PMPI_Init_thread(argc, argv, MPI_THREAD_MULTIPLE, &provided);
+  if (provided < MPI_THREAD_MULTIPLE) {
+    std::cerr << "Didn't receive appropriate thread specification" << std::endl;
+  }
 
   /* Note: The following log statement was initially at the beginning
      of initialization, but DTIO logging requires rank so we're going
      to have to wait to log until after MPI has initialized.
    */
-  DTIO_LOG_DEBUG ("[MPI] Init Entered");
+  DTIO_LOG_DEBUG("[MPI] Init Entered");
 
   /* NOTE: If we're intercepting MPI_Init, we can't assume that
      argv[1] is the DTIO conf path
    */
-  printf ("Load config\n");
-  ConfigManager::get_instance ()->LoadConfig (); //(*argv)[1]
+  printf("Load config\n");
+  ConfigManager::get_instance()->LoadConfig();  //(*argv)[1]
   std::stringstream ss;
 
   // int rank;
@@ -80,15 +78,11 @@ dtio::MPI_Init (int *argc, char ***argv)
   // PMPI_Comm_split (MPI_COMM_WORLD, QUEUE_TASKSCHED_COLOR, rank - 1,
   //                 &ConfigManager::get_instance ()->QUEUE_TASKSCHED_COMM);
   // DTIO_LOG_DEBUG ("[MPI] Comm: Queue Taskscheduler");
-  printf ("DTIO system get instance\n");
-  dtio_system::getInstance (service::LIB);
-  printf ("Instance gotten\n");
-  DTIO_LOG_DEBUG ("[MPI] Comm: Complete");
+  printf("DTIO system get instance\n");
+  dtio_system::getInstance(service::LIB);
+  printf("Instance gotten\n");
+  DTIO_LOG_DEBUG("[MPI] Comm: Complete");
   return 0;
 }
 
-void
-dtio::MPI_Finalize ()
-{
-  PMPI_Finalize ();
-}
+void dtio::MPI_Finalize() { PMPI_Finalize(); }

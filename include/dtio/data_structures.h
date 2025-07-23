@@ -25,13 +25,14 @@
 #define DTIO_MAIN_STRUCTURE_H
 
 // #include <hcl/macros.h>
+#include <dtio/constants.h>
+#include <dtio/enumerations.h>
+#include <dtio/logger.h>
+
 #include <cereal/types/array.hpp>
 #include <cereal/types/common.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/string.hpp>
-#include <dtio/constants.h>
-#include <dtio/enumerations.h>
-#include <dtio/logger.h>
 // #include <rpc/msgpack/adaptor/define_decl.hpp>
 #include <utility>
 #include <vector>
@@ -44,172 +45,118 @@
 // #include <rpc/rpc_error.h>
 // #include <rpc/server.h>
 
-#include <regex>
 #include <string.h>
 
+#include <regex>
+
 // This exists so that we can make the buffer larger
-typedef struct DTIOCharStruct
-{
+typedef struct DTIOCharStruct {
   size_t length;
   char value[MAX_IO_UNIT];
 
-  DTIOCharStruct () {}
-  DTIOCharStruct (const DTIOCharStruct &other)
-      : DTIOCharStruct (other.value, other.length)
-  {
-  } /* copy constructor*/
-  DTIOCharStruct (DTIOCharStruct &&other)
-      : DTIOCharStruct (other.value, other.length)
-  {
-  } /* move constructor*/
+  DTIOCharStruct() {}
+  DTIOCharStruct(const DTIOCharStruct &other)
+      : DTIOCharStruct(other.value, other.length) {} /* copy constructor*/
+  DTIOCharStruct(DTIOCharStruct &&other)
+      : DTIOCharStruct(other.value, other.length) {} /* move constructor*/
 
-  DTIOCharStruct (const char *data_)
-  {
-    snprintf (this->value, MAX_IO_UNIT, "%s", data_);
+  DTIOCharStruct(const char *data_) {
+    snprintf(this->value, MAX_IO_UNIT, "%s", data_);
   }
-  DTIOCharStruct (std::string data_)
-      : DTIOCharStruct (data_.c_str (), data_.size ())
-  {
-  }
+  DTIOCharStruct(std::string data_)
+      : DTIOCharStruct(data_.c_str(), data_.size()) {}
 
-  DTIOCharStruct (char *data_, size_t size)
-  {
-    snprintf (this->value, size + 1, "%s", data_);
+  DTIOCharStruct(char *data_, size_t size) {
+    snprintf(this->value, size + 1, "%s", data_);
     this->length = size;
   }
 
-  DTIOCharStruct (const char *data_, size_t size)
-  {
-    snprintf (this->value, size + 1, "%s", data_);
+  DTIOCharStruct(const char *data_, size_t size) {
+    snprintf(this->value, size + 1, "%s", data_);
     this->length = size;
   }
 
   // MSGPACK_DEFINE(length, value);
 
-  void
-  Set (char *data_, size_t size)
-  {
-    snprintf (this->value, size, "%s", data_);
+  void Set(char *data_, size_t size) {
+    snprintf(this->value, size, "%s", data_);
 
     this->length = size;
   }
-  void
-  Set (std::string data_)
-  {
-    snprintf (this->value, data_.size (), "%s", data_.c_str ());
-    this->length = data_.size ();
+  void Set(std::string data_) {
+    snprintf(this->value, data_.size(), "%s", data_.c_str());
+    this->length = data_.size();
   }
 
-  const char *
-  c_str () const
-  {
-    return this->value;
-  }
-  std::string
-  string () const
-  {
-    return std::string (this->value, this->length);
-  }
+  const char *c_str() const { return this->value; }
+  std::string string() const { return std::string(this->value, this->length); }
 
-  char *
-  data ()
-  {
-    return value;
-  }
-  const size_t
-  size () const
-  {
-    return this->length;
-  }
+  char *data() { return value; }
+  const size_t size() const { return this->length; }
   /**
    * Operators
    */
-  DTIOCharStruct &
-  operator= (const DTIOCharStruct &other)
-  {
-    strncpy (this->value, other.value, other.length);
+  DTIOCharStruct &operator=(const DTIOCharStruct &other) {
+    strncpy(this->value, other.value, other.length);
     this->length = other.length;
     return *this;
   }
   /* equal operator for comparing two Chars. */
-  bool
-  operator== (const DTIOCharStruct &o) const
-  {
-    return (this->length == o.length)
-           && (strncmp (value, o.value, this->length) == 0);
+  bool operator==(const DTIOCharStruct &o) const {
+    return (this->length == o.length) &&
+           (strncmp(value, o.value, this->length) == 0);
   }
-  DTIOCharStruct
-  operator+ (const DTIOCharStruct &o)
-  {
-    std::string added = std::string (this->value, this->length)
-                        + std::string (o.value, o.length);
-    return DTIOCharStruct (added);
+  DTIOCharStruct operator+(const DTIOCharStruct &o) {
+    std::string added =
+        std::string(this->value, this->length) + std::string(o.value, o.length);
+    return DTIOCharStruct(added);
   }
-  DTIOCharStruct
-  operator+ (std::string &o)
-  {
-    std::string added = std::string (this->value, this->length) + o;
-    return DTIOCharStruct (added);
+  DTIOCharStruct operator+(std::string &o) {
+    std::string added = std::string(this->value, this->length) + o;
+    return DTIOCharStruct(added);
   }
-  DTIOCharStruct &
-  operator+= (const DTIOCharStruct &rhs)
-  {
-    std::string added
-        = std::string (this->c_str ()) + std::string (rhs.c_str ());
-    Set (added);
+  DTIOCharStruct &operator+=(const DTIOCharStruct &rhs) {
+    std::string added = std::string(this->c_str()) + std::string(rhs.c_str());
+    Set(added);
     return *this;
   }
-  bool
-  operator> (const DTIOCharStruct &o) const
-  {
-    return this->length == o.length
-           && strncmp (this->value, o.value, this->length) > 0;
+  bool operator>(const DTIOCharStruct &o) const {
+    return this->length == o.length &&
+           strncmp(this->value, o.value, this->length) > 0;
   }
-  bool
-  operator>= (const DTIOCharStruct &o) const
-  {
-    return this->length == o.length
-           && strncmp (this->value, o.value, this->length) >= 0;
+  bool operator>=(const DTIOCharStruct &o) const {
+    return this->length == o.length &&
+           strncmp(this->value, o.value, this->length) >= 0;
   }
-  bool
-  operator< (const DTIOCharStruct &o) const
-  {
-    return this->length == o.length && strcmp (this->value, o.value) < 0;
+  bool operator<(const DTIOCharStruct &o) const {
+    return this->length == o.length && strcmp(this->value, o.value) < 0;
   }
-  bool
-  operator<= (const DTIOCharStruct &o) const
-  {
-    return this->length == o.length && strcmp (this->value, o.value) <= 0;
+  bool operator<=(const DTIOCharStruct &o) const {
+    return this->length == o.length && strcmp(this->value, o.value) <= 0;
   }
 
   template <class Archive>
-  void
-  serialize (Archive &archive)
-  {
-    archive (this->length, cereal::binary_data (this->value, MAX_IO_UNIT));
+  void serialize(Archive &archive) {
+    archive(this->length, cereal::binary_data(this->value, MAX_IO_UNIT));
   }
 
 } DTIOCharStruct;
 
-static DTIOCharStruct
-operator+ (const std::string &a1, const DTIOCharStruct &a2)
-{
-  std::string added = a1 + std::string (a2.value, a2.length + 1);
-  return DTIOCharStruct (added);
+static DTIOCharStruct operator+(const std::string &a1,
+                                const DTIOCharStruct &a2) {
+  std::string added = a1 + std::string(a2.value, a2.length + 1);
+  return DTIOCharStruct(added);
 }
 
-namespace std
-{
-template <> struct hash<DTIOCharStruct>
-{
-  size_t
-  operator() (const DTIOCharStruct &k) const
-  {
-    std::string val (k.value, k.length + 1);
-    return std::hash<std::string> () (val);
+namespace std {
+template <>
+struct hash<DTIOCharStruct> {
+  size_t operator()(const DTIOCharStruct &k) const {
+    std::string val(k.value, k.length + 1);
+    return std::hash<std::string>()(val);
   }
 };
-} // namespace std
+}  // namespace std
 
 // typedef boost::interprocess::allocator<char,
 // boost::interprocess::managed_mapped_file::segment_manager> CharAllocator;
@@ -219,16 +166,14 @@ template <> struct hash<DTIOCharStruct>
 /******************************************************************************
  *message_key structure
  ******************************************************************************/
-struct message_key
-{
+struct message_key {
   message_type m_type;
   map_type mp_type;
   operation operation_type;
   char key[KEY_SIZE];
 };
 
-struct message
-{
+struct message {
   message_type m_type;
   map_type mp_type;
   char key[KEY_SIZE];
@@ -236,8 +181,7 @@ struct message
   char *data;
 };
 
-struct file
-{
+struct file {
   location_type location;
   char filename[DTIO_FILENAME_MAX];
   int64_t offset;
@@ -245,25 +189,32 @@ struct file
   int worker;
   int server;
 
-  file (std::string filename_, int64_t offset, std::size_t file_size)
-      : filename (), offset (offset), size (file_size), location (CACHE),
-        worker (-1), server (-1)
-  {
-    strncpy (filename, filename_.c_str (), DTIO_FILENAME_MAX);
+  file(std::string filename_, int64_t offset, std::size_t file_size)
+      : filename(),
+        offset(offset),
+        size(file_size),
+        location(CACHE),
+        worker(-1),
+        server(-1) {
+    strncpy(filename, filename_.c_str(), DTIO_FILENAME_MAX);
   }
 
-  file (const file &file_t)
-      : filename (), offset (file_t.offset), size (file_t.size),
-        location (file_t.location), worker (file_t.worker),
-        server (file_t.server)
-  {
-    strncpy (filename, file_t.filename, DTIO_FILENAME_MAX);
+  file(const file &file_t)
+      : filename(),
+        offset(file_t.offset),
+        size(file_t.size),
+        location(file_t.location),
+        worker(file_t.worker),
+        server(file_t.server) {
+    strncpy(filename, file_t.filename, DTIO_FILENAME_MAX);
   }
-  file ()
-      : location (CACHE), filename (""), offset (0), size (0), worker (-1),
-        server (-1)
-  {
-  }
+  file()
+      : location(CACHE),
+        filename(""),
+        offset(0),
+        size(0),
+        worker(-1),
+        server(-1) {}
 
   // MSGPACK_DEFINE(location, filename, offset, size, worker, server);
   // std::ostream& operator<<(std::ostream& os, file const& arg)
@@ -311,13 +262,11 @@ struct file
   //   return std::move(ss).str();  // enable efficiencies in c++17
   // }
 
-  ~file () {}
+  ~file() {}
 
-  file &
-  operator= (const file &other)
-  {
+  file &operator=(const file &other) {
     location = other.location;
-    strncpy (filename, other.filename, DTIO_FILENAME_MAX);
+    strncpy(filename, other.filename, DTIO_FILENAME_MAX);
     offset = other.offset;
     size = other.size;
     worker = other.worker;
@@ -327,36 +276,29 @@ struct file
 
   // serialization
   template <class Archive>
-  void
-  serialize (Archive &archive)
-  {
-    auto location_ = static_cast<int> (this->location);
-    archive (cereal::binary_data (this->filename, DTIO_FILENAME_MAX),
-             this->offset, this->size, location_, this->worker, this->server);
-    location = static_cast<location_type> (location_);
+  void serialize(Archive &archive) {
+    auto location_ = static_cast<int>(this->location);
+    archive(cereal::binary_data(this->filename, DTIO_FILENAME_MAX),
+            this->offset, this->size, location_, this->worker, this->server);
+    location = static_cast<location_type>(location_);
   }
 };
 
 // MSGPACK_ADD_ENUM(location_type);
 
-namespace std
-{
-template <> struct hash<file>
-{
-  size_t
-  operator() (const file *k) const
-  {
-    std::string val (k->filename);
-    return std::hash<std::string> () (val);
+namespace std {
+template <>
+struct hash<file> {
+  size_t operator()(const file *k) const {
+    std::string val(k->filename);
+    return std::hash<std::string>()(val);
   }
-  size_t
-  operator() (const file &k) const
-  {
-    std::string val (k.filename);
-    return std::hash<std::string> () (val);
+  size_t operator()(const file &k) const {
+    std::string val(k.filename);
+    return std::hash<std::string>()(val);
   }
 };
-}
+}  // namespace std
 
 // The idea behind this was to remove the filename from chunk metadata so that
 // we can store more of them, but it needs to be changed to store IDs, along
@@ -406,16 +348,13 @@ template <> struct hash<file>
 //   }
 // };
 
-struct chunk_meta
-{
+struct chunk_meta {
   file actual_user_chunk;
   file destination;
 
   // MSGPACK_DEFINE(actual_user_chunk, destination);
 
-  chunk_meta &
-  operator= (const chunk_meta &other)
-  {
+  chunk_meta &operator=(const chunk_meta &other) {
     actual_user_chunk = other.actual_user_chunk;
     destination = other.destination;
     return *this;
@@ -465,35 +404,27 @@ struct chunk_meta
 
   // serialization
   template <class Archive>
-  void
-  serialize (Archive &archive)
-  {
-    archive (this->actual_user_chunk, this->destination);
+  void serialize(Archive &archive) {
+    archive(this->actual_user_chunk, this->destination);
   }
 };
 
-namespace std
-{
-template <> struct hash<chunk_meta>
-{
-  size_t
-  operator() (const chunk_meta *k) const
-  {
-    return std::hash<file> () (k->actual_user_chunk)
-           ^ std::hash<file> () (k->destination);
+namespace std {
+template <>
+struct hash<chunk_meta> {
+  size_t operator()(const chunk_meta *k) const {
+    return std::hash<file>()(k->actual_user_chunk) ^
+           std::hash<file>()(k->destination);
   }
-  size_t
-  operator() (const chunk_meta &k) const
-  {
-    return std::hash<file> () (k.actual_user_chunk)
-           ^ std::hash<file> () (k.destination);
+  size_t operator()(const chunk_meta &k) const {
+    return std::hash<file>()(k.actual_user_chunk) ^
+           std::hash<file>()(k.destination);
   }
 };
-}
+}  // namespace std
 
 // chunk_msg structure
-struct chunk_msg
-{
+struct chunk_msg {
   location_type chunkType;
   std::string dataspace_id;
   std::string filename;
@@ -502,24 +433,19 @@ struct chunk_msg
 };
 
 // file_meta structure
-struct file_meta
-{
+struct file_meta {
   file file_struct;
   std::array<chunk_meta, CHUNK_LIMIT> chunks;
   int current_chunk_index;
   int num_chunks;
 
-  file_meta () : chunks (), current_chunk_index (0), num_chunks (0) {}
-  file_meta (const file_meta &other)
-      : file_meta (other.file_struct, other.chunks, other.current_chunk_index,
-                   other.num_chunks)
-  {
-  } /* copy constructor*/
-  file_meta (file_meta &&other)
-      : file_meta (other.file_struct, other.chunks, other.current_chunk_index,
-                   other.num_chunks)
-  {
-  } /* move constructor*/
+  file_meta() : chunks(), current_chunk_index(0), num_chunks(0) {}
+  file_meta(const file_meta &other)
+      : file_meta(other.file_struct, other.chunks, other.current_chunk_index,
+                  other.num_chunks) {} /* copy constructor*/
+  file_meta(file_meta &&other)
+      : file_meta(other.file_struct, other.chunks, other.current_chunk_index,
+                  other.num_chunks) {} /* move constructor*/
 
   // file_meta(file file_struct_, const std::array<chunk_meta, CHUNK_LIMIT>
   // chunks_, int current_chunk_index_, int num_chunks_) {
@@ -540,65 +466,49 @@ struct file_meta
   //   this->num_chunks = num_chunks_;
   // }
 
-  file_meta (file file_struct_, std::array<chunk_meta, CHUNK_LIMIT> chunks_,
-             int current_chunk_index_, int num_chunks_)
-  {
+  file_meta(file file_struct_, std::array<chunk_meta, CHUNK_LIMIT> chunks_,
+            int current_chunk_index_, int num_chunks_) {
     this->file_struct = file_struct_;
     this->current_chunk_index = current_chunk_index_;
     this->num_chunks = num_chunks_;
-    DTIO_LOG_DEBUG ("Copying chunks in constructor from current index "
-                    << current_chunk_index);
-    for (int i = 0; i < num_chunks_; i++)
-      {
-        if (current_chunk_index_ - i - 1 >= 0)
-          {
-            this->chunks[current_chunk_index_ - i - 1]
-                = chunks_[current_chunk_index_ - i - 1];
-          }
-        else
-          {
-            this->chunks[CHUNK_LIMIT + current_chunk_index_ - i - 1]
-                = chunks_[CHUNK_LIMIT + current_chunk_index_ - i - 1];
-          }
+    DTIO_LOG_DEBUG("Copying chunks in constructor from current index "
+                   << current_chunk_index);
+    for (int i = 0; i < num_chunks_; i++) {
+      if (current_chunk_index_ - i - 1 >= 0) {
+        this->chunks[current_chunk_index_ - i - 1] =
+            chunks_[current_chunk_index_ - i - 1];
+      } else {
+        this->chunks[CHUNK_LIMIT + current_chunk_index_ - i - 1] =
+            chunks_[CHUNK_LIMIT + current_chunk_index_ - i - 1];
       }
+    }
   }
 
-  void
-  append (chunk_meta *cm)
-  {
+  void append(chunk_meta *cm) {
     chunks[current_chunk_index] = *cm;
     ++current_chunk_index;
-    if (num_chunks < CHUNK_LIMIT)
-      {
-        ++num_chunks;
-      }
-    if (current_chunk_index >= CHUNK_LIMIT)
-      {
-        current_chunk_index = 0;
-      }
+    if (num_chunks < CHUNK_LIMIT) {
+      ++num_chunks;
+    }
+    if (current_chunk_index >= CHUNK_LIMIT) {
+      current_chunk_index = 0;
+    }
   }
 
-  file_meta &
-  operator= (const file_meta &other)
-  {
+  file_meta &operator=(const file_meta &other) {
     file_struct = other.file_struct;
     current_chunk_index = other.current_chunk_index;
     num_chunks = other.num_chunks;
-    DTIO_LOG_DEBUG ("Copying chunks from current index "
-                    << current_chunk_index);
-    for (int i = 0; i < num_chunks; i++)
-      {
-        if (current_chunk_index - i - 1 >= 0)
-          {
-            chunks[current_chunk_index - i - 1]
-                = other.chunks[current_chunk_index - i - 1];
-          }
-        else
-          {
-            chunks[CHUNK_LIMIT + current_chunk_index - i - 1]
-                = other.chunks[CHUNK_LIMIT + current_chunk_index - i - 1];
-          }
+    DTIO_LOG_DEBUG("Copying chunks from current index " << current_chunk_index);
+    for (int i = 0; i < num_chunks; i++) {
+      if (current_chunk_index - i - 1 >= 0) {
+        chunks[current_chunk_index - i - 1] =
+            other.chunks[current_chunk_index - i - 1];
+      } else {
+        chunks[CHUNK_LIMIT + current_chunk_index - i - 1] =
+            other.chunks[CHUNK_LIMIT + current_chunk_index - i - 1];
       }
+    }
     return *this;
   }
 
@@ -673,28 +583,24 @@ struct file_meta
 
   // serialization
   template <class Archive>
-  void
-  serialize (Archive &archive)
-  {
-    archive (this->file_struct, this->chunks, this->current_chunk_index,
-             this->num_chunks);
+  void serialize(Archive &archive) {
+    archive(this->file_struct, this->chunks, this->current_chunk_index,
+            this->num_chunks);
   }
 
-  virtual ~file_meta () {}
+  virtual ~file_meta() {}
 };
 
 // dataspace structure
-struct dataspace
-{
+struct dataspace {
   size_t size;
   void *data;
 };
 
 // file_stat structure
-struct file_stat
-{
+struct file_stat {
   FILE *fh;
-  int fd; // Adding this to file stat could be expensive, should it replace fh?
+  int fd;  // Adding this to file stat could be expensive, should it replace fh?
   std::size_t file_pointer;
   std::size_t file_size;
   int flags;
@@ -703,46 +609,51 @@ struct file_stat
   bool is_open;
 
   // Default constructor (required for serialization)
-  file_stat ()
-      : fh (nullptr), fd (-1), file_pointer (0), file_size (0), flags (0),
-        posix_mode (0), mode (""), is_open (false)
-  {
-  }
+  file_stat()
+      : fh(nullptr),
+        fd(-1),
+        file_pointer(0),
+        file_size(0),
+        flags(0),
+        posix_mode(0),
+        mode(""),
+        is_open(false) {}
 
-  file_stat (FILE *fh_, int fd_, std::size_t file_pointer_,
-             std::size_t file_size_, int flags_, mode_t posix_mode_,
-             std::string mode_, bool is_open_)
-      : fh (fh_), fd (fd_), file_pointer (file_pointer_),
-        file_size (file_size_), flags (flags_), posix_mode (posix_mode_),
-        mode (mode_), is_open (is_open_)
-  {
-  }
+  file_stat(FILE *fh_, int fd_, std::size_t file_pointer_,
+            std::size_t file_size_, int flags_, mode_t posix_mode_,
+            std::string mode_, bool is_open_)
+      : fh(fh_),
+        fd(fd_),
+        file_pointer(file_pointer_),
+        file_size(file_size_),
+        flags(flags_),
+        posix_mode(posix_mode_),
+        mode(mode_),
+        is_open(is_open_) {}
 
   // Copy constructor
-  file_stat (const file_stat &other)
-      : fh (other.fh), fd (other.fd), file_pointer (other.file_pointer),
-        file_size (other.file_size), flags (other.flags),
-        posix_mode (other.posix_mode), mode (other.mode),
-        is_open (other.is_open)
-  {
-  }
+  file_stat(const file_stat &other)
+      : fh(other.fh),
+        fd(other.fd),
+        file_pointer(other.file_pointer),
+        file_size(other.file_size),
+        flags(other.flags),
+        posix_mode(other.posix_mode),
+        mode(other.mode),
+        is_open(other.is_open) {}
 
   // Move constructor
-  file_stat (file_stat &&other) noexcept
-      : fh (std::exchange (other.fh, nullptr)),
-        fd (std::exchange (other.fd, -1)),
-        file_pointer (std::exchange (other.file_pointer, 0)),
-        file_size (std::exchange (other.file_size, 0)),
-        flags (std::exchange (other.flags, 0)),
-        posix_mode (std::exchange (other.posix_mode, 0)),
-        mode (std::move (other.mode)),
-        is_open (std::exchange (other.is_open, false))
-  {
-  }
+  file_stat(file_stat &&other) noexcept
+      : fh(std::exchange(other.fh, nullptr)),
+        fd(std::exchange(other.fd, -1)),
+        file_pointer(std::exchange(other.file_pointer, 0)),
+        file_size(std::exchange(other.file_size, 0)),
+        flags(std::exchange(other.flags, 0)),
+        posix_mode(std::exchange(other.posix_mode, 0)),
+        mode(std::move(other.mode)),
+        is_open(std::exchange(other.is_open, false)) {}
 
-  file_stat &
-  operator= (const file_stat &other)
-  {
+  file_stat &operator=(const file_stat &other) {
     fh = other.fh;
     fd = other.fd;
     file_pointer = other.file_pointer;
@@ -801,59 +712,45 @@ struct file_stat
 
   // Serialization
   template <class Archive>
-  void
-  serialize (Archive &archive)
-  {
-    auto fh_ = reinterpret_cast<size_t> (this->fh);
-    archive (fh_, this->fd, this->file_pointer, this->file_size, this->flags,
-             this->posix_mode, this->mode, this->is_open);
-    fh = reinterpret_cast<FILE *> (fh_);
+  void serialize(Archive &archive) {
+    auto fh_ = reinterpret_cast<size_t>(this->fh);
+    archive(fh_, this->fd, this->file_pointer, this->file_size, this->flags,
+            this->posix_mode, this->mode, this->is_open);
+    fh = reinterpret_cast<FILE *>(fh_);
   }
 };
 
-namespace std
-{
-template <> struct hash<file_stat>
-{
-  size_t
-  operator() (const file_stat *k) const
-  {
-    if (k->fh == NULL)
-      {
-        return k->fd;
-      }
-    else
-      {
-        return (size_t)k->fh;
-      }
+namespace std {
+template <>
+struct hash<file_stat> {
+  size_t operator()(const file_stat *k) const {
+    if (k->fh == NULL) {
+      return k->fd;
+    } else {
+      return (size_t)k->fh;
+    }
   }
-  size_t
-  operator() (const file_stat &k) const
-  {
-    if (k.fh == NULL)
-      {
-        return k.fd;
-      }
-    else
-      {
-        return (size_t)k.fh;
-      }
+  size_t operator()(const file_stat &k) const {
+    if (k.fh == NULL) {
+      return k.fd;
+    } else {
+      return (size_t)k.fh;
+    }
   }
 };
-}
+}  // namespace std
 
 // task structure
-struct task
-{
+struct task {
   task_type t_type;
   io_client_type iface;
   int64_t task_id;
   bool publish;
   bool addDataspace;
   bool async;
-  bool special_type; // currently used for fgets, which is an fread that breaks
-                     // on newline, potentially can be used other unusual call
-                     // types with special behavior
+  bool special_type;  // currently used for fgets, which is an fread that breaks
+                      // on newline, potentially can be used other unusual call
+                      // types with special behavior
 
   /* Task-specific info
    * ******************
@@ -868,60 +765,82 @@ struct task
   bool local_copy = false;
   bool check_fs = false;
 
-  task ()
-      : t_type (task_type::READ_TASK), task_id (0), publish (true),
-        iface (io_client_type::POSIX), addDataspace (true), async (true),
-        source (), destination (), meta_updated (false), local_copy (false),
-        check_fs (false), special_type (false)
-  {
-  }
+  task()
+      : t_type(task_type::READ_TASK),
+        task_id(0),
+        publish(true),
+        iface(io_client_type::POSIX),
+        addDataspace(true),
+        async(true),
+        source(),
+        destination(),
+        meta_updated(false),
+        local_copy(false),
+        check_fs(false),
+        special_type(false) {}
 
   // MSGPACK_DEFINE(t_type, iface, task_id, publish, addDataspace, async,
   // source, destination, meta_updated, local_copy, check_fs);
 
-  task (task_type t_type)
-      : t_type (t_type), iface (io_client_type::POSIX), task_id (0),
-        publish (true), addDataspace (true), async (true), source (),
-        destination (), meta_updated (false), local_copy (false),
-        check_fs (false), special_type (false)
-  {
-  }
-  task (const task &t_other)
-      : t_type (t_other.t_type), iface (t_other.iface),
-        task_id (t_other.task_id), publish (t_other.publish),
-        addDataspace (t_other.addDataspace), async (t_other.async),
-        source (t_other.source), destination (t_other.destination),
-        meta_updated (t_other.meta_updated), local_copy (t_other.local_copy),
-        check_fs (t_other.check_fs), special_type (t_other.special_type)
-  {
-  }
+  task(task_type t_type)
+      : t_type(t_type),
+        iface(io_client_type::POSIX),
+        task_id(0),
+        publish(true),
+        addDataspace(true),
+        async(true),
+        source(),
+        destination(),
+        meta_updated(false),
+        local_copy(false),
+        check_fs(false),
+        special_type(false) {}
+  task(const task &t_other)
+      : t_type(t_other.t_type),
+        iface(t_other.iface),
+        task_id(t_other.task_id),
+        publish(t_other.publish),
+        addDataspace(t_other.addDataspace),
+        async(t_other.async),
+        source(t_other.source),
+        destination(t_other.destination),
+        meta_updated(t_other.meta_updated),
+        local_copy(t_other.local_copy),
+        check_fs(t_other.check_fs),
+        special_type(t_other.special_type) {}
 
-  task (task_type t_type_, const file &source_, const file &destination_)
-      : t_type (t_type_), source (source_), destination (destination_),
-        task_id (0), iface (io_client_type::POSIX), publish (true),
-        addDataspace (true), async (true), meta_updated (false),
-        local_copy (false), check_fs (false), special_type (false)
-  {
-  }
-  task (task_type t_type_, file &source)
-      : t_type (t_type_), source (source), task_id (0), publish (true),
-        iface (io_client_type::POSIX), addDataspace (true), async (true),
-        destination (), meta_updated (false), local_copy (false),
-        check_fs (false), special_type (false)
-  {
-  }
+  task(task_type t_type_, const file &source_, const file &destination_)
+      : t_type(t_type_),
+        source(source_),
+        destination(destination_),
+        task_id(0),
+        iface(io_client_type::POSIX),
+        publish(true),
+        addDataspace(true),
+        async(true),
+        meta_updated(false),
+        local_copy(false),
+        check_fs(false),
+        special_type(false) {}
+  task(task_type t_type_, file &source)
+      : t_type(t_type_),
+        source(source),
+        task_id(0),
+        publish(true),
+        iface(io_client_type::POSIX),
+        addDataspace(true),
+        async(true),
+        destination(),
+        meta_updated(false),
+        local_copy(false),
+        check_fs(false),
+        special_type(false) {}
 
-  ~task () {}
+  ~task() {}
 
-  bool
-  operator== (const task &o) const
-  {
-    return task_id == o.task_id;
-  }
+  bool operator==(const task &o) const { return task_id == o.task_id; }
 
-  task &
-  operator= (const task &other)
-  {
+  task &operator=(const task &other) {
     t_type = other.t_type;
     iface = other.iface;
     task_id = other.task_id;
@@ -934,103 +853,69 @@ struct task
     return *this;
   }
 
-  bool
-  operator< (const task &o) const
-  {
-    return task_id < o.task_id;
-  }
-  bool
-  operator> (const task &o) const
-  {
-    return task_id > o.task_id;
-  }
-  bool
-  Contains (const task &o) const
-  {
-    return task_id == o.task_id;
-  }
+  bool operator<(const task &o) const { return task_id < o.task_id; }
+  bool operator>(const task &o) const { return task_id > o.task_id; }
+  bool Contains(const task &o) const { return task_id == o.task_id; }
 
   // Serialization
   template <class Archive>
-  void
-  serialize (Archive &archive)
-  {
-    auto t_type_ = static_cast<int64_t> (this->t_type);
-    auto iface_ = static_cast<int> (this->iface);
-    archive (t_type_, iface_, this->task_id, this->publish, this->addDataspace,
-             this->async, this->source, this->destination, this->meta_updated,
-             this->local_copy, this->check_fs, this->special_type);
-    t_type = static_cast<task_type> (t_type_);
-    iface = static_cast<io_client_type> (iface_);
+  void serialize(Archive &archive) {
+    auto t_type_ = static_cast<int64_t>(this->t_type);
+    auto iface_ = static_cast<int>(this->iface);
+    archive(t_type_, iface_, this->task_id, this->publish, this->addDataspace,
+            this->async, this->source, this->destination, this->meta_updated,
+            this->local_copy, this->check_fs, this->special_type);
+    t_type = static_cast<task_type>(t_type_);
+    iface = static_cast<io_client_type>(iface_);
   }
 };
 
 // MSGPACK_ADD_ENUM(task_type);
 // MSGPACK_ADD_ENUM(io_client_type);
 
-namespace std
-{
-template <> struct hash<task>
-{
-  size_t
-  operator() (const task *k) const
-  {
-    return k->task_id;
-  }
-  size_t
-  operator() (const task &k) const
-  {
-    return k.task_id;
-  }
-  size_t
-  operator() (const int64_t &task_id) const
-  {
-    return task_id;
-  }
+namespace std {
+template <>
+struct hash<task> {
+  size_t operator()(const task *k) const { return k->task_id; }
+  size_t operator()(const task &k) const { return k.task_id; }
+  size_t operator()(const int64_t &task_id) const { return task_id; }
 };
-}
+}  // namespace std
 
 // solver_input structure
-struct solver_input
-{
+struct solver_input {
   std::vector<task *> tasks;
   int num_tasks;
   int64_t *task_size;
 
-  explicit solver_input (std::vector<task *> &task_list, int num_tasks)
-  {
+  explicit solver_input(std::vector<task *> &task_list, int num_tasks) {
     this->tasks = task_list;
     this->num_tasks = num_tasks;
     task_size = new int64_t[num_tasks];
   }
-  solver_input (const solver_input &other)
-      : tasks (other.tasks), num_tasks (other.num_tasks),
-        task_size (other.task_size)
-  {
-  }
+  solver_input(const solver_input &other)
+      : tasks(other.tasks),
+        num_tasks(other.num_tasks),
+        task_size(other.task_size) {}
 
-  virtual ~solver_input () {}
+  virtual ~solver_input() {}
 };
 
 // solver_output structure
-struct solver_output
-{
+struct solver_output {
   int *solution;
   int num_task;
   // workerID->list of tasks
   std::unordered_map<int, std::vector<task *> > worker_task_map;
 
-  explicit solver_output (int num_task)
-      : worker_task_map (), num_task (num_task)
-  {
+  explicit solver_output(int num_task) : worker_task_map(), num_task(num_task) {
     solution = new int[num_task];
   }
-  solver_output (const solver_output &other)
-      : worker_task_map (other.worker_task_map), num_task (other.num_task),
-        solution (other.solution)
-  {
-  }
+  solver_output(const solver_output &other)
+      : worker_task_map(other.worker_task_map),
+        num_task(other.num_task),
+        solution(other.solution) {}
 
-  virtual ~solver_output () {}
+  virtual ~solver_output() {}
 };
-#endif // DTIO_MAIN_STRUCTURE_H
+#endif  // DTIO_MAIN_STRUCTURE_H

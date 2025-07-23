@@ -25,77 +25,64 @@
 #ifndef DTIO_MAIN_UTILITY_H
 #define DTIO_MAIN_UTILITY_H
 
-#include <cstring>
 #include <dtio/config_manager.h>
 #include <getopt.h>
+
+#include <cstring>
 #include <string>
 #include <vector>
 
-static std::vector<std::string>
-string_split (std::string value, std::string delimiter = ",")
-{
-  char *token
-      = strtok (const_cast<char *> (value.c_str ()), delimiter.c_str ());
-  std::vector<std::string> splits = std::vector<std::string> ();
-  while (token != NULL)
-    {
-      splits.push_back (token);
-      token = strtok (NULL, delimiter.c_str ());
-    }
+static std::vector<std::string> string_split(std::string value,
+                                             std::string delimiter = ",") {
+  char *token = strtok(const_cast<char *>(value.c_str()), delimiter.c_str());
+  std::vector<std::string> splits = std::vector<std::string>();
+  while (token != NULL) {
+    splits.push_back(token);
+    token = strtok(NULL, delimiter.c_str());
+  }
   return splits;
 }
-static int
-parse_opts (int argc, char *argv[])
-{
+static int parse_opts(int argc, char *argv[]) {
   char *argv_cp[argc];
-  for (int i = 0; i < argc; ++i)
-    {
-      argv_cp[i] = new char[strlen (argv[i]) + 1];
-      strcpy (argv_cp[i], argv[i]);
-    }
+  for (int i = 0; i < argc; ++i) {
+    argv_cp[i] = new char[strlen(argv[i]) + 1];
+    strcpy(argv_cp[i], argv[i]);
+  }
 
-  auto conf = ConfigManager::get_instance ();
+  auto conf = ConfigManager::get_instance();
   int flags, opt;
   int nsecs, tfnd;
 
   nsecs = 0;
   tfnd = 0;
   flags = 0;
-  while ((opt = getopt (argc, argv_cp, "a:b:c:d:")) != -1)
-    {
-      switch (opt)
-        {
-        case 'a':
-          {
-            conf->NATS_URL_CLIENT = std::string (optarg);
-            break;
-          }
-        case 'b':
-          {
-            conf->NATS_URL_SERVER = std::string (optarg);
-            break;
-          }
-        case 'c':
-          {
-            conf->MEMCACHED_URL_CLIENT = std::string (optarg);
-            break;
-          }
-        case 'd':
-          {
-            conf->MEMCACHED_URL_SERVER = std::string (optarg);
-            break;
-          }
-        default:
-          {
-            break;
-          }
-        }
+  while ((opt = getopt(argc, argv_cp, "a:b:c:d:")) != -1) {
+    switch (opt) {
+      case 'a': {
+        conf->NATS_URL_CLIENT = std::string(optarg);
+        break;
+      }
+      case 'b': {
+        conf->NATS_URL_SERVER = std::string(optarg);
+        break;
+      }
+      case 'c': {
+        conf->MEMCACHED_URL_CLIENT = std::string(optarg);
+        break;
+      }
+      case 'd': {
+        conf->MEMCACHED_URL_SERVER = std::string(optarg);
+        break;
+      }
+      default: {
+        break;
+      }
     }
-  for (int i = 0; i < argc; ++i)
-    {
-      delete (argv_cp[i]);
-    }
+  }
+  for (int i = 0; i < argc; ++i) {
+    delete (argv_cp[i]);
+  }
   return 0;
 }
 
-#endif // DTIO_MAIN_UTILITY_H
+#endif  // DTIO_MAIN_UTILITY_H

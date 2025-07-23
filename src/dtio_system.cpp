@@ -22,84 +22,72 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include <dtio/dtio_system.h>
+
 #include "dtio/config_manager.h"
 #include "dtio/constants.h"
 #include "dtio/enumerations.h"
-#include <dtio/dtio_system.h>
 
 std::shared_ptr<dtio_system> dtio_system::instance = nullptr;
 
 // Interface
-void
-dtio_system::init (service service)
-{
-  MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+void dtio_system::init(service service) {
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   int comm_size;
-  MPI_Comm_size (MPI_COMM_WORLD, &comm_size);
+  MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
   comm_size = comm_size == 0 ? 1 : comm_size;
 
-  printf ("Get client queue\n");
-  if (service == LIB)
-    {
-      // get_client_queue functionality removed
-    }
+  printf("Get client queue\n");
+  if (service == LIB) {
+    // get_client_queue functionality removed
+  }
 
-  printf ("Init IOWarp DS map\n");
-  if (map_impl_type_t == map_impl_type::IOWARP)
-    {
-      map_server_ = std::make_shared<IOWARPMapImpl> (service, "dataspace");
-    }
+  printf("Init IOWarp DS map\n");
+  if (map_impl_type_t == map_impl_type::IOWARP) {
+    map_server_ = std::make_shared<IOWARPMapImpl>(service, "dataspace");
+  }
 
-  switch (service)
-    {
-    case LIB:
-      {
-        if (rank == 0)
-          {
-            printf ("Init lib get\n");
-            auto value = map_server ()->get (table::SYSTEM_REG, "app_no",
-                                             std::to_string (-1));
-            int curr = 0;
-            if (!value.empty ())
-              {
-                curr = std::stoi (value);
-                curr++;
-              }
-            application_id = curr;
-            printf ("Init lib put\n");
-            map_server ()->put (table::SYSTEM_REG, "app_no",
-                                std::to_string (curr), std::to_string (-1));
-            printf ("Init lib counter increment\n");
-            std::size_t t = map_server ()->counter_inc (
-                COUNTER_DB, DATASPACE_ID, std::to_string (-1));
-            printf ("Init lib counter increment done\n");
-          }
-        MPI_Barrier (MPI_COMM_WORLD);
-        break;
+  switch (service) {
+    case LIB: {
+      if (rank == 0) {
+        printf("Init lib get\n");
+        auto value =
+            map_server()->get(table::SYSTEM_REG, "app_no", std::to_string(-1));
+        int curr = 0;
+        if (!value.empty()) {
+          curr = std::stoi(value);
+          curr++;
+        }
+        application_id = curr;
+        printf("Init lib put\n");
+        map_server()->put(table::SYSTEM_REG, "app_no", std::to_string(curr),
+                          std::to_string(-1));
+        printf("Init lib counter increment\n");
+        std::size_t t = map_server()->counter_inc(COUNTER_DB, DATASPACE_ID,
+                                                  std::to_string(-1));
+        printf("Init lib counter increment done\n");
       }
-    case CLIENT:
-      {
-        break;
-      }
-    case SYSTEM_MANAGER:
-      {
-        break;
-      }
-    case TASK_SCHEDULER:
-      {
-        map_server ()->counter_inc (COUNTER_DB, ROUND_ROBIN_INDEX,
-                                    std::to_string (-1));
-        break;
-      }
-    case WORKER_MANAGER:
-      {
-        break;
-      }
-    case WORKER:
-      {
-        break;
-      }
+      MPI_Barrier(MPI_COMM_WORLD);
+      break;
     }
+    case CLIENT: {
+      break;
+    }
+    case SYSTEM_MANAGER: {
+      break;
+    }
+    case TASK_SCHEDULER: {
+      map_server()->counter_inc(COUNTER_DB, ROUND_ROBIN_INDEX,
+                                std::to_string(-1));
+      break;
+    }
+    case WORKER_MANAGER: {
+      break;
+    }
+    case WORKER: {
+      break;
+    }
+  }
 
   // if (map_impl_type_t == map_impl_type::MEMCACHE_D)
   //   {
@@ -112,15 +100,14 @@ dtio_system::init (service service)
   //     map_client_ = std::make_shared<RocksDBImpl> (service, kDBPath_client);
   //   }
   // else
-  printf ("Init IOWarp clients\n");
-  if (map_impl_type_t == map_impl_type::IOWARP)
-    {
-      map_client_ = std::make_shared<IOWARPMapImpl> (service, "metadata");
-      fs_map_ = std::make_shared<IOWARPMapImpl> (service, "metadata+fs");
-      // cm_map_
-      // 	= std::make_shared<HCLMapImpl> (service, "metadata+chunkmeta",
-      // 0, 1, hcl_init);
-      fm_map_ = std::make_shared<IOWARPMapImpl> (service, "metadata+filemeta");
-    }
-  printf ("Init done?\n");
+  printf("Init IOWarp clients\n");
+  if (map_impl_type_t == map_impl_type::IOWARP) {
+    map_client_ = std::make_shared<IOWARPMapImpl>(service, "metadata");
+    fs_map_ = std::make_shared<IOWARPMapImpl>(service, "metadata+fs");
+    // cm_map_
+    // 	= std::make_shared<HCLMapImpl> (service, "metadata+chunkmeta",
+    // 0, 1, hcl_init);
+    fm_map_ = std::make_shared<IOWARPMapImpl>(service, "metadata+filemeta");
+  }
+  printf("Init done?\n");
 }

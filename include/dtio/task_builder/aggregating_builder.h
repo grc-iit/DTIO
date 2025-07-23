@@ -26,20 +26,20 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
-#include <chrono>
 #include <dtio/client_interface/distributed_queue.h>
 #include <dtio/data_structures.h>
 #include <dtio/enumerations.h>
 #include <dtio/metadata_manager/metadata_manager.h>
 #include <dtio/task_builder/task_builder.h>
+
+#include <chrono>
 #include <memory>
 #include <vector>
 /******************************************************************************
  *Class
  ******************************************************************************/
-class aggregating_builder : public task_builder
-{
-private:
+class aggregating_builder : public task_builder {
+ private:
   /******************************************************************************
    *Variables and members
    ******************************************************************************/
@@ -56,29 +56,28 @@ private:
    *Constructor
    ******************************************************************************/
 
-public:
-  aggregating_builder (service service) : task_builder (service)
-  {
+ public:
+  aggregating_builder(service service) : task_builder(service) {
     // Initialize variables used for aggregations
-    aggregate_buffer = (char *)malloc (MAX_IO_UNIT);
+    aggregate_buffer = (char *)malloc(MAX_IO_UNIT);
     current_aggregate_size = 0;
-    aggregation_tasks = std::vector<task *> ();
-    aggregation_offset = -1; // This gets set to -1 so that you can change the
-                             // aggregation start offset
+    aggregation_tasks = std::vector<task *>();
+    aggregation_offset = -1;  // This gets set to -1 so that you can change the
+                              // aggregation start offset
   }
 
   /******************************************************************************
    *Interface
    ******************************************************************************/
-  std::vector<task *> build_write_task (task tsk, const char *data) override;
-  std::vector<task> build_read_task (task t) override;
-  std::vector<task> build_delete_task (task tsk) override;
+  std::vector<task *> build_write_task(task tsk, const char *data) override;
+  std::vector<task> build_read_task(task t) override;
+  std::vector<task> build_delete_task(task tsk) override;
 
-  void close_aggregation ();
+  void close_aggregation();
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~aggregating_builder () { free (aggregate_buffer); }
+  virtual ~aggregating_builder() { free(aggregate_buffer); }
 };
 
-#endif // DTIO_AGGREGATING_BUILDER_H
+#endif  // DTIO_AGGREGATING_BUILDER_H

@@ -26,85 +26,80 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
-#include <cereal/types/memory.hpp>
-#include <cstdio>
 #include <dtio/data_structures.h>
 #include <dtio/dtio_system.h>
+
+#include <cereal/types/memory.hpp>
+#include <cstdio>
 #include <string>
 #include <unordered_map>
 /******************************************************************************
  *Class
  ******************************************************************************/
-class metadata_manager
-{
-private:
+class metadata_manager {
+ private:
   /******************************************************************************
    *Variables and members
    ******************************************************************************/
   static std::shared_ptr<metadata_manager> instance;
   std::unordered_map<FILE *, std::string> fh_map;
   std::unordered_map<int, std::string>
-      fd_map; // TODO how do we use fh_map? Is it needed?
+      fd_map;  // TODO how do we use fh_map? Is it needed?
   std::unordered_map<std::string, file_stat> file_map;
   service service_i;
   /******************************************************************************
    *Constructor
    ******************************************************************************/
-  explicit metadata_manager (service service)
-      : fh_map (), file_map (), service_i (service)
-  {
-  }
+  explicit metadata_manager(service service)
+      : fh_map(), file_map(), service_i(service) {}
 
-public:
+ public:
   /******************************************************************************
    *Interface
    ******************************************************************************/
-  inline static std::shared_ptr<metadata_manager>
-  getInstance (service service)
-  {
-    return instance == nullptr ? instance = std::shared_ptr<metadata_manager> (
-                                     new metadata_manager (service))
+  inline static std::shared_ptr<metadata_manager> getInstance(service service) {
+    return instance == nullptr ? instance = std::shared_ptr<metadata_manager>(
+                                     new metadata_manager(service))
                                : instance;
   }
-  bool is_created (std::string filename);
-  int create (std::string filename, std::string mode, FILE *&fh);
-  int create (std::string filename, int flags, mode_t mode, int *fd);
-  bool is_opened (std::string filename);
-  bool is_opened (FILE *fh);
-  bool is_opened (int fd);
-  int update_on_open (std::string filename, std::string mode, FILE *&fh,
-                      int existing_size = 0);
-  int update_on_open (std::string filename, int flags, mode_t mode, int *fd,
-                      int existing_size = 0);
-  int update_on_close (FILE *&fh);
-  int update_on_close (int fd);
-  int remove_chunks (std::string &basic_string);
-  std::string get_filename (FILE *fh);
-  std::string get_filename (int fd);
+  bool is_created(std::string filename);
+  int create(std::string filename, std::string mode, FILE *&fh);
+  int create(std::string filename, int flags, mode_t mode, int *fd);
+  bool is_opened(std::string filename);
+  bool is_opened(FILE *fh);
+  bool is_opened(int fd);
+  int update_on_open(std::string filename, std::string mode, FILE *&fh,
+                     int existing_size = 0);
+  int update_on_open(std::string filename, int flags, mode_t mode, int *fd,
+                     int existing_size = 0);
+  int update_on_close(FILE *&fh);
+  int update_on_close(int fd);
+  int remove_chunks(std::string &basic_string);
+  std::string get_filename(FILE *fh);
+  std::string get_filename(int fd);
   // std::size_t get_filesize(std::string basic_string);
   // std::string get_mode(std::string basic_string);
   // int get_flags(std::string basic_string);
   // mode_t get_posix_mode(std::string basic_string);
   // long long int get_fp(const std::string &basic_string);
-  file_stat get_stat (std::string basic_string);
-  int update_on_seek (std::string basic_string, size_t offset, size_t origin);
-  int update_read_task_info (task *task_ks[], std::string filename);
-  int update_write_task_info (task *task_ks[], std::string filename);
-  int update_delete_task_info (task task_ks, std::string filename);
-  int update_write_task_info (task task_ks, std::string filename,
-                              std::size_t io_size);
-  std::vector<chunk_meta> fetch_chunks (task task);
-  void update_on_read (std::string filename, size_t size);
-  void update_on_write (std::string filename, size_t size, size_t offset,
-                        file_stat *st);
-  void update_on_delete (std::string filename);
+  file_stat get_stat(std::string basic_string);
+  int update_on_seek(std::string basic_string, size_t offset, size_t origin);
+  int update_read_task_info(task *task_ks[], std::string filename);
+  int update_write_task_info(task *task_ks[], std::string filename);
+  int update_delete_task_info(task task_ks, std::string filename);
+  int update_write_task_info(task task_ks, std::string filename,
+                             std::size_t io_size);
+  std::vector<chunk_meta> fetch_chunks(task task);
+  void update_on_read(std::string filename, size_t size);
+  void update_on_write(std::string filename, size_t size, size_t offset,
+                       file_stat *st);
+  void update_on_delete(std::string filename);
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~metadata_manager ()
-  {
+  virtual ~metadata_manager() {
     // TODO: serialize structures and send down to dtio_meta_file
   }
 };
 
-#endif // DTIO_MAIN_METADATA_MANAGER_H
+#endif  // DTIO_MAIN_METADATA_MANAGER_H

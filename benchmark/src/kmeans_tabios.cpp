@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -27,8 +27,7 @@
 int main(int argc, char **argv) {
   dtio::MPI_Init(&argc, &argv);
   if (argc != 5) {
-    printf(
-        "USAGE: ./kmean_tabios [dtio_conf] [file_path] [iter] [pfs_path]\n");
+    printf("USAGE: ./kmean_tabios [dtio_conf] [file_path] [iter] [pfs_path]\n");
     exit(1);
   }
 
@@ -69,8 +68,7 @@ int main(int argc, char **argv) {
   std::vector<std::pair<size_t, std::vector<task>>> operations =
       std::vector<std::pair<size_t, std::vector<task>>>();
   MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == 0)
-    std::cerr << "Data created Done\n";
+  if (rank == 0) std::cerr << "Data created Done\n";
   for (int i = 0; i < iteration; ++i) {
     for (auto item : workload) {
       for (int j = 0; j < item[1]; ++j) {
@@ -117,8 +115,7 @@ int main(int argc, char **argv) {
   }
   dtio::fclose(fh);
   MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == 0)
-    std::cerr << "Read Done\n";
+  if (rank == 0) std::cerr << "Read Done\n";
 #ifdef TIMERBASE
   map.pauseTime();
 #endif
@@ -128,8 +125,7 @@ int main(int argc, char **argv) {
   double map_sum;
   MPI_Allreduce(&map_time, &map_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double map_mean = map_sum / comm_size;
-  if (rank == 0)
-    stream << map_mean << ",";
+  if (rank == 0) stream << map_mean << ",";
 #endif
   std::string finalname = pfs_path + "final_" + std::to_string(rank) + ".dat";
   FILE *outfile;
@@ -163,8 +159,7 @@ int main(int argc, char **argv) {
   MPI_Allreduce(&red_time, &max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   MPI_Allreduce(&red_time, &min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
   double red_mean = red_sum / comm_size;
-  if (rank == 0)
-    stream << red_mean << "," << max << "," << min;
+  if (rank == 0) stream << red_mean << "," << max << "," << min;
 #endif
   auto time = global_timer.getElapsedTime();
   double sum;

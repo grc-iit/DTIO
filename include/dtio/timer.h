@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -30,7 +30,7 @@
 
 namespace dtio {
 class Timer {
-public:
+ public:
   Timer() : elapsed_time(0) {}
   void startTime();
   double endTimeWithPrint(std::string fnName);
@@ -39,8 +39,8 @@ public:
   int resumeTime();
   double elapsed_time;
 
-private:
+ private:
   std::chrono::high_resolution_clock::time_point t1;
 };
-}
-#endif // DTIO_TIMER_H
+}  // namespace dtio
+#endif  // DTIO_TIMER_H

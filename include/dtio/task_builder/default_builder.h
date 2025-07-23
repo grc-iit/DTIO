@@ -26,18 +26,18 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
-#include <chrono>
 #include <dtio/client_interface/distributed_queue.h>
 #include <dtio/data_structures.h>
 #include <dtio/enumerations.h>
 #include <dtio/task_builder/task_builder.h>
+
+#include <chrono>
 #include <memory>
 /******************************************************************************
  *Class
  ******************************************************************************/
-class default_builder : public task_builder
-{
-private:
+class default_builder : public task_builder {
+ private:
   /******************************************************************************
    *Variables and members
    ******************************************************************************/
@@ -46,20 +46,20 @@ private:
    *Constructor
    ******************************************************************************/
 
-public:
-  default_builder (service service) : task_builder (service) {}
+ public:
+  default_builder(service service) : task_builder(service) {}
 
   /******************************************************************************
    *Interface
    ******************************************************************************/
-  std::vector<task *> build_write_task (task tsk, const char *data) override;
-  std::vector<task> build_read_task (task t) override;
-  std::vector<task> build_delete_task (task tsk) override;
+  std::vector<task *> build_write_task(task tsk, const char *data) override;
+  std::vector<task> build_read_task(task t) override;
+  std::vector<task> build_delete_task(task tsk) override;
 
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~default_builder () {}
+  virtual ~default_builder() {}
 };
 
-#endif // DTIO_MAIN_TASK_HANDLER_H
+#endif  // DTIO_MAIN_TASK_HANDLER_H

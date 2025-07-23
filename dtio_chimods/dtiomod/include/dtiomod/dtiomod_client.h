@@ -35,7 +35,7 @@ class Client : public ModuleClient {
               const DomainQuery &affinity, const chi::string &pool_name,
               const CreateContext &ctx = CreateContext(), int dtiomod_id = 0) {
     FullPtr<CreateTask> task =
-      AsyncCreate(mctx, dom_query, affinity, pool_name, ctx, dtiomod_id);
+        AsyncCreate(mctx, dom_query, affinity, pool_name, ctx, dtiomod_id);
     task->Wait();
     Init(task->ctx_.id_);
     CHI_CLIENT->DelTask(mctx, task);
@@ -56,62 +56,71 @@ class Client : public ModuleClient {
 
   CHI_BEGIN(Write)
   /** Write task */
-  void Write(const hipc::MemContext &mctx,
-	     const hipc::Pointer &data, size_t data_size, size_t data_offset, const hipc::Pointer &filename, size_t filenamelen, io_client_type iface) {
-    int snum = Schedule(HSHM_MCTX, chi::DomainQuery::GetDirectHash(chi::SubDomain::kGlobalContainers, 0));
-    FullPtr<WriteTask> task = AsyncWrite(mctx, chi::DomainQuery::GetDirectHash(chi::SubDomain::kGlobalContainers, snum), data, data_size, data_offset, filename, filenamelen, iface);
-	task->Wait();
-	CHI_CLIENT->DelTask(mctx, task);
+  void Write(const hipc::MemContext &mctx, const hipc::Pointer &data,
+             size_t data_size, size_t data_offset,
+             const hipc::Pointer &filename, size_t filenamelen,
+             io_client_type iface) {
+    int snum = Schedule(HSHM_MCTX, chi::DomainQuery::GetDirectHash(
+                                       chi::SubDomain::kGlobalContainers, 0));
+    FullPtr<WriteTask> task =
+        AsyncWrite(mctx,
+                   chi::DomainQuery::GetDirectHash(
+                       chi::SubDomain::kGlobalContainers, snum),
+                   data, data_size, data_offset, filename, filenamelen, iface);
+    task->Wait();
+    CHI_CLIENT->DelTask(mctx, task);
   }
   CHI_TASK_METHODS(Write);
   CHI_END(Write)
 
-CHI_BEGIN(Read)
+  CHI_BEGIN(Read)
   /** Read task */
-  void Read(const hipc::MemContext &mctx,
-	    const hipc::Pointer &data, size_t data_size, size_t data_offset, const hipc::Pointer &filename, size_t filenamelen, io_client_type iface) {
-    int snum = Schedule(HSHM_MCTX, chi::DomainQuery::GetDirectHash(chi::SubDomain::kGlobalContainers, 0));
+  void Read(const hipc::MemContext &mctx, const hipc::Pointer &data,
+            size_t data_size, size_t data_offset, const hipc::Pointer &filename,
+            size_t filenamelen, io_client_type iface) {
+    int snum = Schedule(HSHM_MCTX, chi::DomainQuery::GetDirectHash(
+                                       chi::SubDomain::kGlobalContainers, 0));
     FullPtr<ReadTask> task =
-      AsyncRead(mctx, chi::DomainQuery::GetDirectHash(chi::SubDomain::kGlobalContainers, snum), data, data_size, data_offset, filename, filenamelen, iface);
+        AsyncRead(mctx,
+                  chi::DomainQuery::GetDirectHash(
+                      chi::SubDomain::kGlobalContainers, snum),
+                  data, data_size, data_offset, filename, filenamelen, iface);
     task->Wait();
     CHI_CLIENT->DelTask(mctx, task);
   }
   CHI_TASK_METHODS(Read);
   CHI_END(Read)
 
-CHI_BEGIN(Prefetch)
+  CHI_BEGIN(Prefetch)
   /** Prefetch task */
-  void Prefetch(const hipc::MemContext &mctx,
-                      const DomainQuery &dom_query) {
-    FullPtr<PrefetchTask> task =
-      AsyncPrefetch(mctx, dom_query);
+  void Prefetch(const hipc::MemContext &mctx, const DomainQuery &dom_query) {
+    FullPtr<PrefetchTask> task = AsyncPrefetch(mctx, dom_query);
     task->Wait();
     CHI_CLIENT->DelTask(mctx, task);
   }
   CHI_TASK_METHODS(Prefetch);
   CHI_END(Prefetch)
 
-CHI_BEGIN(MetaPut)
+  CHI_BEGIN(MetaPut)
   /** MetaPut task */
-  void MetaPut(const hipc::MemContext &mctx,
-	       const DomainQuery &dom_query,
-	       hipc::Pointer key, size_t keylen,
-	       hipc::Pointer val, size_t vallen) {
+  void MetaPut(const hipc::MemContext &mctx, const DomainQuery &dom_query,
+               hipc::Pointer key, size_t keylen, hipc::Pointer val,
+               size_t vallen) {
     FullPtr<MetaPutTask> task =
-      AsyncMetaPut(mctx, dom_query, key, keylen, val, vallen);
+        AsyncMetaPut(mctx, dom_query, key, keylen, val, vallen);
     task->Wait();
     CHI_CLIENT->DelTask(mctx, task);
   }
   CHI_TASK_METHODS(MetaPut);
   CHI_END(MetaPut)
 
-CHI_BEGIN(MetaGet)
+  CHI_BEGIN(MetaGet)
   /** MetaGet task */
   std::tuple<bool, hipc::Pointer, size_t> MetaGet(const hipc::MemContext &mctx,
-						  const DomainQuery &dom_query,
-						  hipc::Pointer key, size_t keylen) {
-    FullPtr<MetaGetTask> task =
-      AsyncMetaGet(mctx, dom_query, key, keylen);
+                                                  const DomainQuery &dom_query,
+                                                  hipc::Pointer key,
+                                                  size_t keylen) {
+    FullPtr<MetaGetTask> task = AsyncMetaGet(mctx, dom_query, key, keylen);
     task->Wait();
     hipc::Pointer val = task->val_;
     size_t vallen = task->vallen_;
@@ -123,12 +132,10 @@ CHI_BEGIN(MetaGet)
   CHI_TASK_METHODS(MetaGet);
   CHI_END(MetaGet)
 
-CHI_BEGIN(Schedule)
+  CHI_BEGIN(Schedule)
   /** Schedule task */
-  int Schedule(const hipc::MemContext &mctx,
-                      const DomainQuery &dom_query) {
-    FullPtr<ScheduleTask> task =
-      AsyncSchedule(mctx, dom_query);
+  int Schedule(const hipc::MemContext &mctx, const DomainQuery &dom_query) {
+    FullPtr<ScheduleTask> task = AsyncSchedule(mctx, dom_query);
     task->Wait();
     int schedule_num = task->schedule_num_;
     CHI_CLIENT->DelTask(mctx, task);

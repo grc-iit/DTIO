@@ -29,14 +29,14 @@
 #include <dtio/data_structures.h>
 #include <dtio/enumerations.h>
 #include <dtio/exceptions.h>
+
 #include <memory>
 
 /******************************************************************************
  *Class
  ******************************************************************************/
-class distributed_queue
-{
-protected:
+class distributed_queue {
+ protected:
   /******************************************************************************
    *Variables and members
    ******************************************************************************/
@@ -44,54 +44,38 @@ protected:
   /******************************************************************************
    *Constructor
    ******************************************************************************/
-  explicit distributed_queue (service service) : service_i (service) {}
+  explicit distributed_queue(service service) : service_i(service) {}
 
-public:
+ public:
   /******************************************************************************
    *Interface
    ******************************************************************************/
-  virtual void
-  clear ()
-  {
-    throw NotImplementedException ("clear");
+  virtual void clear() { throw NotImplementedException("clear"); }
+
+  virtual int publish_task(task *task_t) {
+    throw NotImplementedException("publish_task");
+  }
+  virtual task *subscribe_task_with_timeout(int &status) {
+    throw NotImplementedException("subscribe_task_with_timeout");
   }
 
-  virtual int
-  publish_task (task *task_t)
-  {
-    throw NotImplementedException ("publish_task");
-  }
-  virtual task *
-  subscribe_task_with_timeout (int &status)
-  {
-    throw NotImplementedException ("subscribe_task_with_timeout");
+  virtual task *subscribe_task(int &status) {
+    throw NotImplementedException("subscribe_task");
   }
 
-  virtual task *
-  subscribe_task (int &status)
-  {
-    throw NotImplementedException ("subscribe_task");
+  virtual int get_queue_size() {
+    throw NotImplementedException("get_queue_size");
   }
-
-  virtual int
-  get_queue_size ()
-  {
-    throw NotImplementedException ("get_queue_size");
+  virtual int get_queue_count() {
+    throw NotImplementedException("get_queue_count");
   }
-  virtual int
-  get_queue_count ()
-  {
-    throw NotImplementedException ("get_queue_count");
-  }
-  virtual int
-  get_queue_count_limit ()
-  {
-    throw NotImplementedException ("get_queue_count");
+  virtual int get_queue_count_limit() {
+    throw NotImplementedException("get_queue_count");
   }
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~distributed_queue () {}
+  virtual ~distributed_queue() {}
 };
 
-#endif // DTIO_MAIN_DISTRIBUTEDQUEUE_H
+#endif  // DTIO_MAIN_DISTRIBUTEDQUEUE_H

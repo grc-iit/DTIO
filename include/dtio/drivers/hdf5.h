@@ -24,27 +24,26 @@
 #ifndef DTIO_MAIN_HDF5_H
 #define DTIO_MAIN_HDF5_H
 
-#include <cstdio>
-#include <cstring>
 #include <dtio/data_manager/data_manager.h>
 #include <dtio/drivers/mpi.h>
 #include <dtio/dtio_system.h>
 #include <dtio/metadata_manager/metadata_manager.h>
 
-// DTIO Namespace
-namespace dtio
-{
-namespace hdf5
-{
-int DTIO_Init ();
-int DTIO_open (const char *filename, const char *dsetname, unsigned flags,
-               bool create, bool hdf5file);
-int DTIO_write (const char *filename, const char *dsetname, const char *buf,
-                size_t len, uint64_t offset);
-int DTIO_read (const char *filename, const char *dsetname, char *buf,
-               size_t len, uint64_t offset);
-int DTIO_close (int fd);
-} // namespace hdf5
-} // namespace dtio
+#include <cstdio>
+#include <cstring>
 
-#endif // DTIO_MAIN_HDF5_H
+// DTIO Namespace
+namespace dtio {
+namespace hdf5 {
+int DTIO_Init();
+int DTIO_open(const char *filename, const char *dsetname, unsigned flags,
+              bool create, bool hdf5file);
+int DTIO_write(const char *filename, const char *dsetname, const char *buf,
+               size_t len, uint64_t offset);
+int DTIO_read(const char *filename, const char *dsetname, char *buf, size_t len,
+              uint64_t offset);
+int DTIO_close(int fd);
+}  // namespace hdf5
+}  // namespace dtio
+
+#endif  // DTIO_MAIN_HDF5_H

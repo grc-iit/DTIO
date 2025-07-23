@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -27,14 +27,16 @@
 int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
   if (argc != 6) {
-    printf("USAGE: ./simple_write [filename] [size1] [size2] [writes_per_phase] [num_phases]\n");
+    printf(
+        "USAGE: ./simple_write [filename] [size1] [size2] [writes_per_phase] "
+        "[num_phases]\n");
     exit(1);
   }
 
   int fd;
-  int rv; // return val
+  int rv;  // return val
   int i, j;
-  
+
   int write_size1, write_size2;
   int writes_per_phase, num_phases;
 
@@ -46,7 +48,7 @@ int main(int argc, char **argv) {
   int bigger_write = write_size1 > write_size2 ? write_size1 : write_size2;
   char write_buf[bigger_write];
   for (i = 0; i < bigger_write; i++) {
-    write_buf[i] = (char)(65 + random() % 57); // Just a random char
+    write_buf[i] = (char)(65 + random() % 57);  // Just a random char
   }
   std::cerr << "This is a simple WRITE test.\n";
 

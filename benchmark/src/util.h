@@ -25,15 +25,17 @@
 #ifndef DTIO_BENCH_UTIL_H
 #define DTIO_BENCH_UTIL_H
 
+#include <fcntl.h>
+
 #include "dtio/drivers/posix.h"
 #include "dtio/drivers/stdio.h"
 #include "dtio/return_codes.h"
 #include "dtio/utilities.h"
-#include <fcntl.h>
 /* #include <fstream> */
-#include <iomanip>
 #include <malloc.h>
 #include <mpi.h>
+
+#include <iomanip>
 #include <random>
 /* #include <sstream> */
 #include <zconf.h>
@@ -91,4 +93,4 @@
 /*     std::cerr << "Read failed:" << bytes << "\n"; */
 /* } */
 
-#endif // DTIO_BENCH_UTIL_H
+#endif  // DTIO_BENCH_UTIL_H

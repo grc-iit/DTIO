@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -27,66 +27,21 @@
 
 #include <cstdint>
 
-enum request_status
-{
-  COMPLETED = 0,
-  PENDING = 1
-};
+enum request_status { COMPLETED = 0, PENDING = 1 };
 
-enum message_type
-{
-  METADATA = 0,
-  DATASPACE = 1
-};
-enum operation
-{
-  WRITE = 0,
-  READ = 1,
-  DELETE = 2,
-  FLUSH = 3
-};
-enum map_type
-{
-  META_FH = 0,
-  META_CHUNK = 1
-};
-enum location_type
-{
-  BUFFERS = 0,
-  CACHE = 1,
-  PFS = 2
-};
-enum mpi_comms
-{
-  WORKER_COLOR = 0,
-  SCHEDULER_COLOR = 1,
-  HCLMAP_COLOR = 2
-};
-enum mpi_dataspace_comms
-{
-  DATASPACE_NULL_COLOR = 0,
-  DATASPACE_COLOR = 1
-};
-enum mpi_metadata_comms
-{
-  METADATA_NULL_COLOR = 0,
-  METADATA_COLOR = 1
-};
+enum message_type { METADATA = 0, DATASPACE = 1 };
+enum operation { WRITE = 0, READ = 1, DELETE = 2, FLUSH = 3 };
+enum map_type { META_FH = 0, META_CHUNK = 1 };
+enum location_type { BUFFERS = 0, CACHE = 1, PFS = 2 };
+enum mpi_comms { WORKER_COLOR = 0, SCHEDULER_COLOR = 1, HCLMAP_COLOR = 2 };
+enum mpi_dataspace_comms { DATASPACE_NULL_COLOR = 0, DATASPACE_COLOR = 1 };
+enum mpi_metadata_comms { METADATA_NULL_COLOR = 0, METADATA_COLOR = 1 };
 
-enum mpi_queue_comms
-{
-  QUEUE_WORKER_NULL_COLOR = 0,
-  QUEUE_WORKER_COLOR = 1
-};
+enum mpi_queue_comms { QUEUE_WORKER_NULL_COLOR = 0, QUEUE_WORKER_COLOR = 1 };
 
-enum mpi_ts_comms
-{
-  QUEUE_TS_NULL_COLOR = 0,
-  QUEUE_TS_COLOR = 1
-};
+enum mpi_ts_comms { QUEUE_TS_NULL_COLOR = 0, QUEUE_TS_COLOR = 1 };
 
-enum service
-{
+enum service {
   LIB = 0,
   CLIENT = 1,
   SYSTEM_MANAGER = 2,
@@ -95,8 +50,7 @@ enum service
   WORKER_MANAGER = 5,
   HCLCLIENT = 6
 };
-enum class task_type : int64_t
-{
+enum class task_type : int64_t {
   READ_TASK = 0,
   WRITE_TASK = 1,
   FLUSH_TASK = 2,
@@ -105,8 +59,7 @@ enum class task_type : int64_t
   DUMMY = 5
 };
 
-enum table
-{
+enum table {
   FILE_DB = 0,
   FILE_CHUNK_DB = 1,
   CHUNK_DB = 2,
@@ -119,24 +72,10 @@ enum table
   COUNTER_DB = 9,
   STAGING_DB = 10
 };
-enum builder_impl_type
-{
-  DEFAULT_B = 0,
-  AGGREGATING_B = 1
-};
-enum map_impl_type
-{
-  ROCKS_DB = 0,
-  MEMCACHE_D = 1,
-  IOWARP = 2
-};
-enum queue_impl_type
-{
-  NATS = 0,
-  HCLQUEUE = 1
-};
-enum solver_impl_type
-{
+enum builder_impl_type { DEFAULT_B = 0, AGGREGATING_B = 1 };
+enum map_impl_type { ROCKS_DB = 0, MEMCACHE_D = 1, IOWARP = 2 };
+enum queue_impl_type { NATS = 0, HCLQUEUE = 1 };
+enum solver_impl_type {
   DP = 0,
   GREEDY = 1,
   ROUND_ROBIN = 2,
@@ -144,22 +83,11 @@ enum solver_impl_type
   DEFAULT = 4
 };
 
-// NOTE: MULTI should always be the last interface type, and should not be used in tasks
-// It's used to get the number of interfaces for the purpose of the worker-side multi client
-enum io_client_type
-{
-  STDIO = 0,
-  POSIX = 1,
-  HDF5 = 2,
-  URING = 3,
-  MULTI = 4
-};
+// NOTE: MULTI should always be the last interface type, and should not be used
+// in tasks It's used to get the number of interfaces for the purpose of the
+// worker-side multi client
+enum io_client_type { STDIO = 0, POSIX = 1, HDF5 = 2, URING = 3, MULTI = 4 };
 
-enum Distribution
-{
-  UNIFORM,
-  LINEAR,
-  EXPONENTIAL
-};
+enum Distribution { UNIFORM, LINEAR, EXPONENTIAL };
 
-#endif // DTIO_MAIN_ENUMERATION_H
+#endif  // DTIO_MAIN_ENUMERATION_H

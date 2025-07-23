@@ -26,133 +26,101 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
-#include <cereal/types/memory.hpp>
 #include <dtio/constants.h>
 #include <dtio/data_structures.h>
 #include <dtio/enumerations.h>
 #include <dtio/exceptions.h>
+
+#include <cereal/types/memory.hpp>
 /******************************************************************************
  *Class
  ******************************************************************************/
-class distributed_hashmap
-{
-protected:
+class distributed_hashmap {
+ protected:
   /******************************************************************************
    *Variables and members
    ******************************************************************************/
   service service_i;
 
-public:
+ public:
   /******************************************************************************
    *Constructor
    ******************************************************************************/
-  explicit distributed_hashmap (service service) : service_i (service) {}
+  explicit distributed_hashmap(service service) : service_i(service) {}
   /******************************************************************************
    *Interface
    ******************************************************************************/
-  virtual int
-  put (const table &name, std::string key, const std::string &value,
-       std::string group_key)
-  {
-    throw NotImplementedException ("put");
+  virtual int put(const table &name, std::string key, const std::string &value,
+                  std::string group_key) {
+    throw NotImplementedException("put");
   }
-  virtual int
-  put (const table &name, std::string key, const char *value, size_t size,
-       std::string group_key)
-  {
-    throw NotImplementedException ("put 2");
+  virtual int put(const table &name, std::string key, const char *value,
+                  size_t size, std::string group_key) {
+    throw NotImplementedException("put 2");
   }
-  virtual int
-  put (const table &name, std::string key, chunk_meta *value,
-       std::string group_key)
-  {
-    throw NotImplementedException ("put chunkmeta");
+  virtual int put(const table &name, std::string key, chunk_meta *value,
+                  std::string group_key) {
+    throw NotImplementedException("put chunkmeta");
   }
-  virtual int
-  put (const table &name, std::string key, file_stat *value,
-       std::string group_key)
-  {
-    throw NotImplementedException ("put filestat");
+  virtual int put(const table &name, std::string key, file_stat *value,
+                  std::string group_key) {
+    throw NotImplementedException("put filestat");
   }
-  virtual int
-  put (const table &name, std::string key, file_meta *fm,
-       std::string group_key)
-  {
-    throw NotImplementedException ("put filemeta");
+  virtual int put(const table &name, std::string key, file_meta *fm,
+                  std::string group_key) {
+    throw NotImplementedException("put filemeta");
   }
 
-  virtual std::string
-  get (const table &name, std::string key, std::string group_key)
-  {
-    throw NotImplementedException ("get");
+  virtual std::string get(const table &name, std::string key,
+                          std::string group_key) {
+    throw NotImplementedException("get");
   }
-  virtual void
-  get (const table &name, std::string key, std::string group_key, char *result)
-  {
-    throw NotImplementedException ("get 2");
+  virtual void get(const table &name, std::string key, std::string group_key,
+                   char *result) {
+    throw NotImplementedException("get 2");
   }
-  virtual void
-  get (const table &name, std::string key, std::string group_key, char *result,
-       int max_size)
-  {
-    throw NotImplementedException ("get 3");
+  virtual void get(const table &name, std::string key, std::string group_key,
+                   char *result, int max_size) {
+    throw NotImplementedException("get 3");
   }
 
-  virtual bool
-  get (const table &name, std::string key, std::string group_key,
-       chunk_meta *result)
-  {
-    throw NotImplementedException ("get chunkmeta");
+  virtual bool get(const table &name, std::string key, std::string group_key,
+                   chunk_meta *result) {
+    throw NotImplementedException("get chunkmeta");
   }
 
-  virtual bool
-  get (const table &name, std::string key, std::string group_key,
-       file_stat *result)
-  {
-    throw NotImplementedException ("get filestat");
+  virtual bool get(const table &name, std::string key, std::string group_key,
+                   file_stat *result) {
+    throw NotImplementedException("get filestat");
   }
 
-  virtual bool
-  get (const table &name, std::string key, std::string group_key,
-       file_meta *result)
-  {
-    throw NotImplementedException ("get filemeta");
+  virtual bool get(const table &name, std::string key, std::string group_key,
+                   file_meta *result) {
+    throw NotImplementedException("get filemeta");
   }
 
-  virtual std::string
-  remove (const table &name, std::string key, std::string group_key)
-  {
-    throw NotImplementedException ("remove");
+  virtual std::string remove(const table &name, std::string key,
+                             std::string group_key) {
+    throw NotImplementedException("remove");
   }
-  virtual bool
-  exists (const table &name, std::string key, std::string group_key)
-  {
-    throw NotImplementedException ("remove");
+  virtual bool exists(const table &name, std::string key,
+                      std::string group_key) {
+    throw NotImplementedException("remove");
   }
-  virtual bool
-  purge ()
-  {
-    throw NotImplementedException ("purge");
+  virtual bool purge() { throw NotImplementedException("purge"); }
+  virtual size_t counter_init(const table &name, std::string key,
+                              std::string group_key) {
+    throw NotImplementedException("counter_init");
   }
-  virtual size_t
-  counter_init (const table &name, std::string key, std::string group_key)
-  {
-    throw NotImplementedException ("counter_init");
+  virtual size_t counter_inc(const table &name, std::string key,
+                             std::string group_key) {
+    throw NotImplementedException("counter_inc");
   }
-  virtual size_t
-  counter_inc (const table &name, std::string key, std::string group_key)
-  {
-    throw NotImplementedException ("counter_inc");
-  }
-  virtual size_t
-  get_servers ()
-  {
-    throw NotImplementedException ("get_servers");
-  }
+  virtual size_t get_servers() { throw NotImplementedException("get_servers"); }
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~distributed_hashmap () {}
+  virtual ~distributed_hashmap() {}
 };
 
-#endif // DTIO_MAIN_DISTRIBUTEDHASHMAP_H
+#endif  // DTIO_MAIN_DISTRIBUTEDHASHMAP_H

@@ -26,16 +26,16 @@
 /******************************************************************************
  *include files
  ******************************************************************************/
-#include <cereal/types/memory.hpp>
 #include <dtio/client_interface/distributed_hashmap.h>
 #include <dtio/dtio_system.h>
 #include <dtio/enumerations.h>
+
+#include <cereal/types/memory.hpp>
 /******************************************************************************
  *Class
  ******************************************************************************/
-class data_manager
-{
-private:
+class data_manager {
+ private:
   /******************************************************************************
    *Variables and members
    ******************************************************************************/
@@ -44,32 +44,30 @@ private:
   /******************************************************************************
    *Constructor
    ******************************************************************************/
-  explicit data_manager (service service) : service_i (service) {}
+  explicit data_manager(service service) : service_i(service) {}
 
-public:
+ public:
   /******************************************************************************
    *Interface
    ******************************************************************************/
-  inline static std::shared_ptr<data_manager>
-  getInstance (service service)
-  {
+  inline static std::shared_ptr<data_manager> getInstance(service service) {
     return instance == nullptr
-               ? instance
-                 = std::shared_ptr<data_manager> (new data_manager (service))
+               ? instance =
+                     std::shared_ptr<data_manager>(new data_manager(service))
                : instance;
   }
-  std::string get (const table &name, std::string key, std::string server);
-  void get (const table &name, std::string key, std::string server,
-            char *result);
-  int put (const table &name, std::string key, const char *data, int size,
-           std::string server);
-  int put (const table &name, std::string key, std::string data,
-           std::string server);
-  bool exists (const table &name, std::string key, std::string server);
-  std::string remove (const table &name, std::string key, std::string server);
+  std::string get(const table &name, std::string key, std::string server);
+  void get(const table &name, std::string key, std::string server,
+           char *result);
+  int put(const table &name, std::string key, const char *data, int size,
+          std::string server);
+  int put(const table &name, std::string key, std::string data,
+          std::string server);
+  bool exists(const table &name, std::string key, std::string server);
+  std::string remove(const table &name, std::string key, std::string server);
   /******************************************************************************
    *Destructor
    ******************************************************************************/
-  virtual ~data_manager () {}
+  virtual ~data_manager() {}
 };
-#endif // DTIO_MAIN_DATA_MANAGER_H
+#endif  // DTIO_MAIN_DATA_MANAGER_H

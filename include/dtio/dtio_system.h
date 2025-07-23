@@ -24,14 +24,16 @@
 #ifndef DTIO_MAIN_SYSTEM_H
 #define DTIO_MAIN_SYSTEM_H
 
-#include "dtio/logger.h"
-#include <climits>
 #include <dtio/client_interface/distributed_hashmap.h>
 #include <dtio/client_interface/distributed_queue.h>
 #include <dtio/config_manager.h>
 #include <dtio/constants.h>
 #include <dtio/enumerations.h>
 #include <dtio/external_clients/iowarp_map_impl.h>
+
+#include <climits>
+
+#include "dtio/logger.h"
 // #include <dtio/external_clients/hcl_queue_impl.h>
 // #include <dtio/external_clients/memcached_impl.h>
 // #include <dtio/external_clients/nats_impl.h>
@@ -39,22 +41,24 @@
 // #include <dtio/task_builder/task_builder.h>
 #include <dtio/task_builder/aggregating_builder.h>
 #include <dtio/task_builder/default_builder.h>
-#include <memory>
 #include <mpi.h>
+
+#include <memory>
 #include <string>
 #include <vector>
 
-class dtio_system
-{
-private:
+class dtio_system {
+ private:
   static std::shared_ptr<dtio_system> instance;
   int application_id;
   service service_i;
 
-  explicit dtio_system (service service)
-      : service_i (service), application_id (), client_comm (), client_rank (),
-        rank ()
-  {
+  explicit dtio_system(service service)
+      : service_i(service),
+        application_id(),
+        client_comm(),
+        client_rank(),
+        rank() {
     map_client_ = nullptr;
     map_server_ = nullptr;
     fs_map_ = nullptr;
@@ -62,126 +66,93 @@ private:
     fm_map_ = nullptr;
     task_builder_ = nullptr;
 
-    init (service_i);
+    init(service_i);
     return;
   }
 
-  void init (service service);
+  void init(service service);
   std::shared_ptr<distributed_hashmap> map_client_, map_server_, fs_map_,
       cm_map_, fm_map_;
   std::shared_ptr<task_builder> task_builder_;
 
-public:
-  std::shared_ptr<task_builder>
-  task_composer ()
-  {
-    return task_builder_;
-  }
+ public:
+  std::shared_ptr<task_builder> task_composer() { return task_builder_; }
 
-  bool
-  range_resolve (int **range_bound, int range_bound_size, int lower_bound,
-                 int upper_bound, int chunk_lower, int chunk_upper,
-                 bool *range_resolved)
-  {
+  bool range_resolve(int **range_bound, int range_bound_size, int lower_bound,
+                     int upper_bound, int chunk_lower, int chunk_upper,
+                     bool *range_resolved) {
     int i;
     bool retval = false;
     // int lower_bound = (*range_bound)[0];
     // int upper_bound = (*range_bound)[range_bound_size-1];
-    if (chunk_upper < lower_bound || chunk_lower > upper_bound)
-      {
-        // std::cout << "Chunk out of bounds" << std::endl;
-        return retval;
+    if (chunk_upper < lower_bound || chunk_lower > upper_bound) {
+      // std::cout << "Chunk out of bounds" << std::endl;
+      return retval;
+    } else {
+      if (chunk_lower >= lower_bound) {
+        // std::cout << "Checking bound for chunk placement condition A" <<
+        // std::endl; std::cout << "chunk lower " << chunk_lower <<
+        // std::endl; std::cout << "lower bound " << lower_bound <<
+        // std::endl; std::cout << "upper bound " << upper_bound <<
+        // std::endl; std::cout << "chunk_upper " << chunk_upper <<
+        // std::endl;
+        for (i = chunk_lower - lower_bound;
+             (i < upper_bound - lower_bound) && (i < chunk_upper - chunk_lower);
+             i++) {
+          // std::cout << "i is " << i << std::endl;
+          // std::cout << "Range bound is " << (*range_bound)[i] <<
+          // std::endl;
+          if ((*range_bound)[i] != -1) {
+            (*range_bound)[i] = -1;
+            retval = true;
+          }
+        }
+      } else {
+        // std::cout << "Checking bound for chunk placement condition B" <<
+        // std::endl;
+        for (i = lower_bound;
+             (i < upper_bound - lower_bound) && (i < chunk_upper - chunk_lower);
+             i++) {
+          if ((*range_bound)[i] != -1) {
+            (*range_bound)[i] = -1;
+            retval = true;
+          }
+        }
       }
-    else
-      {
-        if (chunk_lower >= lower_bound)
-          {
-            // std::cout << "Checking bound for chunk placement condition A" <<
-            // std::endl; std::cout << "chunk lower " << chunk_lower <<
-            // std::endl; std::cout << "lower bound " << lower_bound <<
-            // std::endl; std::cout << "upper bound " << upper_bound <<
-            // std::endl; std::cout << "chunk_upper " << chunk_upper <<
-            // std::endl;
-            for (i = chunk_lower - lower_bound;
-                 (i < upper_bound - lower_bound)
-                 && (i < chunk_upper - chunk_lower);
-                 i++)
-              {
-                // std::cout << "i is " << i << std::endl;
-                // std::cout << "Range bound is " << (*range_bound)[i] <<
-                // std::endl;
-                if ((*range_bound)[i] != -1)
-                  {
-                    (*range_bound)[i] = -1;
-                    retval = true;
-                  }
-              }
-          }
-        else
-          {
-            // std::cout << "Checking bound for chunk placement condition B" <<
-            // std::endl;
-            for (i = lower_bound; (i < upper_bound - lower_bound)
-                                  && (i < chunk_upper - chunk_lower);
-                 i++)
-              {
-                if ((*range_bound)[i] != -1)
-                  {
-                    (*range_bound)[i] = -1;
-                    retval = true;
-                  }
-              }
-          }
-        // Complicated code here
-        // FIXME We probably need something in the return to make sure we know
-        // how to index into the DTs later
-        if (!retval && chunk_lower == lower_bound
-            && chunk_upper == upper_bound)
-          {
-            DTIO_LOG_DEBUG ("Full range checked, setting bool");
-            *range_resolved = true;
-          }
-        return retval;
+      // Complicated code here
+      // FIXME We probably need something in the return to make sure we know
+      // how to index into the DTs later
+      if (!retval && chunk_lower == lower_bound && chunk_upper == upper_bound) {
+        DTIO_LOG_DEBUG("Full range checked, setting bool");
+        *range_resolved = true;
       }
+      return retval;
+    }
   }
 
-  std::shared_ptr<distributed_hashmap>
-  map_client (std::string type = "metadata")
-  {
-    if (type == "metadata")
-      {
-        return map_client_;
-      }
-    else if (type == "metadata+fs")
-      {
-        return fs_map_;
-      }
-    else if (type == "metadata+chunkmeta")
-      {
-        return cm_map_;
-      }
-    else if (type == "metadata+filemeta")
-      {
-        return fm_map_;
-      }
+  std::shared_ptr<distributed_hashmap> map_client(
+      std::string type = "metadata") {
+    if (type == "metadata") {
+      return map_client_;
+    } else if (type == "metadata+fs") {
+      return fs_map_;
+    } else if (type == "metadata+chunkmeta") {
+      return cm_map_;
+    } else if (type == "metadata+filemeta") {
+      return fm_map_;
+    }
     return nullptr;
   }
-  std::shared_ptr<distributed_hashmap>
-  map_server ()
-  {
-    return map_server_;
-  }
+  std::shared_ptr<distributed_hashmap> map_server() { return map_server_; }
   int rank, client_rank;
   MPI_Comm client_comm;
 
-  inline static std::shared_ptr<dtio_system>
-  getInstance (service service)
-  {
+  inline static std::shared_ptr<dtio_system> getInstance(service service) {
     return instance == nullptr
-               ? instance
-                 = std::shared_ptr<dtio_system> (new dtio_system (service))
+               ? instance =
+                     std::shared_ptr<dtio_system>(new dtio_system(service))
                : instance;
   }
 };
 
-#endif // DTIO_MAIN_SYSTEM_H
+#endif  // DTIO_MAIN_SYSTEM_H

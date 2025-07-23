@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -27,8 +27,9 @@
 int main(int argc, char **argv) {
   dtio::MPI_Init(&argc, &argv);
   if (argc != 5) {
-    printf("USAGE: ./hacc_tabios [dtio_conf] [file_path] [iteration] "
-           "[buf_path]\n");
+    printf(
+        "USAGE: ./hacc_tabios [dtio_conf] [file_path] [iteration] "
+        "[buf_path]\n");
     exit(1);
   }
 
@@ -37,8 +38,7 @@ int main(int argc, char **argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
 #ifdef COLLECT
-  if (rank == 0)
-    system("sh /home/cc/nfs/aetrio/scripts/log_reset.sh");
+  if (rank == 0) system("sh /home/cc/nfs/aetrio/scripts/log_reset.sh");
 #endif
   if (rank == 0)
     stream << "hacc_tabios()" << std::fixed << std::setprecision(10);
@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
   global_timer.pauseTime();
 
   std::vector<std::pair<size_t, std::vector<task *>>> operations =
-    std::vector<std::pair<size_t, std::vector<task *>>>();
+      std::vector<std::pair<size_t, std::vector<task *>>>();
 
   for (int i = 0; i < iteration; ++i) {
     for (auto item : workload) {
@@ -98,8 +98,7 @@ int main(int argc, char **argv) {
 #endif
   for (auto operation : operations) {
     auto bytes = dtio::fwrite_wait(operation.second);
-    if (bytes != operation.first)
-      std::cerr << "Write failed\n";
+    if (bytes != operation.first) std::cerr << "Write failed\n";
   }
 #ifdef TIMERBASE
   wbb.pauseTime();
@@ -109,8 +108,7 @@ int main(int argc, char **argv) {
   double bb_sum;
   MPI_Allreduce(&writeBB, &bb_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double bb_mean = bb_sum / comm_size;
-  if (rank == 0)
-    stream << "write_to_BB," << bb_mean << ",";
+  if (rank == 0) stream << "write_to_BB," << bb_mean << ",";
 #endif
 
   char *read_buf = (char *)malloc(io_per_teration * sizeof(char));
@@ -137,8 +135,7 @@ int main(int argc, char **argv) {
   double read_sum;
   MPI_Allreduce(&read_time, &read_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double read_mean = read_sum / comm_size;
-  if (rank == 0)
-    stream << "read_from_BB," << read_mean << ",";
+  if (rank == 0) stream << "read_from_BB," << read_mean << ",";
 #endif
 
   std::string output = file_path + "final_" + std::to_string(rank) + ".out";
@@ -156,8 +153,7 @@ int main(int argc, char **argv) {
   double pfs_sum;
   MPI_Allreduce(&pfs_time, &pfs_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   double pfs_mean = pfs_sum / comm_size;
-  if (rank == 0)
-    stream << "write_to_PFS," << pfs_mean << ",";
+  if (rank == 0) stream << "write_to_PFS," << pfs_mean << ",";
 #endif
   global_timer.pauseTime();
 
