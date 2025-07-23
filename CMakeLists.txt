@@ -175,3 +175,6 @@ install(
   TARGETS dtio
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# Install jarvis repo
+jarvis_repo_add("${CMAKE_SOURCE_DIR}/test/jarvis_dtio" "${CMAKE_SOURCE_DIR}/test/jarvis_dtio/pipelines")
