@@ -2,10 +2,10 @@
 add_library(dtio_posix_interception SHARED posix_api.cc)
 
 dtio_set_libs(dtio_posix_interception)
+target_link_libraries(dtio_posix_interception PUBLIC MPI::MPI_CXX dl stdc++fs)
+set_target_properties(dtio_posix_interception PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-add_dependencies(dtio_posix_interception dtio)
-
-# target_link_libraries(dtio_posix_interception PUBLIC dtio)
+add_dependencies(dtio_posix_interception dtio )
 
 set_target_properties(dtio_posix_interception PROPERTIES LINKER_LANGUAGE CXX)
 

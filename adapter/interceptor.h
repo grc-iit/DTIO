@@ -25,8 +25,7 @@
 #ifndef HERMES_ADAPTER_UTILS_H_
 #define HERMES_ADAPTER_UTILS_H_
 
-namespace dtio::adapter
-{
+namespace dtio::adapter {
 
 #define HERMES_DECL(F) F
 #define DTIO_DECL(F) F
@@ -34,6 +33,6 @@ namespace dtio::adapter
 /** The maximum length of a POSIX path */
 static inline const int kMaxPathLen = 4096;
 
-} // namespace dtio::adapter
+}  // namespace dtio::adapter
 
-#endif // HERMES_ADAPTER_UTILS_H_
+#endif  // HERMES_ADAPTER_UTILS_H_

@@ -54,6 +54,13 @@ endif()
 # -----------------------------------------------------------------------------
 # Find Packages
 # -----------------------------------------------------------------------------
+# This is for compatibility with CLANG + Spack
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+list(APPEND CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+
 if (CMAKE_VERSION VERSION_LESS 3.18)
   set(DEV_MODULE Development)
 else()
@@ -110,6 +117,7 @@ function(dtio_set_core_libs target)
   target_link_directories(${target} PUBLIC ${URING_LIBRARY_DIRS})
   target_include_directories(${target} PUBLIC ${HDF5_INCLUDE_DIRS})
   target_include_directories(${target} PUBLIC ${URING_INCLUDE_DIRS})
+  target_link_libraries(${target} PUBLIC dl)
 endfunction()
 
 function(dtio_set_libs target)
@@ -131,9 +139,6 @@ include_directories(include)
 include_directories("adapter") # <-- here 
 include_directories(dtio_chimods)
 add_subdirectory(dtio_chimods)
-
-# define ones we have installed
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ------------------------------------------------------------------------------
 # Build DTIO Library

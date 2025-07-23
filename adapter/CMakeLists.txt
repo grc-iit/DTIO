@@ -1,6 +1,4 @@
 # Set dtio to preload if adapter is linked.
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}-DDTIO_PRELOAD -DDTIO_RPC_THALLIUM")
-
 set(DTIO_SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 set(DTIO_ADAPTER_DIR ${CMAKE_SOURCE_DIR}/adapter)
 set(DTIO_IO_CLIENT_DIR ${CMAKE_SOURCE_DIR}/io_client)
