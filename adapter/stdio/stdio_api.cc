@@ -25,18 +25,21 @@
 // Dynamically checked to see which are the real APIs and which are intercepted
 bool stdio_intercepted = true;
 
-#include <cstdio>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <sys/stat.h>
+
+#include <cstdio>
 // #include "hermes_shm/util/logging.h"
 // #include <filesystem>
 
 // #include "hermes_types.h"
-#include "interceptor.h"
-#include <dtio/drivers/stdio.h>
-// #include <dtio/drivers/mpi.h>
+// #include <dtio/drivers/stdio.h>  // Not available, using stdio_api.h instead
 
+#include "dtio/client_metadata_manager.h"
+#include "dtio/config_manager.h"
+#include "dtio/dtio_enumerations.h"
+#include "interceptor.h"
 #include "stdio_api.h"
 // #include "posix_fs_api.h"
 // #include "filesystem/filesystem.h"
@@ -49,303 +52,110 @@ bool stdio_intercepted = true;
 // namespace hapi = hermes::api;
 namespace stdfs = std::filesystem;
 
-std::shared_ptr<dtio::stdio::StdioApi> dtio::stdio::StdioApi::instance
-    = nullptr;
+extern "C" {
 
-extern "C"
-{
+static __attribute__((constructor(101))) void init_posix(void) {}
 
-  static __attribute__ ((constructor (101))) void
-  init_posix (void)
-  {
-    HERMES_STDIO_API;
-    // HERMES_POSIX_FS;
-    // TRANSPARENT_HERMES;
-  } /**/
+/**
+ * MPI
+ */
+int HERMES_DECL(MPI_Init)(int *argc, char ***argv) {
+  return 0;  // Success
+}
 
-  /**
-   * MPI
-   */
-  int
-  HERMES_DECL (MPI_Init) (int *argc, char ***argv)
-  {
-    DTIO_LOG_DEBUG_RANKLESS ("Intercepted " << __func__);
-    auto real_api = HERMES_STDIO_API;
-    // You shouldn't ever be calling the real version
-
-    std::string execname = std::string (*argv[0]);
-    DTIO_LOG_DEBUG_RANKLESS ("Now intercepting executable: " << execname);
-    real_api->add_to_whitelist (execname);
-    return dtio::MPI_Init (argc, argv);
-  }
-  // void HERMES_DECL(MPI_Finalize)() {
-  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  //   // You shouldn't ever be calling the real version
-
-  //   return dtio::MPI_Finalize();
-  // }
-
-  /**
-   * STDIO
-   */
-  FILE *
-  HERMES_DECL (fopen) (const char *filename, const char *mode)
-  {
-    DTIO_LOG_DEBUG_RANKLESS ("Intercepted " << __func__);
-    auto real_api = HERMES_STDIO_API;
-
-    std::string caller_name = "";
-    if (real_api->check_path (filename))
-      {
-        FILE *retfp = dtio::stdio::fopen (filename, mode);
-        real_api->whitelist_fp (retfp);
-        return retfp;
-      }
-    else if (ConfigManager::get_instance ()->NEVER_TRACE)
-      {
-        return real_api->fopen (filename, mode);
-      }
-    if (boost::stacktrace::stacktrace ().size () > 1)
-      {
-        caller_name = boost::stacktrace::detail::location_from_symbol (
-                          boost::stacktrace::stacktrace ()[1].address ())
-                          .name ();
-      }
-
-    if (real_api->interceptp (caller_name))
-      {
-        FILE *retfp = dtio::stdio::fopen (filename, mode);
-        real_api->whitelist_fp (retfp);
-        return retfp;
-      }
-    else
-      {
-        return real_api->fopen (filename, mode);
-      }
+/**
+ * STDIO
+ */
+FILE *HERMES_DECL(fopen)(const char *filename, const char *mode) {
+  // Call real fopen first
+  FILE *real_fp = HERMES_STDIO_API->fopen(filename, mode);
+  if (!real_fp) {
+    return nullptr;
   }
 
-  char *
-  HERMES_DECL (fgets) (char *ptr, int count, FILE *stream)
-  {
-    DTIO_LOG_DEBUG_RANKLESS ("Intercepted " << __func__);
-    auto real_api = HERMES_STDIO_API;
-    std::string caller_name = "";
+  // Convert to absolute path
+  std::string abs_path = std::filesystem::absolute(filename).string();
 
-    if (real_api->fp_whitelistedp (stream))
-      {
-        // if (ConfigManager::get_instance()->ASYNC) {
-        //   return dtio::posix::read_async(fd, buf, count);
-        // }
-        // else {
-        dtio::stdio::fread (ptr, 1, count, stream, true);
-        return ptr;
-        // }
-      }
-    else
-      {
-        return real_api->fgets (ptr, count, stream);
-      }
-
-    if (boost::stacktrace::stacktrace ().size () > 1)
-      {
-        caller_name = boost::stacktrace::detail::location_from_symbol (
-                          boost::stacktrace::stacktrace ()[1].address ())
-                          .name ();
-      }
-    auto test = real_api->interceptp (caller_name);
-    if (real_api->interceptp (caller_name))
-      {
-        // if (ConfigManager::get_instance()->ASYNC) {
-        //   return dtio::posix::read_async(fd, buf, count);
-        // }
-        // else {
-        dtio::stdio::fread (ptr, 1, count, stream, true);
-
-        return ptr;
-        // }
-      }
-    else
-      {
-        return real_api->fgets (ptr, count, stream);
-      }
+  // Check if should intercept
+  auto *config = DTIO_CONF;
+  if (!config->ShouldIntercept(abs_path)) {
+    return real_fp;
   }
 
-  size_t
-  HERMES_DECL (fread) (void *ptr, size_t size, size_t count, FILE *stream)
-  {
-    DTIO_LOG_DEBUG_RANKLESS ("Intercepted " << __func__);
-    auto real_api = HERMES_STDIO_API;
-    std::string caller_name = "";
+  // Register with metadata manager
+  auto *client_meta = DTIO_CLIENT_META;
+  int flags = 0;  // Convert mode to flags if needed
+  if (strchr(mode, 'w')) flags |= O_WRONLY;
+  if (strchr(mode, 'r')) flags |= O_RDONLY;
+  if (strchr(mode, '+')) flags |= O_RDWR;
+  if (strchr(mode, 'a')) flags |= O_APPEND;
 
-    if (real_api->fp_whitelistedp (stream))
-      {
-        // if (ConfigManager::get_instance()->ASYNC) {
-        //   return dtio::posix::read_async(fd, buf, count);
-        // }
-        // else {
-        return dtio::stdio::fread (ptr, size, count, stream);
-        // }
-      }
-    else
-      {
-        return real_api->fread (ptr, size, count, stream);
-      }
+  client_meta->RegisterStdioFp(real_fp, abs_path, flags);
 
-    if (boost::stacktrace::stacktrace ().size () > 1)
-      {
-        caller_name = boost::stacktrace::detail::location_from_symbol (
-                          boost::stacktrace::stacktrace ()[1].address ())
-                          .name ();
-      }
-    auto test = real_api->interceptp (caller_name);
-    if (real_api->interceptp (caller_name))
-      {
-        // if (ConfigManager::get_instance()->ASYNC) {
-        //   return dtio::posix::read_async(fd, buf, count);
-        // }
-        // else {
-        return dtio::stdio::fread (ptr, size, count, stream);
-        // }
-      }
-    else
-      {
-        return real_api->fread (ptr, size, count, stream);
-      }
+  return real_fp;
+}
+
+char *HERMES_DECL(fgets)(char *ptr, int count, FILE *stream) {
+  return nullptr;  // Not implemented
+}
+
+size_t HERMES_DECL(fread)(void *ptr, size_t size, size_t count, FILE *stream) {
+  return 0;  // Not implemented
+}
+
+size_t HERMES_DECL(fwrite)(const void *ptr, size_t size, size_t count,
+                           FILE *stream) {
+  // Check if file pointer is registered with DTIO
+  auto *client_meta = DTIO_CLIENT_META;
+  if (!client_meta->IsStdioFpRegistered(stream)) {
+    // Not intercepted, call real API
+    return HERMES_STDIO_API->fwrite(ptr, size, count, stream);
   }
 
-  size_t
-  HERMES_DECL (fwrite) (const void *ptr, size_t size, size_t count,
-                        FILE *stream)
-  {
-    DTIO_LOG_DEBUG_RANKLESS ("Intercepted " << __func__);
-    auto real_api = HERMES_STDIO_API;
-    std::string caller_name = "";
+  // Get file info and submit to DTIO runtime
+  auto *file_info = client_meta->GetStdioFileInfo(stream);
+  if (file_info) {
+    auto *config = DTIO_CONF;
 
-    if (real_api->fp_whitelistedp (stream))
-      {
-        if (ConfigManager::get_instance ()->ASYNC)
-          {
-            return dtio::stdio::fwrite (
-                ptr, size, count, stream); // TODO eventually, write_async
-          }
-        else
-          {
-            return dtio::stdio::fwrite (ptr, size, count, stream);
-          }
-      }
-    else
-      {
-        return real_api->fwrite (ptr, size, count, stream);
-      }
+    size_t total_size = size * count;
 
-    if (boost::stacktrace::stacktrace ().size () > 1)
-      {
-        caller_name = boost::stacktrace::detail::location_from_symbol (
-                          boost::stacktrace::stacktrace ()[1].address ())
-                          .name ();
-      }
-    if (real_api->interceptp (caller_name))
-      {
-        if (ConfigManager::get_instance ()->ASYNC)
-          {
-            return dtio::stdio::fwrite (
-                ptr, size, count, stream); // TODO eventually, write_async
-          }
-        else
-          {
-            return dtio::stdio::fwrite (ptr, size, count, stream);
-          }
-      }
-    else
-      {
-        return real_api->fwrite (ptr, size, count, stream);
-      }
+    // Allocate buffer in shared memory
+    hipc::FullPtr<char> shm_buf =
+        CHI_CLIENT->AllocateBuffer(HSHM_MCTX, total_size);
+    memcpy(shm_buf.ptr_, ptr, total_size);
+
+    // Submit write task with filename as chi::string
+    config->dtio_mod_.Write(
+        HSHM_MCTX, shm_buf.shm_, total_size, file_info->current_offset,
+        chi::string(file_info->absolute_path), dtio::IoClientType::kStdio);
+
+    // Update offset
+    client_meta->UpdateStdioOffset(stream,
+                                   file_info->current_offset + total_size);
+
+    // Free shared memory buffer
+    CHI_CLIENT->FreeBuffer(HSHM_MCTX, shm_buf);
+
+    return count;
   }
 
-  int
-  HERMES_DECL (fseek) (FILE *stream, long int offset, int origin)
-  {
-    DTIO_LOG_DEBUG_RANKLESS ("Intercepted " << __func__);
-    auto real_api = HERMES_STDIO_API;
-    std::string caller_name = "";
+  // Fallback to real API
+  return HERMES_STDIO_API->fwrite(ptr, size, count, stream);
+}
 
-    if (real_api->fp_whitelistedp (stream))
-      {
-        return dtio::stdio::fseek (stream, offset, origin);
-      }
-    else
-      {
-        return real_api->fseek (stream, offset, origin);
-      }
+int HERMES_DECL(fseek)(FILE *stream, long int offset, int origin) {
+  return -1;  // Not implemented
+}
 
-    if (boost::stacktrace::stacktrace ().size () > 1)
-      {
-        caller_name = boost::stacktrace::detail::location_from_symbol (
-                          boost::stacktrace::stacktrace ()[1].address ())
-                          .name ();
-      }
-    if (real_api->interceptp (caller_name))
-      {
-        return dtio::stdio::fseek (stream, offset, origin);
-      }
-    else
-      {
-        return real_api->fseek (stream, offset, origin);
-      }
+int HERMES_DECL(fclose)(FILE *stream) {
+  // Remove from metadata manager if registered
+  auto *client_meta = DTIO_CLIENT_META;
+  if (client_meta->IsStdioFpRegistered(stream)) {
+    client_meta->UnregisterStdioFp(stream);
   }
 
-  // int HERMES_DECL(stat)(const char *pathname, struct stat *buf) {
-  //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  //   auto real_api = HERMES_STDIO_API;
-  //   std::string caller_name = "";
+  // Call real fclose
+  return HERMES_STDIO_API->fclose(stream);
+}
 
-  //   if (real_api->check_path(pathname)) {
-  //     return dtio::posix::mystat(pathname, buf);
-  //   }
-  //   else if (ConfigManager::get_instance()->NEVER_TRACE) {
-  //     return real_api->stat(pathname, buf);
-  //   }
-
-  //   if (boost::stacktrace::stacktrace().size() > 1) {
-  //     caller_name =
-  //     boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  //   }
-  //   if (real_api->interceptp(caller_name)) {
-  //     return dtio::posix::mystat(pathname, buf);
-  //   }
-  //   else {
-  //     return real_api->stat(pathname, buf);
-  //   }
-  // }
-
-  int
-  HERMES_DECL (fclose) (FILE *stream)
-  {
-    DTIO_LOG_DEBUG_RANKLESS ("Intercepted " << __func__);
-    auto real_api = HERMES_STDIO_API;
-    std::string caller_name = "";
-    if (real_api->fp_whitelistedp (stream))
-      {
-        return dtio::stdio::fclose (stream);
-      }
-    else
-      {
-        return real_api->fclose (stream);
-      }
-    if (boost::stacktrace::stacktrace ().size () > 1)
-      {
-        caller_name = boost::stacktrace::detail::location_from_symbol (
-                          boost::stacktrace::stacktrace ()[1].address ())
-                          .name ();
-      }
-    if (real_api->interceptp (caller_name))
-      {
-        return dtio::stdio::fclose (stream);
-      }
-    else
-      {
-        return real_api->fclose (stream);
-      }
-  }
-
-} // extern C
+}  // extern C

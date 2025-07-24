@@ -26,12 +26,13 @@
 #define HERMES_ADAPTER_STDIO_H
 #include "real_api.h"
 // #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <boost/stacktrace.hpp>
 #include <iostream>
 #include <set>
 #include <string>
-#include <sys/stat.h>
-#include <sys/types.h>
 // #include <unistd.h>
 #include <cstdio>
 
@@ -43,31 +44,25 @@
 #define _STAT_VER 0
 #endif
 
-extern "C"
-{
-  typedef FILE *(*fopen_t) (const char *filename, const char *mode);
-  typedef size_t (*fread_t) (void *ptr, size_t size, size_t count,
-                             FILE *stream);
-  typedef char *(*fgets_t) (char *ptr, int count, FILE *stream);
-  typedef size_t (*fwrite_t) (const void *ptr, size_t size, size_t count,
-                              FILE *stream);
-  typedef int (*fseek_t) (FILE *stream, long int offset, int origin);
-  typedef int (*fclose_t) (FILE *stream);
+extern "C" {
+typedef FILE *(*fopen_t)(const char *filename, const char *mode);
+typedef size_t (*fread_t)(void *ptr, size_t size, size_t count, FILE *stream);
+typedef char *(*fgets_t)(char *ptr, int count, FILE *stream);
+typedef size_t (*fwrite_t)(const void *ptr, size_t size, size_t count,
+                           FILE *stream);
+typedef int (*fseek_t)(FILE *stream, long int offset, int origin);
+typedef int (*fclose_t)(FILE *stream);
 }
 
-namespace dtio::stdio
-{
+namespace dtio::stdio {
 
 /** Used for compatability with older kernel versions */
-static int fxstat_to_fstat (int fd, struct stat *stbuf);
+static int fxstat_to_fstat(int fd, struct stat *stbuf);
 
 /** Pointers to the real stdio API */
-class StdioApi : public dtio::adapter::RealApi
-{
-private:
-  static std::shared_ptr<dtio::stdio::StdioApi> instance;
-
-public:
+class StdioApi : public dtio::adapter::RealApi {
+ private:
+ public:
   std::shared_ptr<std::set<std::string> > interception_whitelist = nullptr;
   std::shared_ptr<std::set<FILE *> > fp_interception_whitelist = nullptr;
 
@@ -84,94 +79,35 @@ public:
   /** fclose */
   fclose_t fclose = nullptr;
 
-  StdioApi () : dtio::adapter::RealApi ("open", "stdio_intercepted")
-  {
-    interception_whitelist = std::make_shared<std::set<std::string> > ();
-    fp_interception_whitelist = std::make_shared<std::set<FILE *> > ();
+  StdioApi() : dtio::adapter::RealApi("open", "stdio_intercepted") {
+    interception_whitelist = std::make_shared<std::set<std::string> >();
+    fp_interception_whitelist = std::make_shared<std::set<FILE *> >();
 
-    fopen = (fopen_t)dlsym (real_lib_, "fopen");
-    REQUIRE_API (fopen)
-    fread = (fread_t)dlsym (real_lib_, "fread");
-    REQUIRE_API (fread)
-    fgets = (fgets_t)dlsym (real_lib_, "fgets");
-    REQUIRE_API (fgets)
-    fwrite = (fwrite_t)dlsym (real_lib_, "fwrite");
-    REQUIRE_API (fwrite)
-    fseek = (fseek_t)dlsym (real_lib_, "fseek");
-    REQUIRE_API (fseek)
+    fopen = (fopen_t)dlsym(real_lib_, "fopen");
+    REQUIRE_API(fopen)
+    fread = (fread_t)dlsym(real_lib_, "fread");
+    REQUIRE_API(fread)
+    fgets = (fgets_t)dlsym(real_lib_, "fgets");
+    REQUIRE_API(fgets)
+    fwrite = (fwrite_t)dlsym(real_lib_, "fwrite");
+    REQUIRE_API(fwrite)
+    fseek = (fseek_t)dlsym(real_lib_, "fseek");
+    REQUIRE_API(fseek)
 
-    fclose = (fclose_t)dlsym (real_lib_, "fclose");
-    REQUIRE_API (fclose)
+    fclose = (fclose_t)dlsym(real_lib_, "fclose");
+    REQUIRE_API(fclose)
   }
-  StdioApi (const StdioApi &) = default;
-  StdioApi (StdioApi &&) = default;
-  StdioApi &operator= (const StdioApi &) = default;
-  StdioApi &operator= (StdioApi &&) = default;
-
-  bool
-  fp_whitelistedp (FILE *fp)
-  {
-    if (interception_whitelist == nullptr)
-      {
-        return false;
-      }
-    else
-      {
-        return fp_interception_whitelist->find (fp)
-               != fp_interception_whitelist->end ();
-      }
-  }
-
-  void
-  whitelist_fp (FILE *fp)
-  {
-    fp_interception_whitelist->insert (fp);
-  }
-
-  bool
-  interceptp (std::string sourcename)
-  {
-    if (interception_whitelist == nullptr)
-      {
-        return false;
-      }
-    else
-      {
-        return interception_whitelist->find (sourcename)
-               != interception_whitelist->end ();
-      }
-  }
-
-  bool
-  check_path (const char *path)
-  {
-    return (strlen (path) < 7)
-           || (path[0] == 'd' && path[1] == 't' && path[2] == 'i'
-               && path[3] == 'o' && path[4] == ':' && path[5] == '/'
-               && path[6] == '/');
-  }
-
-  void
-  add_to_whitelist (std::string execname)
-  {
-    interception_whitelist->insert (execname);
-  }
-
-  inline static std::shared_ptr<dtio::stdio::StdioApi>
-  getInstance ()
-  {
-    return instance == nullptr
-               ? instance = std::make_shared<dtio::stdio::StdioApi> ()
-               : instance;
-  }
+  StdioApi(const StdioApi &) = default;
+  StdioApi(StdioApi &&) = default;
+  StdioApi &operator=(const StdioApi &) = default;
+  StdioApi &operator=(StdioApi &&) = default;
 };
-
-} // namespace dtio::stdio
+}  // namespace dtio::stdio
 
 // Singleton macros
 #include "hermes_shm/util/singleton.h"
 
-#define HERMES_STDIO_API dtio::stdio::StdioApi::getInstance ()
-#define HERMES_STDIO_API_T std::shared_ptr<dtio::stdio::StdioApi>
+#define HERMES_STDIO_API hshm::Singleton<dtio::stdio::StdioApi>::GetInstance()
+#define HERMES_STDIO_API_T dtio::stdio::StdioApi *
 
-#endif // HERMES_ADAPTER_STDIO
+#endif  // HERMES_ADAPTER_STDIO

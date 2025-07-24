@@ -9,6 +9,18 @@ project(
 # -----------------------------------------------------------------------------
 option(DTIO_ENABLE_CMAKE_DOTENV "Use cmake dotenv" ON)
 option(DTIO_ENABLE_MPI "Enable MPI" ON)
+option(DTIO_ENABLE_URING "Enable URING" ON)
+option(DTIO_NO_COMPILE "Do not compile DTIO" OFF)
+
+if(DTIO_NO_COMPILE)
+    install(
+        FILES
+        ${CMAKE_SOURCE_DIR}/.gitignore
+        DESTINATION
+        ${CMAKE_INSTALL_PREFIX}/.gitignore
+    )
+    return()
+endif()
 
 # ------------------------------------------------------------------------------
 # DOTENV
@@ -82,10 +94,6 @@ find_package(Python 3.8 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED)
 
 find_package(HermesShm REQUIRED)
 
-find_package(FMT REQUIRED)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(SPDLOG REQUIRED spdlog)
-
 find_package(HDF5 1.14 COMPONENTS C REQUIRED)
 include_directories(${HDF5_INCLUDE_DIRS})
 link_directories(${HDF5_LIBRARY_DIRS}) 
@@ -156,15 +164,8 @@ add_subdirectory(dtio_chimods)
 # ------------------------------------------------------------------------------
 
 set(COMMON_SRC
-    src/config_manager.cpp
-    src/data_manager/data_manager.cpp
-    src/metadata_manager/metadata_manager.cpp
-    src/external_clients/iowarp_map_impl.cpp
-    src/dtio_system.cpp
-
-    # INTERCEPTORS
-    src/lib/posix.cpp 
-    src/lib/mpi.cpp)
+    src/config_manager.cc
+    src/client_metadata_manager.cc)
 
 # Variable for setting the log level (1=ERROR, 2=WARN, 3=INFO, 4=DEBUG, 5=TRACE)
 set(LOG_LEVEL 1 CACHE STRING "Set the log level")
@@ -179,8 +180,8 @@ add_subdirectory(adapter/stdio)
 add_subdirectory(adapter/posix)
 add_subdirectory(adapter/vol)
 
-nanobind_add_module(dtiopy src/lib/dtio.cpp ${DTIO_LIB_SRC})
-dtio_set_libs(dtiopy)
+# nanobind_add_module(dtiopy src/lib/dtio.cpp ${DTIO_LIB_SRC})
+# dtio_set_libs(dtiopy)
 
 # ------------------------------------------------------------------------------
 # Install DTIO Library

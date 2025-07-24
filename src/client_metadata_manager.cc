@@ -22,5 +22,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include <dtio/config_manager.h>
-std::shared_ptr<ConfigManager> ConfigManager::instance = nullptr;
+#include "dtio/client_metadata_manager.h"
+
+// Define the global singleton variable
+HSHM_DEFINE_GLOBAL_PTR_VAR_CC(dtio::ClientMetadataManager, kDtioClientMeta); 

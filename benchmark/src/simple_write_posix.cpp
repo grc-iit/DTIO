@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -22,71 +22,85 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include <fcntl.h>
+#include <mpi.h>
+#include <unistd.h>
+
+#include <iostream>
+
 #include "util.h"
 
 int main(int argc, char **argv) {
+  int fd;
+  int rv;
   std::cout << "Init" << std::endl;
-  dtio::MPI_Init(&argc, &argv);
+  // dtio::MPI_Init(&argc, &argv);  // Commented out - driver API removed
+  MPI_Init(&argc, &argv);  // Use standard MPI instead
   std::cout << "Init done" << std::endl;
-  if (argc != 2) {
+
+  if (argc < 2) {
     printf("USAGE: ./simple_write [filename]\n");
     exit(1);
   }
 
-  int fd;
-  int rv; // return val
-  char write_buf[50] = "Testing R/W with DTIO. This is msg body.";
+  static char write_buf[2048];
 
-  // hcl::Timer timer = hcl::Timer();
-  // timer.resumeTime();
+  for (int i = 0; i < 2048; ++i) {
+    write_buf[i] = 'a' + (rand() % 26);
+  }
+
   std::cerr << "This is a simple WRITE test.\n";
 
-  // open/create file
+  // Write
   std::cout << "Open" << std::endl;
-  fd = dtio::posix::open(argv[1], O_RDWR | O_CREAT | O_TRUNC);
+  // fd = dtio::posix::open(argv[1], O_RDWR | O_CREAT | O_TRUNC);  // Commented
+  // out - driver API removed
+  fd = open(argv[1], O_RDWR | O_CREAT | O_TRUNC,
+            0644);  // Use standard POSIX instead
   std::cout << "Open done" << std::endl;
   if (fd < 0) {
     std::cerr << "Failed to open/create file. Aborting...\n";
-    exit(-1);
+    exit(1);
   }
 
-  // // write message to file
   std::cout << "Write" << std::endl;
-  rv = dtio::posix::write(fd, write_buf, sizeof(write_buf));
-  // std::cerr << "(Return value: " << rv << ")\n";
-  // std::cerr << "Written to: " << argv[2] << "\n";
+  // rv = dtio::posix::write(fd, write_buf, sizeof(write_buf));  // Commented
+  // out - driver API removed
+  rv = write(fd, write_buf, sizeof(write_buf));  // Use standard POSIX instead
 
-  // dtio::posix::close(fd);
-
+  if (rv != sizeof(write_buf)) {
+    // dtio::posix::close(fd);  // Commented out - driver API removed
+    close(fd);  // Use standard POSIX instead
+    exit(1);
+  }
   std::cout << "Write done" << std::endl;
-  // timer.pauseTime();
-  // auto time = timer.getElapsedTime();
-  // // std::cerr << "Time elapsed: " << time << " seconds.\n";
 
-  // char read_buf[50];
+  // static char read_buf[2048];
 
-  // // timer.resumeTime();
-  // std::cerr << "This is a simple READ test.\n";
+  // Read test
+  /* DISABLED for now
+  // fd = dtio::posix::open(argv[2], O_RDWR);  // Commented out - driver API
+  removed fd = open(argv[2], O_RDWR);  // Use standard POSIX instead
 
-  // // open file for reading
-  // // fd = dtio::posix::open(argv[2], O_RDWR);
-  // // if (fd < 0) {
-  // //   std::cerr << "Failed to find file. Aborting...\n";
-  // //   exit(-1);
-  // // }
+  if (fd < 0) {
+    std::cerr << "Failed to open file for read. Aborting...\n";
+    exit(1);
+  }
 
-  // // read
-  // dtio::posix::lseek(fd, 0, SEEK_SET);
+  // dtio::posix::lseek(fd, 0, SEEK_SET);  // Commented out - driver API removed
+  lseek(fd, 0, SEEK_SET);  // Use standard POSIX instead
 
-  // std::cout << "Read" << std::endl;
-  // rv = dtio::posix::read(fd, read_buf, sizeof(write_buf));
-  // std::cerr << "(Return value: " << rv << ")\n";
-  // std::cerr << read_buf << "\n";
+  // rv = dtio::posix::read(fd, read_buf, sizeof(write_buf));  // Commented out
+  - driver API removed rv = read(fd, read_buf, sizeof(write_buf));  // Use
+  standard POSIX instead
+  */
 
-  dtio::posix::close(fd);
-  // timer.pauseTime();
-  // time = timer.getElapsedTime();
-  // std::cerr << "Time elapsed: " << time << " seconds.\n";
+  // dtio::posix::close(fd);  // Commented out - driver API removed
+  close(fd);  // Use standard POSIX instead
 
-  dtio::MPI_Finalize();
+  printf("Test passed!\n");
+
+  // dtio::MPI_Finalize();  // Commented out - driver API removed
+  MPI_Finalize();  // Use standard MPI instead
+  return 0;
 }

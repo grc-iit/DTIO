@@ -13,6 +13,7 @@
 #include "chimaera/api/chimaera_runtime.h"
 #include "chimaera/monitor/monitor.h"
 #include "chimaera_admin/chimaera_admin_client.h"
+#include "dtio/dtio_enumerations.h"
 #include "dtiomod/dtiomod_client.h"
 
 namespace chi::dtiomod {
@@ -62,16 +63,15 @@ class Server : public Module {
     hipc::FullPtr data_full(task->data_);
     char *data_ = (char *)(data_full.ptr_);
 
-    hipc::FullPtr filename_full(task->filename_);
-    char *filepath_ = (char *)(filename_full.ptr_);
+    std::string filepath_str = task->filename_.str();
+    std::string filepath = (filepath_str.compare(0, 7, "dtio://") == 0) ? 
+                           filepath_str.substr(7) : filepath_str;
 
-    char *filepath =
-        (strncmp(filepath_, "dtio://", 7) == 0) ? (filepath_ + 7) : filepath_;
     switch (task->iface_) {
-      case io_client_type::POSIX: {
+      case dtio::IoClientType::kPosix: {
         int fd;
         // if (temp_fd == -1) {
-        fd = open64(filepath, O_RDWR | O_CREAT, 0664);  // "w+"
+        fd = open64(filepath.c_str(), O_RDWR | O_CREAT, 0664);  // "w+"
                                                         // temp_fd = fd;
         // }
         // else {
@@ -86,10 +86,10 @@ class Server : public Module {
           std::cerr << "written less" << count << "\n";
 
       } break;
-      case io_client_type::STDIO: {
+      case dtio::IoClientType::kStdio: {
         FILE *fp;
         // if (temp_fd == -1) {
-        fp = fopen(filepath, "rw+");  // "w+"
+        fp = fopen(filepath.c_str(), "rw+");  // "w+"
                                       // temp_fd = fd;
         // }
         // else {
@@ -126,17 +126,15 @@ class Server : public Module {
     hipc::FullPtr data_full(task->data_);
     char *data_ = (char *)(data_full.ptr_);
 
-    hipc::FullPtr filename_full(task->filename_);
-    char *filepath_ = (char *)(filename_full.ptr_);
-
-    char *filepath =
-        (strncmp(filepath_, "dtio://", 7) == 0) ? (filepath_ + 7) : filepath_;
+    std::string filepath_str = task->filename_.str();
+    std::string filepath = (filepath_str.compare(0, 7, "dtio://") == 0) ? 
+                           filepath_str.substr(7) : filepath_str;
 
     switch (task->iface_) {
-      case io_client_type::POSIX: {
+      case dtio::IoClientType::kPosix: {
         int fd;
         // if (temp_fd == -1) {
-        fd = open64(filepath, O_RDWR | O_CREAT, 0664);  // "w+"
+        fd = open64(filepath.c_str(), O_RDWR | O_CREAT, 0664);  // "w+"
                                                         // temp_fd = fd;
         // }
         // else {
@@ -151,10 +149,10 @@ class Server : public Module {
           std::cerr << "read less" << count << "\n";
 
       } break;
-      case STDIO: {
+      case dtio::IoClientType::kStdio: {
         FILE *fp;
         // if (temp_fd == -1) {
-        fp = fopen(filepath, "rw+");  // "w+"
+        fp = fopen(filepath.c_str(), "rw+");  // "w+"
                                       // temp_fd = fd;
         // }
         // else {
@@ -206,14 +204,10 @@ class Server : public Module {
   CHI_BEGIN(MetaPut)
   /** The MetaPut method */
   void MetaPut(MetaPutTask *task, RunContext &rctx) {
-    hipc::FullPtr key_full(task->key_);
-    char *key_ = (char *)(key_full.ptr_);
+    std::string key = task->key_.str();
+    std::string val = task->val_.str();
 
-    hipc::FullPtr val_full(task->val_);
-    char *val_ = (char *)(val_full.ptr_);
-
-    metamap[std::string(key_, task->keylen_)] = std::tuple<std::string, size_t>(
-        std::string(val_, task->vallen_), task->vallen_);
+    metamap[key] = std::tuple<std::string, size_t>(val, val.length());
     printf("Metaput runtime put done\n");
   }
   void MonitorMetaPut(MonitorModeId mode, MetaPutTask *task, RunContext &rctx) {
@@ -232,14 +226,9 @@ class Server : public Module {
   CHI_BEGIN(MetaGet)
   /** The MetaGet method */
   void MetaGet(MetaGetTask *task, RunContext &rctx) {
-    hipc::FullPtr key_full(task->key_);
-    char *key_ = (char *)(key_full.ptr_);
+    std::string key = task->key_.str();
 
-    hipc::FullPtr val_full(task->val_);
-    char *val_ = (char *)(val_full.ptr_);
-
-    task->presence_ =
-        (metamap.find(std::string(key_, task->keylen_)) != metamap.end());
+    task->presence_ = (metamap.find(key) != metamap.end());
 
     if (!task->presence_) {
       std::cout << "DTIOMOD key not found" << std::endl;
@@ -247,10 +236,10 @@ class Server : public Module {
     }
 
     std::cout << "DTIOMOD key found" << std::endl;
-    auto ref = metamap[std::string(key_, task->keylen_)];
-    val_ = strndup(std::get<0>(ref).c_str(), std::get<1>(ref));
+    auto ref = metamap[key];
+    std::string val = std::get<0>(ref);
+    task->val_ = val;
     std::cout << "DTIOMOD strlen val " << std::get<1>(ref) << std::endl;
-    task->vallen_ = std::get<1>(ref);
   }
   void MonitorMetaGet(MonitorModeId mode, MetaGetTask *task, RunContext &rctx) {
     switch (mode) {

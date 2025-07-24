@@ -27,17 +27,13 @@ class DtioSimpleTest(Application):
         :return: List(dict)
         """
         return [
-            # {
-            #     "name": None,  # The name of the parameter
-            #     "msg": "",  # Describe this parameter
-            #     "type": str,  # What is the parameter type?
-            #     "default": None,  # What is the default value if not required?
-            #     # Does this parameter have specific valid inputs?
-            #     "choices": [],
-            #     # When type is list, what do the entries of the list mean?
-            #     # A list of dicts just like this one.
-            #     "args": [],
-            # },
+            {
+                'name': 'test_dir',
+                'msg': 'Path to the test directory',
+                'type': str,
+                'default': '${HOME}/DTIO',
+                'class': 'paths',
+            }
         ]
 
     def _configure(self, **kwargs):
@@ -48,7 +44,8 @@ class DtioSimpleTest(Application):
         :param kwargs: Configuration parameters for this pkg.
         :return: None
         """
-        pass
+        test_dir = os.path.expandvars(self.config['test_dir'])
+        Mkdir(test_dir)
 
     def start(self):
         """
@@ -57,7 +54,8 @@ class DtioSimpleTest(Application):
 
         :return: None
         """
-        Exec('dtio_simple_write_posix dtio://${HOME}/DTIO/test.txt', 
+        test_dir = os.path.expandvars(self.config['test_dir'])
+        Exec(f'dtio_simple_write_posix {test_dir}/test.txt', 
              LocalExecInfo(env=self.mod_env,
                             do_dbg=self.config['do_dbg'],
                             dbg_port=self.config['dbg_port'],))

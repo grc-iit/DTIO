@@ -6,7 +6,7 @@
 #define CHI_TASKS_TASK_TEMPL_INCLUDE_dtiomod_dtiomod_TASKS_H_
 
 #include "chimaera/chimaera_namespace.h"
-#include "enumerations.h"
+#include "dtio/dtio_enumerations.h"
 
 namespace chi::dtiomod {
 
@@ -24,8 +24,8 @@ struct CreateTaskParams {
 
   HSHM_INLINE_CROSS_FUN
   CreateTaskParams(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc,
-		  int dtiomod_id = 0) {
-	  dtiomod_id_ = dtiomod_id;
+                   int dtiomod_id = 0) {
+    dtiomod_id_ = dtiomod_id;
   }
 
   template <typename Ar>
@@ -43,62 +43,60 @@ CHI_END(Destroy)
 
 CHI_BEGIN(Write)
 struct WriteTask : public Task, TaskFlags<TF_SRL_SYM> {
-	IN hipc::Pointer data_;
-        IN size_t data_offset_;
-        IN size_t data_size_;
-        IN hipc::Pointer filename_;
-        IN size_t filenamelen_;
-        IN io_client_type iface_;
+  IN hipc::Pointer data_;
+  IN size_t data_offset_;
+  IN size_t data_size_;
+  IN chi::ipc::string filename_;
+  IN dtio::IoClientType iface_;
 
-	/** SHM default constructor */
-	HSHM_INLINE explicit WriteTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc) : Task(alloc) {}
+  /** SHM default constructor */
+  HSHM_INLINE explicit WriteTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc)
+      : Task(alloc), filename_(alloc) {}
 
-	/** Emplace constructor */
-	HSHM_INLINE explicit WriteTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc, const TaskNode &task_node,
-				       const PoolId &pool_id, const DomainQuery &dom_query,
-				       const hipc::Pointer &data, size_t data_size, size_t data_offset, const hipc::Pointer &filename, size_t filenamelen, io_client_type iface) : Task(alloc) { // 
-	// Initialize task
-	task_node_ = task_node;
-	prio_ = TaskPrioOpt::kHighLatency;
-	pool_ = pool_id;
-	method_ = Method::kWrite;
-	task_flags_.SetBits(0);
-	dom_query_ = dom_query;
-	
-	// Custom
-	filename_ = filename;
-	data_ = data;
-	data_size_ = data_size;
-	data_offset_ = data_offset;
-	filename_ = filename;
-	filenamelen_ = filenamelen;
-	iface_ = iface;
-	}
-	
-	/** Duplicate message */
-	void CopyStart(const WriteTask &other, bool deep) {
-	data_ = other.data_;
-	data_size_ = other.data_size_;
-        data_offset_ = other.data_offset_;
-	filename_ = other.filename_;
-	filenamelen_ = other.filenamelen_;
-	iface_ = other.iface_;
-	if (!deep) {
-		UnsetDataOwner();
-	}
-	}
-					      
-	/** (De)serialize message call */
-	template <typename Ar>
-	void SerializeStart(Ar &ar) {
-	  ar.bulk(DT_WRITE, data_, data_size_);
-	  ar.bulk(DT_WRITE, filename_, filenamelen_);
-	  ar(data_size_, data_offset_, iface_);
-	}
-					      
-	/** (De)serialize message return */
-	template <typename Ar>
-	void SerializeEnd(Ar &ar) {}
+  /** Emplace constructor */
+  HSHM_INLINE explicit WriteTask(
+      const hipc::CtxAllocator<CHI_ALLOC_T> &alloc, const TaskNode &task_node,
+      const PoolId &pool_id, const DomainQuery &dom_query,
+      const hipc::Pointer &data, size_t data_size, size_t data_offset,
+      const chi::string &filename, dtio::IoClientType iface)
+      : Task(alloc), filename_(alloc, filename) {
+    // Initialize task
+    task_node_ = task_node;
+    prio_ = TaskPrioOpt::kHighLatency;
+    pool_ = pool_id;
+    method_ = Method::kWrite;
+    task_flags_.SetBits(0);
+    dom_query_ = dom_query;
+
+    // Custom
+    data_ = data;
+    data_size_ = data_size;
+    data_offset_ = data_offset;
+    iface_ = iface;
+  }
+
+  /** Duplicate message */
+  void CopyStart(const WriteTask &other, bool deep) {
+    data_ = other.data_;
+    data_size_ = other.data_size_;
+    data_offset_ = other.data_offset_;
+    filename_ = other.filename_;
+    iface_ = other.iface_;
+    if (!deep) {
+      UnsetDataOwner();
+    }
+  }
+
+  /** (De)serialize message call */
+  template <typename Ar>
+  void SerializeStart(Ar &ar) {
+    ar.bulk(DT_WRITE, data_, data_size_);
+    ar(filename_, data_size_, data_offset_, iface_);
+  }
+
+  /** (De)serialize message return */
+  template <typename Ar>
+  void SerializeEnd(Ar &ar) {}
 };
 CHI_END(Write)
 
@@ -108,21 +106,22 @@ struct ReadTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN hipc::Pointer data_;
   IN size_t data_offset_;
   IN size_t data_size_;
-  IN hipc::Pointer filename_;
-  IN size_t filenamelen_;
-  IN io_client_type iface_;
+  IN chi::ipc::string filename_;
+  IN dtio::IoClientType iface_;
 
   /** SHM default constructor */
-  HSHM_INLINE explicit
-  ReadTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc) : Task(alloc) {}
+  HSHM_INLINE explicit ReadTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc)
+      : Task(alloc), filename_(alloc) {}
 
   /** Emplace constructor */
-  HSHM_INLINE explicit
-  ReadTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc,
-                const TaskNode &task_node,
-                const PoolId &pool_id,
-	   const DomainQuery &dom_query,
-	   const hipc::Pointer &data, size_t data_size, size_t data_offset, const hipc::Pointer &filename, size_t filenamelen, io_client_type iface) : Task(alloc) {
+  HSHM_INLINE explicit ReadTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc,
+                                const TaskNode &task_node,
+                                const PoolId &pool_id,
+                                const DomainQuery &dom_query,
+                                const hipc::Pointer &data, size_t data_size,
+                                size_t data_offset, const chi::string &filename,
+                                dtio::IoClientType iface)
+      : Task(alloc), filename_(alloc, filename) {
     // Initialize task
     task_node_ = task_node;
     prio_ = TaskPrioOpt::kLowLatency;
@@ -135,8 +134,6 @@ struct ReadTask : public Task, TaskFlags<TF_SRL_SYM> {
     data_ = data;
     data_size_ = data_size;
     data_offset_ = data_offset;
-    filename_ = filename;
-    filenamelen_ = filenamelen;
     iface_ = iface;
   }
 
@@ -146,7 +143,6 @@ struct ReadTask : public Task, TaskFlags<TF_SRL_SYM> {
     data_size_ = other.data_size_;
     data_offset_ = other.data_offset_;
     filename_ = other.filename_;
-    filenamelen_ = other.filenamelen_;
     iface_ = other.iface_;
     if (!deep) {
       UnsetDataOwner();
@@ -154,17 +150,15 @@ struct ReadTask : public Task, TaskFlags<TF_SRL_SYM> {
   }
 
   /** (De)serialize message call */
-  template<typename Ar>
+  template <typename Ar>
   void SerializeStart(Ar &ar) {
     ar.bulk(DT_WRITE, data_, data_size_);
-    ar.bulk(DT_WRITE, filename_, filenamelen_);
-    ar(data_size_, data_offset_, iface_);
+    ar(filename_, data_size_, data_offset_, iface_);
   }
 
   /** (De)serialize message return */
-  template<typename Ar>
-  void SerializeEnd(Ar &ar) {
-  }
+  template <typename Ar>
+  void SerializeEnd(Ar &ar) {}
 };
 CHI_END(Read);
 
@@ -172,15 +166,15 @@ CHI_BEGIN(Prefetch)
 /** The PrefetchTask task */
 struct PrefetchTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** SHM default constructor */
-  HSHM_INLINE explicit
-  PrefetchTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc) : Task(alloc) {}
+  HSHM_INLINE explicit PrefetchTask(
+      const hipc::CtxAllocator<CHI_ALLOC_T> &alloc)
+      : Task(alloc) {}
 
   /** Emplace constructor */
-  HSHM_INLINE explicit
-  PrefetchTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc,
-                const TaskNode &task_node,
-                const PoolId &pool_id,
-                const DomainQuery &dom_query) : Task(alloc) {
+  HSHM_INLINE explicit PrefetchTask(
+      const hipc::CtxAllocator<CHI_ALLOC_T> &alloc, const TaskNode &task_node,
+      const PoolId &pool_id, const DomainQuery &dom_query)
+      : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     prio_ = TaskPrioOpt::kLowLatency;
@@ -193,41 +187,36 @@ struct PrefetchTask : public Task, TaskFlags<TF_SRL_SYM> {
   }
 
   /** Duplicate message */
-  void CopyStart(const PrefetchTask &other, bool deep) {
-  }
+  void CopyStart(const PrefetchTask &other, bool deep) {}
 
   /** (De)serialize message call */
-  template<typename Ar>
-  void SerializeStart(Ar &ar) {
-  }
+  template <typename Ar>
+  void SerializeStart(Ar &ar) {}
 
   /** (De)serialize message return */
-  template<typename Ar>
-  void SerializeEnd(Ar &ar) {
-  }
+  template <typename Ar>
+  void SerializeEnd(Ar &ar) {}
 };
 CHI_END(Prefetch);
 
 CHI_BEGIN(MetaPut)
 /** The MetaPutTask task */
 struct MetaPutTask : public Task, TaskFlags<TF_SRL_SYM> {
-  IN hipc::Pointer key_;
-  IN size_t keylen_;
-  IN hipc::Pointer val_;
-  IN size_t vallen_;
+  IN chi::ipc::string key_;
+  IN chi::ipc::string val_;
 
   /** SHM default constructor */
-  HSHM_INLINE explicit
-  MetaPutTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc) : Task(alloc) {}
+  HSHM_INLINE explicit MetaPutTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc)
+      : Task(alloc), key_(alloc), val_(alloc) {}
 
   /** Emplace constructor */
-  HSHM_INLINE explicit
-  MetaPutTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc,
-                const TaskNode &task_node,
-                const PoolId &pool_id,
-	      const DomainQuery &dom_query,
-	      hipc::Pointer key, size_t keylen,
-	      hipc::Pointer val, size_t vallen) : Task(alloc) {
+  HSHM_INLINE explicit MetaPutTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc,
+                                   const TaskNode &task_node,
+                                   const PoolId &pool_id,
+                                   const DomainQuery &dom_query,
+                                   const chi::string &key,
+                                   const chi::string &val)
+      : Task(alloc), key_(alloc, key), val_(alloc, val) {
     // Initialize task
     task_node_ = task_node;
     prio_ = TaskPrioOpt::kLowLatency;
@@ -235,60 +224,47 @@ struct MetaPutTask : public Task, TaskFlags<TF_SRL_SYM> {
     method_ = Method::kMetaPut;
     task_flags_.SetBits(0);
     dom_query_ = dom_query;
-
-    // Custom
-    key_ = key;
-    val_ = val;
-    keylen_ = keylen;
-    vallen_ = vallen;
   }
 
   /** Duplicate message */
   void CopyStart(const MetaPutTask &other, bool deep) {
     key_ = other.key_;
-    keylen_ = other.keylen_;
     val_ = other.val_;
-    vallen_ = other.vallen_;
     if (!deep) {
       UnsetDataOwner();
     }
   }
 
   /** (De)serialize message call */
-  template<typename Ar>
+  template <typename Ar>
   void SerializeStart(Ar &ar) {
-    ar.bulk(DT_WRITE, key_, keylen_);
-    ar.bulk(DT_WRITE, val_, vallen_);
-    ar(keylen_, vallen_);
+    ar(key_, val_);
   }
 
   /** (De)serialize message return */
-  template<typename Ar>
-  void SerializeEnd(Ar &ar) {
-  }
+  template <typename Ar>
+  void SerializeEnd(Ar &ar) {}
 };
 CHI_END(MetaPut);
 
 CHI_BEGIN(MetaGet)
 /** The MetaGetTask task */
 struct MetaGetTask : public Task, TaskFlags<TF_SRL_SYM> {
-  IN hipc::Pointer key_;
-  IN size_t keylen_;
-  OUT hipc::Pointer val_;
-  OUT size_t vallen_;
+  IN chi::ipc::string key_;
+  OUT chi::ipc::string val_;
   OUT bool presence_;
 
   /** SHM default constructor */
-  HSHM_INLINE explicit
-  MetaGetTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc) : Task(alloc) {}
+  HSHM_INLINE explicit MetaGetTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc)
+      : Task(alloc), key_(alloc), val_(alloc) {}
 
   /** Emplace constructor */
-  HSHM_INLINE explicit
-  MetaGetTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc,
-                const TaskNode &task_node,
-                const PoolId &pool_id,
-	      const DomainQuery &dom_query,
-	      hipc::Pointer key, size_t keylen) : Task(alloc) {
+  HSHM_INLINE explicit MetaGetTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc,
+                                   const TaskNode &task_node,
+                                   const PoolId &pool_id,
+                                   const DomainQuery &dom_query,
+                                   const chi::string &key)
+      : Task(alloc), key_(alloc, key), val_(alloc) {
     // Initialize task
     task_node_ = task_node;
     prio_ = TaskPrioOpt::kLowLatency;
@@ -298,17 +274,13 @@ struct MetaGetTask : public Task, TaskFlags<TF_SRL_SYM> {
     dom_query_ = dom_query;
 
     // Custom
-    key_ = key;
-    keylen_ = keylen;
     presence_ = false;
   }
 
   /** Duplicate message */
   void CopyStart(const MetaGetTask &other, bool deep) {
     key_ = other.key_;
-    keylen_ = other.keylen_;
     val_ = other.val_;
-    vallen_ = other.vallen_;
     presence_ = other.presence_;
     if (!deep) {
       UnsetDataOwner();
@@ -316,16 +288,15 @@ struct MetaGetTask : public Task, TaskFlags<TF_SRL_SYM> {
   }
 
   /** (De)serialize message call */
-  template<typename Ar>
+  template <typename Ar>
   void SerializeStart(Ar &ar) {
-    ar.bulk(DT_WRITE, key_, keylen_);
+    ar(key_);
   }
 
   /** (De)serialize message return */
-  template<typename Ar>
+  template <typename Ar>
   void SerializeEnd(Ar &ar) {
-    ar.bulk(DT_WRITE, val_, vallen_);
-    ar(vallen_, presence_);
+    ar(val_, presence_);
   }
 };
 CHI_END(MetaGet);
@@ -336,15 +307,15 @@ struct ScheduleTask : public Task, TaskFlags<TF_SRL_SYM> {
   OUT size_t schedule_num_;
 
   /** SHM default constructor */
-  HSHM_INLINE explicit
-  ScheduleTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc) : Task(alloc) {}
+  HSHM_INLINE explicit ScheduleTask(
+      const hipc::CtxAllocator<CHI_ALLOC_T> &alloc)
+      : Task(alloc) {}
 
   /** Emplace constructor */
-  HSHM_INLINE explicit
-  ScheduleTask(const hipc::CtxAllocator<CHI_ALLOC_T> &alloc,
-                const TaskNode &task_node,
-                const PoolId &pool_id,
-	       const DomainQuery &dom_query) : Task(alloc) {
+  HSHM_INLINE explicit ScheduleTask(
+      const hipc::CtxAllocator<CHI_ALLOC_T> &alloc, const TaskNode &task_node,
+      const PoolId &pool_id, const DomainQuery &dom_query)
+      : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     prio_ = TaskPrioOpt::kLowLatency;
@@ -362,12 +333,11 @@ struct ScheduleTask : public Task, TaskFlags<TF_SRL_SYM> {
   }
 
   /** (De)serialize message call */
-  template<typename Ar>
-  void SerializeStart(Ar &ar) {
-  }
+  template <typename Ar>
+  void SerializeStart(Ar &ar) {}
 
   /** (De)serialize message return */
-  template<typename Ar>
+  template <typename Ar>
   void SerializeEnd(Ar &ar) {
     ar(schedule_num_);
   }

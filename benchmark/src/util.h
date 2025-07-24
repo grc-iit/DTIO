@@ -27,8 +27,6 @@
 
 #include <fcntl.h>
 
-#include "dtio/drivers/posix.h"
-#include "dtio/drivers/stdio.h"
 #include "dtio/return_codes.h"
 #include "dtio/utilities.h"
 /* #include <fstream> */

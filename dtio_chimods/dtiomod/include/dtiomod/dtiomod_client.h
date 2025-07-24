@@ -57,16 +57,15 @@ class Client : public ModuleClient {
   CHI_BEGIN(Write)
   /** Write task */
   void Write(const hipc::MemContext &mctx, const hipc::Pointer &data,
-             size_t data_size, size_t data_offset,
-             const hipc::Pointer &filename, size_t filenamelen,
-             io_client_type iface) {
+             size_t data_size, size_t data_offset, const chi::string &filename,
+             dtio::IoClientType iface) {
     int snum = Schedule(HSHM_MCTX, chi::DomainQuery::GetDirectHash(
                                        chi::SubDomain::kGlobalContainers, 0));
     FullPtr<WriteTask> task =
         AsyncWrite(mctx,
                    chi::DomainQuery::GetDirectHash(
                        chi::SubDomain::kGlobalContainers, snum),
-                   data, data_size, data_offset, filename, filenamelen, iface);
+                   data, data_size, data_offset, filename, iface);
     task->Wait();
     CHI_CLIENT->DelTask(mctx, task);
   }
@@ -76,15 +75,15 @@ class Client : public ModuleClient {
   CHI_BEGIN(Read)
   /** Read task */
   void Read(const hipc::MemContext &mctx, const hipc::Pointer &data,
-            size_t data_size, size_t data_offset, const hipc::Pointer &filename,
-            size_t filenamelen, io_client_type iface) {
+            size_t data_size, size_t data_offset, const chi::string &filename,
+            dtio::IoClientType iface) {
     int snum = Schedule(HSHM_MCTX, chi::DomainQuery::GetDirectHash(
                                        chi::SubDomain::kGlobalContainers, 0));
     FullPtr<ReadTask> task =
         AsyncRead(mctx,
                   chi::DomainQuery::GetDirectHash(
                       chi::SubDomain::kGlobalContainers, snum),
-                  data, data_size, data_offset, filename, filenamelen, iface);
+                  data, data_size, data_offset, filename, iface);
     task->Wait();
     CHI_CLIENT->DelTask(mctx, task);
   }
@@ -104,10 +103,8 @@ class Client : public ModuleClient {
   CHI_BEGIN(MetaPut)
   /** MetaPut task */
   void MetaPut(const hipc::MemContext &mctx, const DomainQuery &dom_query,
-               hipc::Pointer key, size_t keylen, hipc::Pointer val,
-               size_t vallen) {
-    FullPtr<MetaPutTask> task =
-        AsyncMetaPut(mctx, dom_query, key, keylen, val, vallen);
+               const chi::string &key, const chi::string &val) {
+    FullPtr<MetaPutTask> task = AsyncMetaPut(mctx, dom_query, key, val);
     task->Wait();
     CHI_CLIENT->DelTask(mctx, task);
   }
@@ -116,17 +113,15 @@ class Client : public ModuleClient {
 
   CHI_BEGIN(MetaGet)
   /** MetaGet task */
-  std::tuple<bool, hipc::Pointer, size_t> MetaGet(const hipc::MemContext &mctx,
-                                                  const DomainQuery &dom_query,
-                                                  hipc::Pointer key,
-                                                  size_t keylen) {
-    FullPtr<MetaGetTask> task = AsyncMetaGet(mctx, dom_query, key, keylen);
+  std::tuple<bool, chi::string> MetaGet(const hipc::MemContext &mctx,
+                                        const DomainQuery &dom_query,
+                                        const chi::string &key) {
+    FullPtr<MetaGetTask> task = AsyncMetaGet(mctx, dom_query, key);
     task->Wait();
-    hipc::Pointer val = task->val_;
-    size_t vallen = task->vallen_;
+    chi::string val = task->val_.str();
     bool presence = task->presence_;
     CHI_CLIENT->DelTask(mctx, task);
-    auto ret = std::tuple<bool, hipc::Pointer, size_t>(presence, val, vallen);
+    auto ret = std::tuple<bool, chi::string>(presence, val);
     return ret;
   }
   CHI_TASK_METHODS(MetaGet);

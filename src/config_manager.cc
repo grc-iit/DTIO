@@ -22,17 +22,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DTIO_MAIN_MPI_H
-#define DTIO_MAIN_MPI_H
+#include "dtio/config_manager.h"
 
-#include <dtio/dtio_system.h>
-#include <dtio/enumerations.h>
-#include <mpi.h>
-
-namespace dtio {
-int MPI_Init(int *argc, char ***argv);
-
-void MPI_Finalize();
-}  // namespace dtio
-
-#endif  // DTIO_MAIN_MPI_H
+// Define the global singleton variable
+HSHM_DEFINE_GLOBAL_PTR_VAR_CC(dtio::ConfigurationManager, kDtioConf); 

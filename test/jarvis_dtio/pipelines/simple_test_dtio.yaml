@@ -10,6 +10,7 @@ pkgs:
     do_dbg: true
   - pkg_type: dtio_run
     pkg_name: dtio_run
+    include_paths: ["${HOME}/DTIO"]
   # - pkg_type: dtio_adapter
   #   pkg_name: dtio_adapter
   #   posix: true
