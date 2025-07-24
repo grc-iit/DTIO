@@ -23,7 +23,7 @@ class Server : public Module {
   CLS_CONST LaneGroupId kDefaultGroup = 0;
 
  public:
-  std::unordered_map<std::string, std::tuple<std::string, size_t>> metamap;
+  std::unordered_map<std::string, std::string> metamap;
   size_t schedule_num;
 
   Server() = default;
@@ -64,15 +64,16 @@ class Server : public Module {
     char *data_ = (char *)(data_full.ptr_);
 
     std::string filepath_str = task->filename_.str();
-    std::string filepath = (filepath_str.compare(0, 7, "dtio://") == 0) ? 
-                           filepath_str.substr(7) : filepath_str;
+    std::string filepath = (filepath_str.compare(0, 7, "dtio://") == 0)
+                               ? filepath_str.substr(7)
+                               : filepath_str;
 
     switch (task->iface_) {
       case dtio::IoClientType::kPosix: {
         int fd;
         // if (temp_fd == -1) {
         fd = open64(filepath.c_str(), O_RDWR | O_CREAT, 0664);  // "w+"
-                                                        // temp_fd = fd;
+                                                                // temp_fd = fd;
         // }
         // else {
         //   fd = temp_fd;
@@ -90,7 +91,7 @@ class Server : public Module {
         FILE *fp;
         // if (temp_fd == -1) {
         fp = fopen(filepath.c_str(), "rw+");  // "w+"
-                                      // temp_fd = fd;
+                                              // temp_fd = fd;
         // }
         // else {
         //   fd = temp_fd;
@@ -127,15 +128,16 @@ class Server : public Module {
     char *data_ = (char *)(data_full.ptr_);
 
     std::string filepath_str = task->filename_.str();
-    std::string filepath = (filepath_str.compare(0, 7, "dtio://") == 0) ? 
-                           filepath_str.substr(7) : filepath_str;
+    std::string filepath = (filepath_str.compare(0, 7, "dtio://") == 0)
+                               ? filepath_str.substr(7)
+                               : filepath_str;
 
     switch (task->iface_) {
       case dtio::IoClientType::kPosix: {
         int fd;
         // if (temp_fd == -1) {
         fd = open64(filepath.c_str(), O_RDWR | O_CREAT, 0664);  // "w+"
-                                                        // temp_fd = fd;
+                                                                // temp_fd = fd;
         // }
         // else {
         //   fd = temp_fd;
@@ -153,7 +155,7 @@ class Server : public Module {
         FILE *fp;
         // if (temp_fd == -1) {
         fp = fopen(filepath.c_str(), "rw+");  // "w+"
-                                      // temp_fd = fd;
+                                              // temp_fd = fd;
         // }
         // else {
         //   fd = temp_fd;
@@ -206,8 +208,7 @@ class Server : public Module {
   void MetaPut(MetaPutTask *task, RunContext &rctx) {
     std::string key = task->key_.str();
     std::string val = task->val_.str();
-
-    metamap[key] = std::tuple<std::string, size_t>(val, val.length());
+    metamap[key] = val;
     printf("Metaput runtime put done\n");
   }
   void MonitorMetaPut(MonitorModeId mode, MetaPutTask *task, RunContext &rctx) {
@@ -227,19 +228,15 @@ class Server : public Module {
   /** The MetaGet method */
   void MetaGet(MetaGetTask *task, RunContext &rctx) {
     std::string key = task->key_.str();
-
     task->presence_ = (metamap.find(key) != metamap.end());
-
     if (!task->presence_) {
       std::cout << "DTIOMOD key not found" << std::endl;
       return;
     }
-
     std::cout << "DTIOMOD key found" << std::endl;
-    auto ref = metamap[key];
-    std::string val = std::get<0>(ref);
+    std::string val = metamap[key];
     task->val_ = val;
-    std::cout << "DTIOMOD strlen val " << std::get<1>(ref) << std::endl;
+    std::cout << "DTIOMOD strlen val " << val.length() << std::endl;
   }
   void MonitorMetaGet(MonitorModeId mode, MetaGetTask *task, RunContext &rctx) {
     switch (mode) {
