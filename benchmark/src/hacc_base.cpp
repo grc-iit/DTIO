@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -27,8 +27,9 @@
 int main(int argc, char **argv) {
   dtio::MPI_Init(&argc, &argv);
   if (argc != 5) {
-    printf("USAGE: ./hacc_tabios [dtio_conf] [file_path] [iteration] "
-           "[buf_path]\n");
+    printf(
+        "USAGE: ./hacc_tabios [dtio_conf] [file_path] [iteration] "
+        "[buf_path]\n");
     exit(1);
   }
 
@@ -91,8 +92,7 @@ int main(int argc, char **argv) {
   }
 #ifdef TIMERBASE
   wbb.resumeTime();
-  if (rank == 0)
-    stream << "write_to_BB," << wbb.pauseTime() << ",";
+  if (rank == 0) stream << "write_to_BB," << wbb.pauseTime() << ",";
 #endif
   auto read_buf = static_cast<char *>(calloc(io_per_teration, sizeof(char)));
   global_timer.resumeTime();
@@ -111,8 +111,7 @@ int main(int argc, char **argv) {
   std::fclose(fh1);
   MPI_Barrier(MPI_COMM_WORLD);
 #ifdef TIMERBASE
-  if (rank == 0)
-    stream << "read_from_BB," << rbb.pauseTime() << ",";
+  if (rank == 0) stream << "read_from_BB," << rbb.pauseTime() << ",";
 #endif
 
   std::string output = file_path + "final_" + std::to_string(rank) + ".out";
@@ -130,8 +129,7 @@ int main(int argc, char **argv) {
   std::fclose(fh2);
   MPI_Barrier(MPI_COMM_WORLD);
 #ifdef TIMERBASE
-  if (rank == 0)
-    stream << "write_to_PFS," << pfs.pauseTime() << "\n";
+  if (rank == 0) stream << "write_to_PFS," << pfs.pauseTime() << "\n";
 #endif
   global_timer.pauseTime();
   free(read_buf);

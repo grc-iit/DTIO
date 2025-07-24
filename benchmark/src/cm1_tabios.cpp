@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -83,16 +83,14 @@ int main(int argc, char **argv) {
   for (auto operation : operations) {
     auto bytes = dtio::fwrite_wait(operation.second);
     printf("HERE2.5: %ul\n", bytes);
-    if (bytes != operation.first)
-      std::cerr << "Write failed\n";
+    if (bytes != operation.first) std::cerr << "Write failed\n";
   }
   global_timer.pauseTime();
   for (int i = 0; i < 32; ++i) {
     free(write_buf[i]);
   }
   global_timer.resumeTime();
-  if (rank == 0)
-    std::cerr << "Write finished\n";
+  if (rank == 0) std::cerr << "Write finished\n";
   dtio::fclose(fh);
   global_timer.pauseTime();
   printf("HERE3");

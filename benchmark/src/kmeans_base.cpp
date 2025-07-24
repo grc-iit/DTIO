@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -93,8 +93,7 @@ int main(int argc, char **argv) {
         }
         void *read_buf;
         read_buf = memalign(align * 2, item[0] + align);
-        if (read_buf == NULL)
-          std::cerr << "memalign\n";
+        if (read_buf == NULL) std::cerr << "memalign\n";
         read_buf += align;
         global_timer.resumeTime();
 #ifdef TIMERBASE
@@ -103,8 +102,7 @@ int main(int argc, char **argv) {
         // auto bytes = std::fread(read_buf,sizeof(char),item[0],fh);
 
         auto bytes = read(fd, read_buf, item[0]);
-        if (bytes != item[0])
-          std::cerr << "Read failed:" << bytes << "\n";
+        if (bytes != item[0]) std::cerr << "Read failed:" << bytes << "\n";
         MPI_Barrier(MPI_COMM_WORLD);
 #ifdef TIMERBASE
         map.pauseTime();
@@ -127,8 +125,7 @@ int main(int argc, char **argv) {
 #endif
   global_timer.pauseTime();
 #ifdef TIMERBASE
-  if (rank == 0)
-    stream << map.getElapsedTime() << ",";
+  if (rank == 0) stream << map.getElapsedTime() << ",";
 #endif
 #ifdef TIMERBASE
   Timer reduce = Timer();
@@ -163,8 +160,7 @@ int main(int argc, char **argv) {
 #endif
   global_timer.pauseTime();
 #ifdef TIMERBASE
-  if (rank == 0)
-    stream << reduce.getElapsedTime() << ",";
+  if (rank == 0) stream << reduce.getElapsedTime() << ",";
 #endif
   auto time = global_timer.getElapsedTime();
   double sum;

@@ -1,6 +1,4 @@
 # Set dtio to preload if adapter is linked.
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}-DDTIO_PRELOAD -DDTIO_RPC_THALLIUM")
-
 set(DTIO_SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 set(DTIO_ADAPTER_DIR ${CMAKE_SOURCE_DIR}/adapter)
 set(DTIO_IO_CLIENT_DIR ${CMAKE_SOURCE_DIR}/io_client)
@@ -12,7 +10,6 @@ include_directories(
         ${DTIO_IO_CLIENT_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_subdirectory(filesystem)
 # if(DTIO_ENABLE_POSIX_ADAPTER)
 add_subdirectory(posix)
 # endif()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -26,16 +26,16 @@
 #define HERMES_ADAPTER_API_H
 
 #include <dlfcn.h>
+#include <dtio/logger.h>
 #include <link.h>
-#include <dtio/common/logger.h>
 
 #define REQUIRE_API(api_name)                                                 \
   if (!(api_name))                                                            \
     {                                                                         \
-      DTIO_LOG_ERROR ("HERMES Adapter failed to map symbol: {}", #api_name);   \
+      DTIO_LOG_ERROR ("HERMES Adapter failed to map symbol: {}", #api_name);  \
     }
 
-namespace  dtio::adapter
+namespace dtio::adapter
 {
 
 struct RealApiIter

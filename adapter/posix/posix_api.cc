@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -25,434 +25,428 @@
 // Dynamically checked to see which are the real APIs and which are intercepted
 bool posix_intercepted = true;
 
+// Prevent conflicts with system 64-bit function definitions
+// #ifndef _LARGEFILE64_SOURCE
+// #define _LARGEFILE64_SOURCE 1
+// #endif
+// #ifndef _GNU_SOURCE
+// #define _GNU_SOURCE 1
+// #endif
+
+#include "posix_api.h"
+
 #include <fcntl.h>
 #include <stdarg.h>
 #include <sys/stat.h>
-// #include "hermes_shm/util/logging.h"
-// #include <filesystem>
+#include <unistd.h>
 
-// #include "hermes_types.h"
-#include <dtio/common/singleton.h>
+#include <filesystem>
+
+#include "dtio/client_metadata_manager.h"
+#include "dtio/config_manager.h"
+#include "dtio/dtio_enumerations.h"
 #include "interceptor.h"
-#include <dtio/drivers/posix.h>
-// #include <dtio/drivers/mpi.h>
 
-#include "posix_api.h"
-// #include "posix_fs_api.h"
-// #include "filesystem/filesystem.h"
-
-// using hermes::adapter::fs::AdapterStat;
-// using hermes::adapter::fs::IoStatus;
-// using hermes::adapter::fs::File;
-// using hermes::adapter::fs::SeekMode;
-
-// namespace hapi = hermes::api;
 namespace stdfs = std::filesystem;
-
-std::shared_ptr<dtio::posix::PosixApi> dtio::posix::PosixApi::instance = nullptr;
 
 extern "C" {
 
-static __attribute__((constructor(101))) void init_posix(void) {
-	HERMES_POSIX_API;
-	// HERMES_POSIX_FS;
-	// TRANSPARENT_HERMES;
-}/**/
+static __attribute__((constructor(101))) void init_posix(void) {}
 
 /**
  * MPI
  */
 int HERMES_DECL(MPI_Init)(int *argc, char ***argv) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  // You shouldn't ever be calling the real version
-
-  std::string execname;
-  if (argc != NULL && *argc > 0) {
-    execname = std::string(*argv[0]);
-  }
-  else {
-    // FIXME need to figure out Python interception
-    execname = "python3";
-
-    // if (boost::stacktrace::stacktrace().size() > 1) {
-    //   execname = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-    // }
-    // else {
-      // std::cerr << "No argv provided to MPI_Init" << std::endl;
-      // throw std::logic_error("No argv provided to MPI_Init");
-    // }
-  }
-  DTIO_LOG_DEBUG_RANKLESS("Now intercepting executable: " << execname);
-  real_api->add_to_whitelist(execname);
-  return dtio::MPI_Init(argc, argv);
+  return 0;  // Success
 }
 
-int HERMES_DECL(MPI_Init_thread)(int *argc, char ***argv, int required, int *provided) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  // You shouldn't ever be calling the real version
-
-  std::string execname;
-  if (argc != NULL && *argc > 0) {
-    execname = std::string(*argv[0]);
-  }
-  else {
-    // FIXME need to figure out Python interception
-    execname = "python3";
-
-    // if (boost::stacktrace::stacktrace().size() > 1) {
-    //   execname = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-    // }
-    // else {
-      // std::cerr << "No argv provided to MPI_Init" << std::endl;
-      // throw std::logic_error("No argv provided to MPI_Init");
-    // }
-  }
-  DTIO_LOG_DEBUG_RANKLESS("Now intercepting executable: " << execname);
-  real_api->add_to_whitelist(execname);
-  *provided = MPI_THREAD_MULTIPLE;
-  return dtio::MPI_Init(argc, argv);
+int HERMES_DECL(MPI_Init_thread)(int *argc, char ***argv, int required,
+                                 int *provided) {
+  return 0;  // Success
 }
-// void HERMES_DECL(MPI_Finalize)() {
-//   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-//   // You shouldn't ever be calling the real version
-
-//   return dtio::MPI_Finalize();
-// }
 
 /**
  * POSIX
  */
+#if !defined(_FILE_OFFSET_BITS) || _FILE_OFFSET_BITS != 64
 int HERMES_DECL(open)(const char *path, int flags, ...) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-
-  int mode = 0;
-  if (flags & O_CREAT || flags & O_TMPFILE) {
-    va_list arg;
-    va_start(arg, flags);
-    mode = va_arg(arg, int);
-    va_end(arg);
-  }
-
-  std::string caller_name = "";
-  if (real_api->check_path(path)) {
-    int retfd = dtio::posix::open(path, flags);
-    real_api->whitelist_fd(retfd);
-    return retfd;
-  }
-  else if (ConfigManager::get_instance()->NEVER_TRACE) {
-    if (flags & O_CREAT || flags & O_TMPFILE) {
-      return real_api->open(path, flags, mode);
-    }
-    else {
-      return real_api->open(path, flags);
-    }
-  }
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  
-  if (real_api->interceptp(caller_name)) {
-    int retfd = dtio::posix::open(path, flags);
-    real_api->whitelist_fd(retfd);
-    return retfd;
-  }
-  else {
-    if (flags & O_CREAT || flags & O_TMPFILE) {
-      return real_api->open(path, flags, mode);
-    }
-    else {
-      return real_api->open(path, flags);
-    }
-  }
-}
-
-int HERMES_DECL(open64)(const char *path, int flags, ...) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-
-  int mode = 0;
+  mode_t mode = 0;
   if (flags & O_CREAT) {
-    va_list arg;
-    va_start(arg, flags);
-    mode = va_arg(arg, int);
-    va_end(arg);
+    va_list args;
+    va_start(args, flags);
+    mode = va_arg(args, mode_t);
+    va_end(args);
   }
 
-  if (real_api->check_path(path)) {
-    int retfd = dtio::posix::open64(path, flags);
-    real_api->whitelist_fd(retfd);
-    return retfd;
+  // Call real open first
+  int real_fd;
+  if (flags & O_CREAT) {
+    real_fd = HERMES_POSIX_API->open(path, flags, mode);
+  } else {
+    real_fd = HERMES_POSIX_API->open(path, flags);
   }
-  else if (ConfigManager::get_instance()->NEVER_TRACE) {
-    if (flags & O_CREAT) {
-      return real_api->open64(path, flags, mode);
-    }
-    else {
-      return real_api->open64(path, flags);
-    }
+
+  if (real_fd < 0) {
+    return real_fd;
   }
- std::string caller_name = "";
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
+
+  // Convert to absolute path
+  std::string abs_path = stdfs::absolute(path).string();
+
+  // Check if should intercept
+  auto *config = DTIO_CONF;
+  if (!config->ShouldIntercept(abs_path)) {
+    return real_fd;
   }
-  if (real_api->interceptp(caller_name)) {
-    int retfd = dtio::posix::open64(path, flags);
-    real_api->whitelist_fd(retfd);
-    return retfd;
-  }
-  else {
-    if (flags & O_CREAT) {
-      return real_api->open64(path, flags, mode);
-    }
-    else {
-      return real_api->open64(path, flags);
-    }
-  }
+
+  // Register with metadata manager
+  auto *client_meta = DTIO_CLIENT_META;
+  client_meta->RegisterPosixFd(real_fd, abs_path, flags);
+
+  return real_fd;
 }
+#endif
+
+#if defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64
+int HERMES_DECL(open64)(const char *path, int flags, ...) {
+  mode_t mode = 0;
+  if (flags & O_CREAT) {
+    va_list args;
+    va_start(args, flags);
+    mode = va_arg(args, mode_t);
+    va_end(args);
+  }
+
+  // Call real open64 first
+  int real_fd;
+  if (flags & O_CREAT) {
+    real_fd = HERMES_POSIX_API->open64(path, flags, mode);
+  } else {
+    real_fd = HERMES_POSIX_API->open64(path, flags);
+  }
+
+  if (real_fd < 0) {
+    return real_fd;
+  }
+
+  // Convert to absolute path
+  std::string abs_path = stdfs::absolute(path).string();
+
+  // Check if should intercept
+  auto *config = DTIO_CONF;
+  if (!config->ShouldIntercept(abs_path)) {
+    return real_fd;
+  }
+
+  // Register with metadata manager
+  auto *client_meta = DTIO_CLIENT_META;
+  client_meta->RegisterPosixFd(real_fd, abs_path, flags);
+
+  return real_fd;
+}
+#endif
 
 int HERMES_DECL(__open_2)(const char *path, int oflag) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-  if (real_api->check_path(path)) {
-    int retfd = dtio::posix::__open_2(path, oflag);
-    real_api->whitelist_fd(retfd);
-    return retfd;
-  }
-  else if (ConfigManager::get_instance()->NEVER_TRACE) {
-    return real_api->__open_2(path, oflag);
-  }
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    int retfd = dtio::posix::__open_2(path, oflag);
-    real_api->whitelist_fd(retfd);
-    return retfd;
-  }
-  else {
-    return real_api->__open_2(path, oflag);
-  }
+  return -1;  // Not implemented
 }
 
+#if !defined(_FILE_OFFSET_BITS) || _FILE_OFFSET_BITS != 64
 int HERMES_DECL(creat)(const char *path, mode_t mode) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-  // dtio::posix::creat(path, mode);
-}
+  // creat is equivalent to open(path, O_CREAT | O_WRONLY | O_TRUNC, mode)
+  int flags = O_CREAT | O_WRONLY | O_TRUNC;
 
-int HERMES_DECL(creat64)(const char *path, mode_t mode) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-  // dtio::posix::creat64(path, mode);
+  // Call real creat first
+  int real_fd = HERMES_POSIX_API->creat(path, mode);
+
+  if (real_fd < 0) {
+    return real_fd;
+  }
+
+  // Convert to absolute path
+  std::string abs_path = stdfs::absolute(path).string();
+
+  // Check if should intercept
+  auto *config = DTIO_CONF;
+  if (!config->ShouldIntercept(abs_path)) {
+    return real_fd;
+  }
+
+  // Register with metadata manager
+  auto *client_meta = DTIO_CLIENT_META;
+  client_meta->RegisterPosixFd(real_fd, abs_path, flags);
+
+  return real_fd;
 }
+#endif
+
+#if defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64
+int HERMES_DECL(creat64)(const char *path, mode_t mode) {
+  // creat64 is equivalent to open64(path, O_CREAT | O_WRONLY | O_TRUNC, mode)
+  int flags = O_CREAT | O_WRONLY | O_TRUNC;
+
+  // Call real creat64 first
+  int real_fd = HERMES_POSIX_API->creat64(path, mode);
+
+  if (real_fd < 0) {
+    return real_fd;
+  }
+
+  // Convert to absolute path
+  std::string abs_path = stdfs::absolute(path).string();
+
+  // Check if should intercept
+  auto *config = DTIO_CONF;
+  if (!config->ShouldIntercept(abs_path)) {
+    return real_fd;
+  }
+
+  // Register with metadata manager
+  auto *client_meta = DTIO_CLIENT_META;
+  client_meta->RegisterPosixFd(real_fd, abs_path, flags);
+
+  return real_fd;
+}
+#endif
 
 ssize_t HERMES_DECL(read)(int fd, void *buf, size_t count) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-
-  if (real_api->fd_whitelistedp(fd)) {
-    return dtio::posix::read(fd, buf, count);
-  }
-  else {
-    return real_api->read(fd, buf, count);
+  // Check if file descriptor is registered with DTIO
+  auto *client_meta = DTIO_CLIENT_META;
+  if (!client_meta->IsPosixFdRegistered(fd)) {
+    // Not intercepted, call real API
+    return HERMES_POSIX_API->read(fd, buf, count);
   }
 
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
+  // Get file info and submit to DTIO runtime
+  auto *file_info = client_meta->GetPosixFileInfo(fd);
+  if (file_info) {
+    auto *config = DTIO_CONF;
+
+    // Allocate buffer in shared memory
+    hipc::FullPtr<char> shm_buf = CHI_CLIENT->AllocateBuffer(HSHM_MCTX, count);
+
+    // Submit read task with filename as chi::string
+    config->dtio_mod_.Read(
+        HSHM_MCTX, shm_buf.shm_, count, file_info->current_offset,
+        chi::string(file_info->absolute_path), dtio::IoClientType::kPosix);
+
+    // Copy data back to user buffer
+    memcpy(buf, shm_buf.ptr_, count);
+
+    // Update offset
+    client_meta->UpdatePosixOffset(fd, file_info->current_offset + count);
+
+    // Free shared memory buffer
+    CHI_CLIENT->FreeBuffer(HSHM_MCTX, shm_buf);
+
+    return count;
   }
-  auto test = real_api->interceptp(caller_name);
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::read(fd, buf, count);
-  }
-  else {
-    return real_api->read(fd, buf, count);
-  }
+
+  // Fallback to real API
+  return HERMES_POSIX_API->read(fd, buf, count);
 }
 
 ssize_t HERMES_DECL(write)(int fd, const void *buf, size_t count) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-
-  if (real_api->fd_whitelistedp(fd)) {
-    return dtio::posix::write(fd, buf, count);
-  }
-  else {
-    return real_api->write(fd, buf, count);
+  // Check if file descriptor is registered with DTIO
+  auto *client_meta = DTIO_CLIENT_META;
+  if (!client_meta->IsPosixFdRegistered(fd)) {
+    // Not intercepted, call real API
+    return HERMES_POSIX_API->write(fd, buf, count);
   }
 
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
+  // Get file info and submit to DTIO runtime
+  auto *file_info = client_meta->GetPosixFileInfo(fd);
+  if (file_info) {
+    auto *config = DTIO_CONF;
+
+    // Allocate buffer in shared memory
+    hipc::FullPtr<char> shm_buf = CHI_CLIENT->AllocateBuffer(HSHM_MCTX, count);
+    memcpy(shm_buf.ptr_, buf, count);
+
+    // Submit write task with filename as chi::string
+    config->dtio_mod_.Write(
+        HSHM_MCTX, shm_buf.shm_, count, file_info->current_offset,
+        chi::string(file_info->absolute_path), dtio::IoClientType::kPosix);
+
+    // Update offset
+    client_meta->UpdatePosixOffset(fd, file_info->current_offset + count);
+
+    // Free shared memory buffer
+    CHI_CLIENT->FreeBuffer(HSHM_MCTX, shm_buf);
+
+    return count;
   }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::write(fd, buf, count);
-  }
-  else {
-    return real_api->write(fd, buf, count);
-  }
+
+  // Fallback to real API
+  return HERMES_POSIX_API->write(fd, buf, count);
 }
 
-// NOTE: not in DTIO
-// ssize_t HERMES_DECL(pread)(int fd, void *buf, size_t count, off_t offset) {
+#if !defined(_FILE_OFFSET_BITS) || _FILE_OFFSET_BITS != 64
+off_t HERMES_DECL(lseek)(int fd, off_t offset, int whence) {
+  // Check if file descriptor is registered with DTIO
+  auto *client_meta = DTIO_CLIENT_META;
+  if (!client_meta->IsPosixFdRegistered(fd)) {
+    // Not intercepted, call real API
+    return HERMES_POSIX_API->lseek(fd, offset, whence);
+  }
+
+  // Call real lseek first to get the actual position
+  off_t real_offset = HERMES_POSIX_API->lseek(fd, offset, whence);
+  if (real_offset < 0) {
+    return real_offset;
+  }
+
+  // Update DTIO metadata with new offset
+  auto *file_info = client_meta->GetPosixFileInfo(fd);
+  if (file_info) {
+    client_meta->UpdatePosixOffset(fd, real_offset);
+  }
+
+  return real_offset;
+}
+#endif
+
+#if defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64
+off64_t HERMES_DECL(lseek64)(int fd, off64_t offset, int whence) {
+  // Check if file descriptor is registered with DTIO
+  auto *client_meta = DTIO_CLIENT_META;
+  if (!client_meta->IsPosixFdRegistered(fd)) {
+    // Not intercepted, call real API
+    return HERMES_POSIX_API->lseek64(fd, offset, whence);
+  }
+
+  // Call real lseek64 first to get the actual position
+  off64_t real_offset = HERMES_POSIX_API->lseek64(fd, offset, whence);
+  if (real_offset < 0) {
+    return real_offset;
+  }
+
+  // Update DTIO metadata with new offset
+  auto *file_info = client_meta->GetPosixFileInfo(fd);
+  if (file_info) {
+    client_meta->UpdatePosixOffset(fd, real_offset);
+  }
+
+  return real_offset;
+}
+#endif
+
+int HERMES_DECL(__fxstat)(int __ver, int fd, struct stat *buf) {
+  return -1;  // Not implemented
+}
+
+int HERMES_DECL(__fxstatat)(int __ver, int __fildes, const char *__filename,
+                            struct stat *__stat_buf, int __flag) {
+  return -1;  // Not implemented
+}
+
+int HERMES_DECL(__xstat)(int __ver, const char *__filename,
+                         struct stat *__stat_buf) {
+  return -1;  // Not implemented
+}
+
+int HERMES_DECL(__lxstat)(int __ver, const char *__filename,
+                          struct stat *__stat_buf) {
+  return -1;  // Not implemented
+}
+
+#if !defined(_FILE_OFFSET_BITS) || _FILE_OFFSET_BITS != 64
+int HERMES_DECL(stat)(const char *pathname, struct stat *buf) {
+  // For stat, we don't need special DTIO handling - just call real API
+  // The file doesn't need to be open for stat operations
+  return HERMES_POSIX_API->stat(pathname, buf);
+}
+#endif
+
+int HERMES_DECL(__fxstat64)(int __ver, int fd, struct stat64 *buf) {
+  return -1;  // Not implemented
+}
+
+int HERMES_DECL(__fxstatat64)(int __ver, int __fildes, const char *__filename,
+                              struct stat64 *__stat_buf, int __flag) {
+  return -1;  // Not implemented
+}
+
+int HERMES_DECL(__xstat64)(int __ver, const char *__filename,
+                           struct stat64 *__stat_buf) {
+  return -1;  // Not implemented
+}
+
+int HERMES_DECL(__lxstat64)(int __ver, const char *__filename,
+                            struct stat64 *__stat_buf) {
+  return -1;  // Not implemented
+}
+
+#if defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64
+int HERMES_DECL(stat64)(const char *pathname, struct stat64 *buf) {
+  // For stat64, we don't need special DTIO handling - just call real API
+  // The file doesn't need to be open for stat operations
+  return HERMES_POSIX_API->stat64(pathname, buf);
+}
+#endif
+
+int HERMES_DECL(fsync)(int fd) {
+  // Check if file descriptor is registered with DTIO
+  auto *client_meta = DTIO_CLIENT_META;
+  if (!client_meta->IsPosixFdRegistered(fd)) {
+    // Not intercepted, call real API
+    return HERMES_POSIX_API->fsync(fd);
+  }
+
+  // For DTIO-managed files, call real fsync
+  // In the future, this could trigger DTIO-specific flush operations
+  return HERMES_POSIX_API->fsync(fd);
+}
+
+int HERMES_DECL(close)(int fd) {
+  // Check if file descriptor is registered with DTIO
+  auto *client_meta = DTIO_CLIENT_META;
+  if (!client_meta->IsPosixFdRegistered(fd)) {
+    // Not intercepted, call real API
+    return HERMES_POSIX_API->close(fd);
+  }
+
+  // Unregister from DTIO metadata manager
+  client_meta->UnregisterPosixFd(fd);
+
+  // Call real close
+  return HERMES_POSIX_API->close(fd);
+}
+
+int HERMES_DECL(unlink)(const char *pathname) {
+  // For unlink, we don't need special DTIO handling - just call real API
+  // File removal doesn't require tracking in DTIO metadata
+  return HERMES_POSIX_API->unlink(pathname);
+}
+
+// NOTE : not in DTIO ssize_t HERMES_DECL(pread)(int fd, void *buf, size_t
+// count,
+//                                               off_t offset) {
 //   printf("pread called\n");
 //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
 //   // dtio::posix::pread(fd, buf, count, offset);
 // }
 
 // ssize_t HERMES_DECL(pwrite)(int fd, const void *buf, size_t count,
-// 			    off_t offset) {
+//                             off_t offset) {
 //   printf("pwrite called\n");
 //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
 //   // dtio::posix::pwrite(fd, buf, count, offset);
 // }
 
-// ssize_t HERMES_DECL(pread64)(int fd, void *buf, size_t count, off64_t offset) {
+// ssize_t HERMES_DECL(pread64)(int fd, void *buf, size_t count, off64_t offset)
+// {
 //   printf("pread64 called\n");
 //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
 //   // dtio::posix::pread64(fd, buf, count, offset);
 // }
 
 // ssize_t HERMES_DECL(pwrite64)(int fd, const void *buf, size_t count,
-// 			      off64_t offset) {
+//                               off64_t offset) {
 //   printf("pwrite64 called\n");
 //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
 //   // dtio::posix::pwrite64(fd, buf, count, offset);
 // }
 
-off_t HERMES_DECL(lseek)(int fd, off_t offset, int whence) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-
-  if (real_api->fd_whitelistedp(fd)) {
-    return dtio::posix::lseek(fd, offset, whence);
-  }
-  else {
-    return real_api->lseek(fd, offset, whence);
-  }
-
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::lseek(fd, offset, whence);
-  }
-  else {
-    return real_api->lseek(fd, offset, whence);
-  }
-}
-
-off64_t HERMES_DECL(lseek64)(int fd, off64_t offset, int whence) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-
-  if (real_api->fd_whitelistedp(fd)) {
-    return dtio::posix::lseek64(fd, offset, whence);
-  }
-  else {
-    return real_api->lseek64(fd, offset, whence);
-  }
-
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::lseek64(fd, offset, whence);
-  }
-  else {
-    return real_api->lseek64(fd, offset, whence);
-  }
-}
-
-int HERMES_DECL(__fxstat)(int __ver, int fd, struct stat *buf) {
-	// int result = 0;
-	// auto real_api = HERMES_POSIX_API;
-	// auto fs_api = HERMES_POSIX_FS;
-	// if (fs_api->IsFdTracked(fd)) {
-	//   HILOG(kDebug, "Intercepted __fxstat.")
-	//   File f; f.hermes_fd_ = fd;
-	//   result = fs_api->Stat(f, buf);
-	// } else {
-	//   result = real_api->__fxstat(__ver, fd, buf);
-	// }
-	// return result;
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted __fxstat.");
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-  if (real_api->fd_whitelistedp(fd)) {
-    return dtio::posix::__fxstat(__ver, fd, buf);
-  }
-  else {
-    return real_api->__fxstat(__ver, fd, buf);
-  }
-
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::__fxstat(__ver, fd, buf);
-  }
-  else {
-    return real_api->__fxstat(__ver, fd, buf);
-  }
-}
-
-int HERMES_DECL(__fxstatat)(int __ver, int __fildes,
-			    const char *__filename,
-			    struct stat *__stat_buf, int __flag) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-
-  if (real_api->check_path(__filename)) {
-    return dtio::posix::__fxstatat(__ver, __fildes, __filename, __stat_buf, __flag);
-  }
-  else if (ConfigManager::get_instance()->NEVER_TRACE) {
-    return real_api->__fxstatat(__ver, __fildes, __filename, __stat_buf, __flag);
-  }
-
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::__fxstatat(__ver, __fildes, __filename, __stat_buf, __flag);
-  }
-  else {
-    return real_api->__fxstatat(__ver, __fildes, __filename, __stat_buf, __flag);
-  }
-}
-
-int HERMES_DECL(__xstat)(int __ver, const char *__filename,
-			 struct stat *__stat_buf) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-
-  if (real_api->check_path(__filename)) {
-    return dtio::posix::__xstat(__ver, __filename, __stat_buf);
-  }
-  else if (ConfigManager::get_instance()->NEVER_TRACE) {
-    return real_api->__xstat(__ver, __filename, __stat_buf);
-  }
-
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::__xstat(__ver, __filename, __stat_buf);
-  }
-  else {
-    return real_api->__xstat(__ver, __filename, __stat_buf);
-  }
-}
-
-int HERMES_DECL(__lxstat)(int __ver, const char *__filename,
-			  struct stat *__stat_buf) {
-}
 // NOTE:not in DTIO
 // int HERMES_DECL(fstat)(int fd, struct stat *buf) {
 //   printf("fstat called\n");
@@ -469,7 +463,8 @@ int HERMES_DECL(__lxstat)(int __ver, const char *__filename,
 //   }
 
 //   if (boost::stacktrace::stacktrace().size() > 1) {
-//     caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
+//     caller_name =
+//     boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
 //   }
 //   if (real_api->interceptp(caller_name)) {
 //     return dtio::posix::myfstat(fd, buf);
@@ -478,124 +473,6 @@ int HERMES_DECL(__lxstat)(int __ver, const char *__filename,
 //     return real_api->fstat(fd, buf);
 //   }
 // }
-
-int HERMES_DECL(stat)(const char *pathname, struct stat *buf) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-
-  if (real_api->check_path(pathname)) {
-    return dtio::posix::mystat(pathname, buf);
-  }
-  else if (ConfigManager::get_instance()->NEVER_TRACE) {
-    return real_api->stat(pathname, buf);
-  }
-
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::mystat(pathname, buf);
-  }
-  else {
-    return real_api->stat(pathname, buf);
-  }
-}
-
-int HERMES_DECL(__fxstat64)(int __ver, int fd, struct stat64 *buf) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-  if (real_api->fd_whitelistedp(fd)) {
-    return dtio::posix::__fxstat64(__ver, fd, buf);
-  }
-  else {
-    return real_api->__fxstat64(__ver, fd, buf);
-  }
-
-
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::__fxstat64(__ver, fd, buf);
-  }
-  else {
-    return real_api->__fxstat64(__ver, fd, buf);
-  }
-}
-
-int HERMES_DECL(__fxstatat64)(int __ver, int __fildes,
-			      const char *__filename,
-			      struct stat64 *__stat_buf, int __flag) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-
-  if (real_api->check_path(__filename)) {
-    return dtio::posix::__fxstatat64(__ver, __fildes, __filename, __stat_buf, __flag);
-  }
-  else if (ConfigManager::get_instance()->NEVER_TRACE) {
-    return real_api->__fxstatat64(__ver, __fildes, __filename, __stat_buf, __flag);
-  }
-
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::__fxstatat64(__ver, __fildes, __filename, __stat_buf, __flag);
-  }
-  else {
-    return real_api->__fxstatat64(__ver, __fildes, __filename, __stat_buf, __flag);
-  }
-}
-
-int HERMES_DECL(__xstat64)(int __ver, const char *__filename,
-			   struct stat64 *__stat_buf) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-  if (real_api->check_path(__filename)) {
-    return dtio::posix::__xstat64(__ver, __filename, __stat_buf);
-  }
-  else if (ConfigManager::get_instance()->NEVER_TRACE) {
-    return real_api->__xstat64(__ver, __filename, __stat_buf);
-  }
-
-
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::__xstat64(__ver, __filename, __stat_buf);
-  }
-  else {
-    return real_api->__xstat64(__ver, __filename, __stat_buf);
-  }
-}
-
-int HERMES_DECL(__lxstat64)(int __ver, const char *__filename,
-			    struct stat64 *__stat_buf) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-  if (real_api->check_path(__filename)) {
-    return dtio::posix::__lxstat64(__ver, __filename, __stat_buf);
-  }
-  else if (ConfigManager::get_instance()->NEVER_TRACE) {
-    return real_api->__lxstat64(__ver, __filename, __stat_buf);
-  }
-
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::__lxstat64(__ver, __filename, __stat_buf);
-  }
-  else {
-    return real_api->__lxstat64(__ver, __filename, __stat_buf);
-  }
-}
 
 // NOTE: not in DTIO
 // int HERMES_DECL(fstat64)(int fd, struct stat64 *buf) {
@@ -613,7 +490,8 @@ int HERMES_DECL(__lxstat64)(int __ver, const char *__filename,
 //   }
 
 //   if (boost::stacktrace::stacktrace().size() > 1) {
-//     caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
+//     caller_name =
+//     boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
 //   }
 //   if (real_api->interceptp(caller_name)) {
 //     return dtio::posix::myfstat64(fd, buf);
@@ -623,108 +501,20 @@ int HERMES_DECL(__lxstat64)(int __ver, const char *__filename,
 //   }
 // }
 
-int HERMES_DECL(stat64)(const char *pathname, struct stat64 *buf) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-
-  if (real_api->check_path(pathname)) {
-    return dtio::posix::mystat64(pathname, buf);
-  }
-  else if (ConfigManager::get_instance()->NEVER_TRACE) {
-    return real_api->stat64(pathname, buf);
-  }
-
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::mystat64(pathname, buf);
-  }
-  else {
-    return real_api->stat64(pathname, buf);
-  }
-}
-
-
-int HERMES_DECL(fsync)(int fd) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-  if (real_api->fd_whitelistedp(fd)) {
-    return dtio::posix::fsync(fd);
-  }
-  else {
-    return real_api->fsync(fd);
-  }
-
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::fsync(fd);
-  }
-  else {
-    return real_api->fsync(fd);
-  }
-}
-
-int HERMES_DECL(close)(int fd) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-  if (real_api->fd_whitelistedp(fd)) {
-    return dtio::posix::close(fd);
-  }
-  else {
-    return real_api->close(fd);
-  }
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::close(fd);
-  }
-  else {
-    return real_api->close(fd);
-  }
-}
-
 // int HERMES_DECL(flock)(int fd, int operation) {
 //   printf("flock called\n");
 //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-//   // FIXME For now, we're ignoring this call and hoping it doesnt impact program logic
+//   // FIXME For now, we're ignoring this call and hoping it doesnt impact
+//   program logic
 //   // dtio::posix::flock(fd, operation);
 // }
 
 // int HERMES_DECL(remove)(const char *pathname) {
 //   printf("remove called\n");
 //   DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__)
-//   // FIXME For now, we're ignoring this call and hoping it doesnt impact program logic
+//   // FIXME For now, we're ignoring this call and hoping it doesnt impact
+//   program logic
 //   // dtio::posix::remove(pathname);
 // }
-
-int HERMES_DECL(unlink)(const char *pathname) {
-  DTIO_LOG_DEBUG_RANKLESS("Intercepted " << __func__);
-  auto real_api = HERMES_POSIX_API;
-  std::string caller_name = "";
-
-  if (real_api->check_path(pathname)) {
-    return dtio::posix::unlink(pathname);
-  }
-  else if (ConfigManager::get_instance()->NEVER_TRACE) {
-    return real_api->unlink(pathname);
-  }
-
-  if (boost::stacktrace::stacktrace().size() > 1) {
-    caller_name = boost::stacktrace::detail::location_from_symbol(boost::stacktrace::stacktrace()[1].address()).name();
-  }
-  if (real_api->interceptp(caller_name)) {
-    return dtio::posix::unlink(pathname);
-  }
-  else {
-    return real_api->unlink(pathname);
-  }
-}
 
 }  // extern C

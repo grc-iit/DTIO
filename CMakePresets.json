@@ -1,0 +1,33 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 19,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "debug",
+            "hidden": false,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_INSTALL_PREFIX": "/home/llogan/.scspkg/packages/DTIO",
+                "CHIMAERA_ENABLE_CUDA": "OFF",
+                "DTIO_ENABLE_CMAKE_DOTENV": "ON"
+            }
+        },
+        {
+            "name": "release",
+            "hidden": false,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_INSTALL_PREFIX": "/home/llogan/.scspkg/packages/DTIO",
+                "DTIO_ENABLE_CMAKE_DOTENV": "ON"
+            }
+        }
+    ]
+}

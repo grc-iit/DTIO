@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -25,13 +25,7 @@
 #ifndef HERMES_ADAPTER_UTILS_H_
 #define HERMES_ADAPTER_UTILS_H_
 
-// #include "dtio.h"
-// #include "adapter/filesystem/filesystem_mdm.h"
-
-// namespace stdfs = std::filesystem;
-
-namespace dtio::adapter
-{
+namespace dtio::adapter {
 
 #define HERMES_DECL(F) F
 #define DTIO_DECL(F) F
@@ -39,6 +33,6 @@ namespace dtio::adapter
 /** The maximum length of a POSIX path */
 static inline const int kMaxPathLen = 4096;
 
-} // namespace dtio::adapter
+}  // namespace dtio::adapter
 
-#endif // HERMES_ADAPTER_UTILS_H_
+#endif  // HERMES_ADAPTER_UTILS_H_

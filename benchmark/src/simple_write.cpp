@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
   }
 
   FILE *fp;
-  int rv; // return val
+  int rv;  // return val
   char write_buf[50] = "Testing R/W with DTIO. This is msg body.";
 
   Timer timer = Timer();

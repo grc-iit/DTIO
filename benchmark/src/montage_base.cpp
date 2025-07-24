@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -27,8 +27,9 @@
 int main(int argc, char **argv) {
   dtio::MPI_Init(&argc, &argv);
   if (argc != 5) {
-    printf("USAGE: ./montage_base [dtio_conf] [file_path] [iter] "
-           "[final_path]\n");
+    printf(
+        "USAGE: ./montage_base [dtio_conf] [file_path] [iter] "
+        "[final_path]\n");
     exit(1);
   }
 
@@ -132,8 +133,7 @@ int main(int argc, char **argv) {
 #endif
   global_timer.pauseTime();
 #ifdef TIMERBASE
-  if (rank == 0)
-    stream << w.getElapsedTime() << ",";
+  if (rank == 0) stream << w.getElapsedTime() << ",";
 #endif
 
 #ifdef TIMERBASE
@@ -146,11 +146,9 @@ int main(int argc, char **argv) {
     filename1 = file_path + "file1_" + std::to_string(rank - 1) + ".dat";
     filename2 = file_path + "file2_" + std::to_string(rank - 1) + ".dat";
     fd1 = open(filename1.c_str(), O_DIRECT | O_RDONLY | mode);
-    if (fd1 == -1)
-      std::cerr << "open() failed!\n";
+    if (fd1 == -1) std::cerr << "open() failed!\n";
     fd2 = open(filename2.c_str(), O_DIRECT | O_RDONLY | mode);
-    if (fd2 == -1)
-      std::cerr << "open() failed!\n";
+    if (fd2 == -1) std::cerr << "open() failed!\n";
   }
 #ifdef TIMERBASE
   r.pauseTime();
@@ -162,8 +160,7 @@ int main(int argc, char **argv) {
       for (int j = 0; j < item[1]; ++j) {
         void *read_buf;
         read_buf = memalign(align * 2, item[0] + align);
-        if (read_buf == NULL)
-          std::cerr << "memalign\n";
+        if (read_buf == NULL) std::cerr << "memalign\n";
         read_buf += align;
         global_timer.resumeTime();
 #ifdef TIMERBASE
@@ -174,8 +171,8 @@ int main(int argc, char **argv) {
           bytes = read(fd1, read_buf, item[0] / 2);
           bytes += read(fd2, read_buf, item[0] / 2);
           if (bytes != item[0])
-            std::cerr << "Read() failed!"
-                      << "Bytes:" << bytes << "\tError code:" << errno << "\n";
+            std::cerr << "Read() failed!" << "Bytes:" << bytes
+                      << "\tError code:" << errno << "\n";
         }
         MPI_Barrier(MPI_COMM_WORLD);
 #ifdef TIMERBASE
@@ -199,8 +196,7 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef TIMERBASE
-  if (rank == 0)
-    stream << r.getElapsedTime() << ",";
+  if (rank == 0) stream << r.getElapsedTime() << ",";
 #endif
 
 #ifdef TIMERBASE
@@ -231,8 +227,7 @@ int main(int argc, char **argv) {
   global_timer.pauseTime();
 
 #ifdef TIMERBASE
-  if (rank == 0)
-    stream << a.pauseTime() << ",";
+  if (rank == 0) stream << a.pauseTime() << ",";
 #endif
 
   auto time = global_timer.getElapsedTime();

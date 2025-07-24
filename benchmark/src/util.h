@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -25,17 +25,15 @@
 #ifndef DTIO_BENCH_UTIL_H
 #define DTIO_BENCH_UTIL_H
 
-#include "dtio/common/return_codes.h"
-#include "dtio/common/threadPool.h"
-#include <hcl/common/debug.h>
-#include "dtio/common/utilities.h"
-#include "dtio/drivers/stdio.h"
-#include "dtio/drivers/posix.h"
 #include <fcntl.h>
+
+#include "dtio/return_codes.h"
+#include "dtio/utilities.h"
 /* #include <fstream> */
-#include <iomanip>
 #include <malloc.h>
 #include <mpi.h>
+
+#include <iomanip>
 #include <random>
 /* #include <sstream> */
 #include <zconf.h>
@@ -93,4 +91,4 @@
 /*     std::cerr << "Read failed:" << bytes << "\n"; */
 /* } */
 
-#endif // DTIO_BENCH_UTIL_H
+#endif  // DTIO_BENCH_UTIL_H

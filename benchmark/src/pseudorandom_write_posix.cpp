@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>, 
+ * Copyright (C) 2024 Gnosis Research Center <grc@iit.edu>,
  * Keith Bateman <kbateman@hawk.iit.edu>, Neeraj Rajesh
  * <nrajesh@hawk.iit.edu> Hariharan Devarajan
  * <hdevarajan@hawk.iit.edu>, Anthony Kougkas <akougkas@iit.edu>,
@@ -27,12 +27,14 @@
 int main(int argc, char **argv) {
   dtio::MPI_Init(&argc, &argv);
   if (argc != 3 && argc != 4) {
-    printf("USAGE: ./simple_write [filename] [num_messages] [max size] [(optional) seed]\n");
+    printf(
+        "USAGE: ./simple_write [filename] [num_messages] [max size] "
+        "[(optional) seed]\n");
     exit(1);
   }
 
   int fd;
-  int rv; // return val
+  int rv;  // return val
   int i;
   int num_messages = atoi(argv[2]);
   int seed = ((argc == 4) ? atoi(argv[4]) : rand());
@@ -41,11 +43,9 @@ int main(int argc, char **argv) {
   std::cerr << "Using random seed " << seed << std::endl;
 
   for (i = 0; i < max_size; i++) {
-    write_buf[i] = (char)(65 + random() % 57); // Just a random char
+    write_buf[i] = (char)(65 + random() % 57);  // Just a random char
   }
 
-  hcl::Timer timer = hcl::Timer();
-  timer.resumeTime();
   std::cerr << "This is a simple WRITE test.\n";
 
   // open/create file
@@ -58,16 +58,12 @@ int main(int argc, char **argv) {
   // write message to file
   srandom(seed);
   for (i = 0; i < num_messages; i++) {
-
     rv = dtio::posix::write(fd, write_buf, random() % max_size);
   }
   std::cerr << "(Return value: " << rv << ")\n";
   std::cerr << "Written to: " << argv[1] << "\n";
 
   dtio::posix::close(fd);
-  timer.pauseTime();
-  auto time = timer.getElapsedTime();
-  std::cerr << "Time elapsed: " << time << " seconds.\n";
 
   dtio::MPI_Finalize();
 }
