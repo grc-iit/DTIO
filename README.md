@@ -29,3 +29,10 @@ spack install dtio
 ```
 spack install dtio +nocompile
 ```
+
+```
+spack load dtio +nocompile
+bash env.sh
+cmake ../ -D DTIO_ENABLE_CMAKE_DOTENV=ON
+make -j32 install
+```
